@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { SITE_NAME, NAV_ITEMS } from '@/lib/constants'
+import { SITE_NAME } from '@/lib/constants'
 import { Container } from '@/components/layout/Container'
 
 function Header() {
@@ -10,20 +10,7 @@ function Header() {
           <Link href="/" className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
             {SITE_NAME}
           </Link>
-          <nav>
-            <ul className="flex gap-6">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <span className="text-sm text-gray-600">Handcrafted Bronze Art</span>
         </div>
       </Container>
     </header>
