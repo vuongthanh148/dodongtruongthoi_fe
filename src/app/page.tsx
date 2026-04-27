@@ -21,6 +21,7 @@ import {
   fetchBanners,
   fetchCampaigns,
   fetchCategories,
+  fetchCustomerPhotos,
   fetchProducts,
   type Banner,
   type Campaign,
@@ -48,6 +49,7 @@ export default function Home() {
   const { data: campaignsData = [] } = useSWR(SWR_KEYS.campaigns, fetchCampaigns, {
     dedupingInterval: 60 * 1000, // campaigns are time-sensitive — 1 min cache
   })
+  const { data: customerPhotos = [] } = useSWR(SWR_KEYS.customerPhotos, fetchCustomerPhotos)
 
   // Compute derived data
   const categories = useMemo(() => {
@@ -797,6 +799,99 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {customerPhotos.length > 0 ? (
+        <section
+          style={{
+            background: 'var(--bg-dark)',
+            color: 'var(--text-on-dark)',
+            padding: '24px 0 30px',
+            marginTop: 32,
+          }}
+        >
+          <div style={{ padding: '0 16px', marginBottom: 12 }}>
+            <Label
+              color="gold"
+              style={{
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+              }}
+            >
+              Khách hàng
+            </Label>
+            <Heading as="h2" size="md" color="var(--text-on-dark)">
+              Tranh trong nhà khách hàng
+            </Heading>
+            <div style={{ fontSize: 13, color: 'rgba(244,237,224,0.72)', marginTop: 6, lineHeight: 1.6 }}>
+              Hình ảnh thực tế từ không gian sống của khách hàng trên toàn quốc.
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              padding: '0 16px',
+              overflowX: 'auto',
+            }}
+            className="noscroll"
+          >
+            {customerPhotos.map((photo, index) => {
+              const isPortrait = index % 3 !== 1
+              const ratio = isPortrait ? '3 / 4' : '4 / 3'
+              const width = isPortrait ? '62vw' : '78vw'
+
+              return (
+                <article
+                  key={photo.id}
+                  style={{
+                    position: 'relative',
+                    flex: `0 0 ${width}`,
+                    maxWidth: isPortrait ? 300 : 360,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: '1px solid rgba(244,237,224,0.12)',
+                    background: '#1a120a',
+                    aspectRatio: ratio,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundImage: `url(${photo.imageUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'linear-gradient(180deg, rgba(20,14,9,0.08) 15%, rgba(20,14,9,0.65) 100%)',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 10,
+                      right: 10,
+                      bottom: 10,
+                      fontSize: 13,
+                      color: 'rgba(244,237,224,0.92)',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {photo.caption || 'Không gian thực tế của khách hàng'}
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <Footer />
 

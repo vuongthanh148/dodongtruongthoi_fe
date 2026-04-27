@@ -957,11 +957,17 @@ export default function ProductDetailPage() {
           type="button"
           size="lg"
           onClick={() => {
+            const bgToneOption = BG_TONES.find((t) => t.id === resolvedBgTone)
+            const frameOption = FRAME_STYLES.find((f) => f.id === resolvedFrame)
             upsertCartItem({
               productId: product.id,
+              productTitle: product.title,
               sizeId: selectedSize?.id,
+              sizeLabel: selectedSize?.name,
               bgTone: resolvedBgTone,
+              bgToneLabel: bgToneOption?.name,
               frame: resolvedFrame,
+              frameLabel: frameOption?.name,
               quantity: 1,
               unitPrice: currentPrice,
             })

@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { FooterMinimal } from '@/components/layout/Footer'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { TopBar } from '@/components/layout/TopBar'
 import { getCartItems, clearCart } from '@/lib/storage'
 import { createOrder } from '@/lib/storefront-api'
 import type { CartItem } from '@/lib/types'
@@ -13,6 +16,7 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   // Form state
   const [phone, setPhone] = useState('')
@@ -32,8 +36,19 @@ export default function CheckoutPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[--bg-page] flex items-center justify-center">
-        <p className="text-center text-[--text-secondary]">Đang tải...</p>
+      <div className="min-h-screen bg-[--bg-page]">
+        <TopBar
+          title="Đặt hàng"
+          onMenu={() => setIsMenuOpen(true)}
+          onOpenSaved={() => router.push('/saved')}
+        />
+        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+        <div className="flex items-center justify-center py-16">
+          <p className="text-center text-[--text-secondary]">Đang tải...</p>
+        </div>
+
+        <FooterMinimal />
       </div>
     )
   }
@@ -67,9 +82,9 @@ export default function CheckoutPage() {
         note: note || undefined,
         items: items.map((item) => ({
           productId: item.productId,
-          productTitle: item.productId, // Use productId as title since we don't have full product data
+          productTitle: item.productTitle || item.productId,
           sizeCode: item.sizeId,
-          sizeLabel: item.sizeId,
+          sizeLabel: item.sizeLabel || item.sizeId,
           bgTone: item.bgTone,
           bgToneLabel: item.bgToneLabel,
           frame: item.frame,
@@ -96,9 +111,16 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-page] py-12">
-      <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-serif mb-8">Thanh Toán</h1>
+    <div className="min-h-screen bg-[--bg-page]">
+      <TopBar
+        title="Đặt hàng"
+        onMenu={() => setIsMenuOpen(true)}
+        onOpenSaved={() => router.push('/saved')}
+      />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <h1 className="text-3xl font-serif mb-8">Đặt Hàng</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Order Summary */}
@@ -184,10 +206,10 @@ export default function CheckoutPage() {
                 {items.map((item, index) => (
                   <div key={index} className="flex justify-between text-sm">
                     <div>
-                      <p className="font-medium text-[--accent]">{item.productId}</p>
+                      <p className="font-medium text-[--accent]">{item.productTitle || item.productId}</p>
                       <p className="text-[--text-secondary] text-xs">
                         x{item.quantity}
-                        {item.sizeId && ` | ${item.sizeId}`}
+                        {item.sizeLabel && ` | ${item.sizeLabel}`}
                       </p>
                     </div>
                     <p className="font-medium">
@@ -224,6 +246,8 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      <FooterMinimal />
     </div>
   )
 }

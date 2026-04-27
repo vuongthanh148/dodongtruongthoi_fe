@@ -71,6 +71,15 @@ export interface Review {
   body: string
 }
 
+export interface CustomerPhoto {
+  id: string
+  imageUrl: string
+  caption: string | null
+  sortOrder: number
+  isActive: boolean
+  createdAt: string
+}
+
 export interface SavedProductVariant {
   productId: string
   bgTone?: string
@@ -80,7 +89,9 @@ export interface SavedProductVariant {
 
 export interface CartItem {
   productId: string
+  productTitle?: string
   sizeId?: string
+  sizeLabel?: string
   bgTone?: string
   bgToneLabel?: string
   frame?: string
@@ -249,6 +260,15 @@ export interface AdminReview {
   rating: number
   body: string | null
   is_approved: boolean
+  created_at: string
+}
+
+export interface AdminCustomerPhoto {
+  id: string
+  image_url: string
+  caption: string | null
+  sort_order: number
+  is_active: boolean
   created_at: string
 }
 

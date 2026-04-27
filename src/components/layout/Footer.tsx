@@ -244,3 +244,83 @@ export function Footer() {
     </footer>
   )
 }
+
+export function FooterMinimal() {
+  return (
+    <footer style={{ marginTop: 'auto' }}>
+      {/* Brand Block (dark bg) */}
+      <div
+        style={{
+          background: 'var(--bg-dark)',
+          color: 'var(--text-on-dark)',
+          padding: '28px 20px',
+        }}
+      >
+        {/* Logo + brand side by side */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
+          <DrumMark size={36} color="var(--gold)" />
+          <div style={{ textAlign: 'left' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontSize: 18,
+                fontWeight: 600,
+                color: 'var(--gold)',
+                letterSpacing: '0.02em',
+                lineHeight: 1.1,
+              }}
+            >
+              {SITE_NAME}
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-lora), serif',
+                fontStyle: 'italic',
+                fontSize: 10.5,
+                color: 'rgba(244, 237, 224, 0.7)',
+                letterSpacing: '0.08em',
+                marginTop: 2,
+              }}
+            >
+              tinh hoa làng nghề Việt
+            </div>
+          </div>
+        </div>
+
+        {/* Social icons */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          {[
+            { Icon: IconZalo, href: SOCIAL_LINKS.zalo },
+            { Icon: IconMessenger, href: SOCIAL_LINKS.messenger },
+            { Icon: IconFacebook, href: SOCIAL_LINKS.facebook },
+            { Icon: IconTiktok, href: SOCIAL_LINKS.tiktok },
+          ].map(({ Icon, href }, idx) => (
+            <Btn
+              key={idx}
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(href, '_blank')}
+              style={{
+                color: 'var(--text-on-dark)',
+                opacity: 0.8,
+                padding: '8px',
+                minWidth: 0,
+              }}
+            >
+              <Icon size={20} color="var(--text-on-dark)" />
+            </Btn>
+          ))}
+        </div>
+      </div>
+    </footer>
+  )
+}

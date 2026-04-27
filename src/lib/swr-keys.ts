@@ -7,6 +7,7 @@ export const SWR_KEYS = {
   reviews: (productId: string) => `reviews:${productId}`,
   banners: 'banners',
   campaigns: 'campaigns',
+  customerPhotos: 'customerPhotos',
   orders: (phone: string) => `orders:${phone}`,
   order: (id: string) => `order:${id}`,
 } as const

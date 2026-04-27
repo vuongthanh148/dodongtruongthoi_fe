@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { FooterMinimal } from '@/components/layout/Footer'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { TopBar } from '@/components/layout/TopBar'
 import { getOrderById } from '@/lib/storefront-api'
 import type { Order } from '@/lib/types'
 
@@ -24,9 +28,11 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function OrderDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -49,16 +55,36 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[--bg-page] flex items-center justify-center">
-        <p className="text-center text-[--text-secondary]">Đang tải...</p>
+      <div className="min-h-screen bg-[--bg-page]">
+        <TopBar
+          title="Chi tiết đơn hàng"
+          onBack={() => router.back()}
+          onMenu={() => setIsMenuOpen(true)}
+          onOpenSaved={() => router.push('/saved')}
+        />
+        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+        <div className="flex items-center justify-center py-16">
+          <p className="text-center text-[--text-secondary]">Đang tải...</p>
+        </div>
+
+        <FooterMinimal />
       </div>
     )
   }
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-[--bg-page] py-12">
-        <div className="max-w-2xl mx-auto px-4">
+      <div className="min-h-screen bg-[--bg-page]">
+        <TopBar
+          title="Chi tiết đơn hàng"
+          onBack={() => router.back()}
+          onMenu={() => setIsMenuOpen(true)}
+          onOpenSaved={() => router.push('/saved')}
+        />
+        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+        <div className="max-w-2xl mx-auto px-4 py-12">
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
             <p className="text-red-600 mb-4">{error || 'Không tìm thấy đơn hàng.'}</p>
             <Link
@@ -69,6 +95,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </Link>
           </div>
         </div>
+
+        <FooterMinimal />
       </div>
     )
   }
@@ -76,8 +104,16 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
   const total = order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
 
   return (
-    <div className="min-h-screen bg-[--bg-page] py-12">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-[--bg-page]">
+      <TopBar
+        title="Chi tiết đơn hàng"
+        onBack={() => router.back()}
+        onMenu={() => setIsMenuOpen(true)}
+        onOpenSaved={() => router.push('/saved')}
+      />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      <div className="max-w-2xl mx-auto px-4 py-12">
         {/* Success Message */}
         {order.status === 'pending_confirm' && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -192,6 +228,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           </div>
         )}
       </div>
+
+      <FooterMinimal />
     </div>
   )
 }

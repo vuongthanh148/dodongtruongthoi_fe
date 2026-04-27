@@ -2,12 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { FooterMinimal } from '@/components/layout/Footer'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { TopBar } from '@/components/layout/TopBar'
 import { getCartItems, removeCartItem, setCartItems } from '@/lib/storage'
 import type { CartItem } from '@/lib/types'
 
 export default function CartPage() {
+  const router = useRouter()
   const [items, setItems] = useState<CartItem[]>([])
   const [mounted, setMounted] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     setItems(getCartItems())
@@ -16,8 +22,19 @@ export default function CartPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[--bg-page] flex items-center justify-center">
-        <p className="text-center text-[--text-secondary]">Đang tải...</p>
+      <div className="min-h-screen bg-[--bg-page]">
+        <TopBar
+          title="Giỏ hàng"
+          onMenu={() => setIsMenuOpen(true)}
+          onOpenSaved={() => router.push('/saved')}
+        />
+        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+        <div className="flex items-center justify-center py-16">
+          <p className="text-center text-[--text-secondary]">Đang tải...</p>
+        </div>
+
+        <FooterMinimal />
       </div>
     )
   }
@@ -39,26 +56,57 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-[--bg-page] py-12">
-        <div className="max-w-2xl mx-auto px-4">
+      <div className="min-h-screen bg-[--bg-page]">
+        <TopBar
+          title="Giỏ hàng"
+          onMenu={() => setIsMenuOpen(true)}
+          onOpenSaved={() => router.push('/saved')}
+        />
+        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+        <div className="max-w-2xl mx-auto px-4 py-12">
           <h1 className="text-3xl font-serif mb-8 text-center">Giỏ Hàng</h1>
           <div className="text-center py-12">
             <p className="text-[--text-secondary] mb-6">Giỏ hàng của bạn đang trống</p>
-            <Link
-              href="/"
-              className="inline-block px-6 py-3 bg-[--accent] text-white rounded hover:opacity-90 transition-opacity"
-            >
-              Tiếp Tục Mua Sắm
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/"
+                className="inline-block px-6 py-3 bg-[--accent] text-white rounded hover:opacity-90 transition-opacity"
+              >
+                Tiếp Tục Mua Sắm
+              </Link>
+              <button
+                type="button"
+                disabled
+                className="inline-block px-6 py-3 border rounded opacity-80 cursor-not-allowed"
+                style={{
+                  borderColor: 'rgba(120, 120, 120, 0.35)',
+                  background: '#f3f4f6',
+                  color: '#374151',
+                }}
+              >
+                Tiến Hành Đặt Hàng
+              </button>
+            </div>
+            <p className="text-xs text-[--text-secondary] mt-3">Thêm sản phẩm vào giỏ để tiếp tục đặt hàng.</p>
           </div>
         </div>
+
+        <FooterMinimal />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-page] py-12">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-[--bg-page]">
+      <TopBar
+        title="Giỏ hàng"
+        onMenu={() => setIsMenuOpen(true)}
+        onOpenSaved={() => router.push('/saved')}
+      />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      <div className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-serif mb-8">Giỏ Hàng</h1>
 
         {/* Items List */}
@@ -68,10 +116,10 @@ export default function CartPage() {
               {/* Variant Info */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-serif text-lg text-[--accent] mb-1">
-                  {item.productId}
+                  {item.productTitle || item.productId}
                 </h3>
                 <div className="text-sm text-[--text-secondary] space-y-1">
-                  {item.sizeId && <p>Kích thước: {item.sizeId}</p>}
+                  {item.sizeLabel && <p>Kích thước: {item.sizeLabel}</p>}
                   {item.bgToneLabel && (
                     <p>
                       Tông màu: {item.bgToneLabel}
@@ -135,14 +183,20 @@ export default function CartPage() {
               </Link>
               <Link
                 href="/checkout"
-                className="flex-1 px-4 py-3 bg-[--accent] text-white rounded text-center hover:opacity-90 transition-opacity"
+                className="flex-1 px-4 py-3 rounded text-center transition-opacity"
+                style={{
+                  background: '#7f1d1d',
+                  color: '#ffffff',
+                }}
               >
-                Tiến Hành Thanh Toán
+                Tiến Hành Đặt Hàng
               </Link>
             </div>
           </div>
         </div>
       </div>
+
+      <FooterMinimal />
     </div>
   )
 }

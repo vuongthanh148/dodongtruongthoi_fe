@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { FooterMinimal } from '@/components/layout/Footer'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { TopBar } from '@/components/layout/TopBar'
 import { getOrdersByPhone } from '@/lib/storefront-api'
 import type { Order } from '@/lib/types'
 
@@ -24,11 +28,13 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  const router = useRouter()
   const [phone, setPhone] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [error, setError] = useState('')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,8 +61,16 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-page] py-12">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-[--bg-page]">
+      <TopBar
+        title="Đơn hàng của tôi"
+        onBack={() => router.back()}
+        onMenu={() => setIsMenuOpen(true)}
+        onOpenSaved={() => router.push('/saved')}
+      />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      <div className="max-w-2xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-serif mb-8">Tra Cứu Đơn Hàng</h1>
 
         {/* Search Form */}
@@ -157,6 +171,8 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      <FooterMinimal />
     </div>
   )
 }

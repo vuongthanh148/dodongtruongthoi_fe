@@ -19,6 +19,15 @@ export type Campaign = {
   isActive: boolean
 }
 
+export type CustomerPhoto = {
+  id: string
+  imageUrl: string
+  caption: string | null
+  sortOrder: number
+  isActive: boolean
+  createdAt: string
+}
+
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'}/api/v1`
 
 interface AdminProduct {
@@ -98,6 +107,15 @@ interface AdminCampaignItem {
   starts_at: string
   ends_at: string
   is_active: boolean
+}
+
+interface AdminCustomerPhotoItem {
+  id: string
+  image_url: string
+  caption: string | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
 }
 
 type ApiDataEnvelope<T> = T | { data?: T }
@@ -314,6 +332,25 @@ export async function fetchCampaigns(): Promise<Campaign[]> {
       startsAt: campaign.starts_at,
       endsAt: campaign.ends_at,
       isActive: campaign.is_active,
+    }))
+  } catch {
+    return []
+  }
+}
+
+export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
+  try {
+    const res = await fetch(`${API_BASE}/customer-photos`, { cache: 'no-store' })
+    if (!res.ok) return []
+    const data = (await res.json()) as { data?: AdminCustomerPhotoItem[] }
+    const photos = data.data || []
+    return photos.map((photo) => ({
+      id: photo.id,
+      imageUrl: photo.image_url,
+      caption: photo.caption,
+      sortOrder: photo.sort_order,
+      isActive: photo.is_active,
+      createdAt: photo.created_at,
     }))
   } catch {
     return []
