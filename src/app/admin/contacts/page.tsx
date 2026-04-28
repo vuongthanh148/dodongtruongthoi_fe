@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AdminGuard } from '@/components/admin/AdminGuard'
+import { AdminLayout } from '@/components/admin/AdminLayout'
 import { adminDelete, adminGet, adminPost, adminPut } from '@/lib/admin-api'
 import type { AdminContact } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 const emptyForm = {
   id: '',
@@ -92,19 +92,34 @@ export default function AdminContactsPage() {
   return (
     <AdminGuard>
       <AdminLayout title="Contacts" subtitle="Manage floating social links and hotline channels">
-        <div style={{ marginBottom: 10 }}>
-          <button type="button" onClick={startCreate} style={primaryBtn}>
-            New Contact
-          </button>
-        </div>
-
-        <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'grid', gap: 10, marginBottom: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+        <section
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 12,
+            display: 'grid',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}
+          >
             <Field label="ID (create only)">
-              <input value={form.id} onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))} style={inputStyle} disabled={Boolean(editingId)} />
+              <input
+                value={form.id}
+                onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
+                style={inputStyle}
+                disabled={Boolean(editingId)}
+              />
             </Field>
             <Field label="Platform">
-              <select value={form.platform} onChange={(event) => setForm((prev) => ({ ...prev, platform: event.target.value }))} style={inputStyle}>
+              <select
+                value={form.platform}
+                onChange={(event) => setForm((prev) => ({ ...prev, platform: event.target.value }))}
+                style={inputStyle}
+              >
                 <option value="zalo">zalo</option>
                 <option value="messenger">messenger</option>
                 <option value="facebook">facebook</option>
@@ -114,17 +129,38 @@ export default function AdminContactsPage() {
               </select>
             </Field>
             <Field label="Label">
-              <input value={form.label} onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.label}
+                onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="URL">
-              <input value={form.url} onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.url}
+                onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Sort order">
-              <input type="number" value={form.sort_order} onChange={(event) => setForm((prev) => ({ ...prev, sort_order: event.target.value }))} style={inputStyle} />
+              <input
+                type="number"
+                value={form.sort_order}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, sort_order: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            <input type="checkbox" checked={form.is_active} onChange={(event) => setForm((prev) => ({ ...prev, is_active: event.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, is_active: event.target.checked }))
+              }
+            />
             Active
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -137,10 +173,30 @@ export default function AdminContactsPage() {
           </div>
         </section>
 
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'grid', gap: 8 }}>
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 12,
+            display: 'grid',
+            gap: 8,
+          }}
+        >
           {loading ? <p style={{ color: '#6b7280', margin: 0 }}>Loading contacts...</p> : null}
           {rows.map((row) => (
-            <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr auto auto', gap: 8, alignItems: 'center', border: '1px solid #f3f4f6', borderRadius: 8, padding: 8 }}>
+            <div
+              key={row.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '120px 1fr auto auto',
+                gap: 8,
+                alignItems: 'center',
+                border: '1px solid #f3f4f6',
+                borderRadius: 8,
+                padding: 8,
+              }}
+            >
               <strong style={{ textTransform: 'capitalize' }}>{row.platform}</strong>
               <span style={{ overflowWrap: 'anywhere' }}>{row.url}</span>
               <button type="button" onClick={() => startEdit(row)} style={actionBtn}>
@@ -166,7 +222,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-const inputStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: 6, padding: '10px 12px', fontSize: 14 }
-const primaryBtn: React.CSSProperties = { border: 'none', background: '#7f1d1d', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer' }
-const secondaryBtn: React.CSSProperties = { border: '1px solid #d1d5db', background: 'white', color: '#374151', borderRadius: 6, padding: '9px 12px', cursor: 'pointer' }
-const actionBtn: React.CSSProperties = { border: 'none', background: 'transparent', color: '#7f1d1d', cursor: 'pointer', padding: 0 }
+const inputStyle: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  borderRadius: 6,
+  padding: '10px 12px',
+  fontSize: 14,
+}
+const primaryBtn: React.CSSProperties = {
+  border: 'none',
+  background: '#7f1d1d',
+  color: 'white',
+  borderRadius: 6,
+  padding: '9px 12px',
+  cursor: 'pointer',
+}
+const secondaryBtn: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  background: 'white',
+  color: '#374151',
+  borderRadius: 6,
+  padding: '9px 12px',
+  cursor: 'pointer',
+}
+const actionBtn: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#7f1d1d',
+  cursor: 'pointer',
+  padding: 0,
+}

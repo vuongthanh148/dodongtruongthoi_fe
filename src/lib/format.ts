@@ -1,5 +1,6 @@
 export function formatVnd(value: number): string {
-  return `${value.toLocaleString('vi-VN')}đ`
+  const safeValue = Number.isFinite(value) ? value : 0
+  return `${safeValue.toLocaleString('vi-VN')}đ`
 }
 
 export function formatPhone(phone: string): string {

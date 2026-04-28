@@ -183,13 +183,18 @@ export default function AdminOrdersPage() {
                   }}
                 >
                   {(row.items ?? []).map((item, index) => {
-                    const variantParts = [item.sizeLabel, item.bgToneLabel, item.frameLabel].filter(
+                    const quantity = Number(item.quantity) || 0
+                    const unitPrice = Number(item.unit_price) || 0
+                    const variantParts = [item.size_label, item.bg_tone_label, item.frame_label].filter(
                       Boolean
                     ) as string[]
-                    const variantLine = variantParts.length > 0 ? `${variantParts.join(' · ')}  x${item.quantity}` : `x${item.quantity}`
+                    const variantLine =
+                      variantParts.length > 0
+                        ? `${variantParts.join(' · ')}  x${quantity}`
+                        : `x${quantity}`
 
                     return (
-                      <div key={`${item.productId}-${index}`} style={{ display: 'grid', gap: 2 }}>
+                      <div key={`${item.product_id}-${index}`} style={{ display: 'grid', gap: 2 }}>
                         <div
                           style={{
                             display: 'flex',
@@ -198,9 +203,11 @@ export default function AdminOrdersPage() {
                             gap: 12,
                           }}
                         >
-                          <span style={{ fontSize: 13, color: '#111827' }}>{item.productTitle}</span>
+                          <span style={{ fontSize: 13, color: '#111827' }}>
+                            {item.product_title || 'Sản phẩm'}
+                          </span>
                           <span style={{ fontSize: 13, color: '#7f1d1d', fontWeight: 600 }}>
-                            {formatVnd(item.unitPrice * item.quantity)}
+                            {formatVnd(unitPrice * quantity)}
                           </span>
                         </div>
                         <div style={{ fontSize: 12, color: '#6b7280' }}>{variantLine}</div>

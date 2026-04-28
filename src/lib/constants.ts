@@ -24,3 +24,7 @@ export const SOCIAL_LINKS = {
   facebook: 'https://facebook.com/dodongtruongthoi',
   tiktok: 'https://tiktok.com/@dodongtruongthoi',
 } as const
+
+export const BANNER_AUTO_SCROLL_MS = 3000
+export const CUSTOMER_PHOTO_AUTO_SCROLL_MS = 3600
+export const FEATURED_PRODUCTS_COUNT = 4

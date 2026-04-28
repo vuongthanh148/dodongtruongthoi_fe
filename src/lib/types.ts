@@ -137,19 +137,6 @@ export interface OrderItem {
   variantImageUrl?: string
 }
 
-export interface Order {
-  id: string
-  phone: string
-  customerName?: string
-  address?: string
-  note?: string
-  status: OrderStatus
-  totalAmount: number
-  items: OrderItem[]
-  createdAt: string
-  updatedAt?: string
-}
-
 export interface AdminCategory {
   id: string
   name: string
@@ -250,7 +237,22 @@ export interface AdminOrder {
   admin_note: string | null
   total_amount: number
   created_at: string
-  items: OrderItem[]
+  items: AdminOrderItem[]
+}
+
+export interface AdminOrderItem {
+  product_id: string
+  product_title: string
+  product_subtitle?: string
+  size_code?: string
+  size_label?: string
+  bg_tone?: string
+  bg_tone_label?: string
+  frame?: string
+  frame_label?: string
+  quantity: number
+  unit_price: number
+  variant_image_url?: string
 }
 
 export interface AdminReview {

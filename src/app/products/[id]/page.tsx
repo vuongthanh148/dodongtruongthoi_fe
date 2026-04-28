@@ -11,14 +11,27 @@ import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
-import { BG_TONES, FRAME_STYLES, PRODUCTS } from '@/lib/data'
+import {
+  BG_TONES,
+  DEFAULT_PLACE_LABELS,
+  DEFAULT_SPEC_LABELS,
+  FRAME_STYLES,
+  PRODUCTS,
+  mergeLabelOverrides,
+} from '@/lib/data'
 import { addRecentlyViewed, getSavedProducts, getRecentlyViewedIds, toggleSavedProduct, upsertCartItem } from '@/lib/storage'
-import { fetchProduct, fetchProductReviews, fetchProducts } from '@/lib/storefront-api'
+import {
+  fetchProduct,
+  fetchProductReviews,
+  fetchProducts,
+  fetchSettings,
+  parseLabelOverrides,
+} from '@/lib/storefront-api'
 import type { Product, SavedProductVariant } from '@/lib/types'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import useSWR from 'swr'
 import { SWR_KEYS } from '@/lib/swr-keys'
 
@@ -26,33 +39,20 @@ type TabId = 'description' | 'guide' | 'specs' | 'reviews'
 type ArtBg = 'gold' | 'red' | 'bronze' | 'dark'
 type ArtFrame = 'bronze' | 'gold' | 'dark' | 'carved'
 
-const PLACE_LABELS: Record<string, string> = {
-  living_room: 'Phòng khách',
-  office: 'Văn phòng',
-  bedroom: 'Phòng ngủ',
-  dining_room: 'Phòng ăn',
-  entrance: 'Hành lang / Lối vào',
-}
-
-const SPEC_LABELS: Record<string, string> = {
-  material: 'Chất liệu',
-  technique: 'Kỹ thuật',
-  origin: 'Xuất xứ',
-  style: 'Phong cách',
-  warranty: 'Bảo hành',
-  size: 'Kích thước',
-}
-
 function CompareModal({
   product,
   onClose,
   activeBg,
   activeFrame,
+  bgTones,
+  frameStyles,
 }: {
   product: Product
   onClose: () => void
   activeBg: string | undefined
   activeFrame: string | undefined
+  bgTones: Array<{ id: string; name: string }>
+  frameStyles: Array<{ id: string; name: string }>
 }) {
   const [combos, setCombos] = useState(() => [
     {
@@ -124,8 +124,8 @@ function CompareModal({
         }}
       >
         {combos.map((combo, i) => {
-          const bgInfo = BG_TONES.find((b) => b.id === combo.bg)
-          const frameInfo = FRAME_STYLES.find((f) => f.id === combo.frame)
+          const bgInfo = bgTones.find((b) => b.id === combo.bg)
+          const frameInfo = frameStyles.find((f) => f.id === combo.frame)
           return (
             <div
               key={i}
@@ -171,7 +171,7 @@ function CompareModal({
                       minWidth: 34,
                       minHeight: 34,
                     }}
-                    aria-label={`Chọn nền ${BG_TONES.find((b) => b.id === tone)?.name ?? tone}`}
+                    aria-label={`Chọn nền ${bgTones.find((b) => b.id === tone)?.name ?? tone}`}
                   >
                     <VariantSwatch tone={tone} size={22} active={tone === combo.bg} />
                   </button>
@@ -218,6 +218,26 @@ export default function ProductDetailPage() {
   const { data: relatedProducts = [], isLoading: relatedLoading } = useSWR(
     product?.categoryId ? SWR_KEYS.productsByCategory(product.categoryId) : null,
     product?.categoryId ? () => fetchProducts({ category: product.categoryId, limit: 8 }).then(ps => ps.filter(p => p.id !== product.id).slice(0, 6)) : null
+  )
+
+  const { data: settings = {} } = useSWR(SWR_KEYS.settings, fetchSettings)
+
+  const labelOverrides = useMemo(() => parseLabelOverrides(settings), [settings])
+  const displayBgTones = useMemo(
+    () => mergeLabelOverrides(BG_TONES, labelOverrides.bgTones),
+    [labelOverrides.bgTones]
+  )
+  const displayFrameStyles = useMemo(
+    () => mergeLabelOverrides(FRAME_STYLES, labelOverrides.frames),
+    [labelOverrides.frames]
+  )
+  const placeLabels = useMemo(
+    () => ({ ...DEFAULT_PLACE_LABELS, ...labelOverrides.placeLabels }),
+    [labelOverrides.placeLabels]
+  )
+  const specLabels = useMemo(
+    () => ({ ...DEFAULT_SPEC_LABELS, ...labelOverrides.specLabels }),
+    [labelOverrides.specLabels]
   )
 
   const resolvedBgTone = bgTone ?? queryBgTone ?? product?.defaultBg
@@ -536,7 +556,7 @@ export default function ProductDetailPage() {
           <div>
             <Label>Chọn nền tranh</Label>
             <Heading as="h3" size="sm" style={{ fontSize: 17, marginTop: 2 }}>
-              {BG_TONES.find((tone) => tone.id === resolvedBgTone)?.name}
+              {displayBgTones.find((tone) => tone.id === resolvedBgTone)?.name}
             </Heading>
           </div>
           <Btn
@@ -582,7 +602,7 @@ export default function ProductDetailPage() {
             >
               <VariantSwatch tone={tone} size={18} active={tone === resolvedBgTone} />
               <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                {BG_TONES.find((item) => item.id === tone)?.name}
+                {displayBgTones.find((item) => item.id === tone)?.name}
               </span>
             </button>
           ))}
@@ -592,7 +612,7 @@ export default function ProductDetailPage() {
       <div style={{ padding: '20px 16px 0' }}>
         <Label>Chọn khung</Label>
         <Heading as="h3" size="sm" style={{ fontSize: 17, margin: '2px 0 10px' }}>
-          {FRAME_STYLES.find((item) => item.id === resolvedFrame)?.name}
+          {displayFrameStyles.find((item) => item.id === resolvedFrame)?.name}
         </Heading>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 7 }}>
@@ -632,7 +652,7 @@ export default function ProductDetailPage() {
                   justifyContent: 'center',
                 }}
               >
-                {FRAME_STYLES.find((item) => item.id === frameId)?.name}
+                {displayFrameStyles.find((item) => item.id === frameId)?.name}
               </div>
             </button>
           ))}
@@ -769,7 +789,7 @@ export default function ProductDetailPage() {
                         flexShrink: 0,
                       }}
                     />
-                    {PLACE_LABELS[entry] ?? entry}
+                    {placeLabels[entry] ?? entry}
                   </div>
                 ))}
               </div>
@@ -799,7 +819,7 @@ export default function ProductDetailPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {SPEC_LABELS[key] ?? key}
+                    {specLabels[key] ?? key}
                   </span>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>
                     {value}
@@ -957,8 +977,8 @@ export default function ProductDetailPage() {
           type="button"
           size="lg"
           onClick={() => {
-            const bgToneOption = BG_TONES.find((t) => t.id === resolvedBgTone)
-            const frameOption = FRAME_STYLES.find((f) => f.id === resolvedFrame)
+            const bgToneOption = displayBgTones.find((t) => t.id === resolvedBgTone)
+            const frameOption = displayFrameStyles.find((f) => f.id === resolvedFrame)
             upsertCartItem({
               productId: product.id,
               productTitle: product.title,
@@ -992,6 +1012,8 @@ export default function ProductDetailPage() {
           onClose={() => setShowCompare(false)}
           activeBg={resolvedBgTone}
           activeFrame={resolvedFrame}
+          bgTones={displayBgTones}
+          frameStyles={displayFrameStyles}
         />
       )}
     </div>

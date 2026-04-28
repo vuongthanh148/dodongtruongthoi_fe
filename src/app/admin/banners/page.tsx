@@ -95,12 +95,6 @@ export default function AdminBannersPage() {
   return (
     <AdminGuard>
       <AdminLayout title="Banners" subtitle="Manage homepage hero and campaign banners">
-        <div style={{ marginBottom: 10 }}>
-          <button type="button" onClick={startCreate} style={primaryBtn}>
-            New Banner
-          </button>
-        </div>
-
         <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'grid', gap: 10, marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
             <Field label="ID (create only)">

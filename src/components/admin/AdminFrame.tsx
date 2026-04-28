@@ -108,7 +108,7 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
       <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: gridCols, background: '#f5f6f8' }}>
         {/* Always render sidebar on initial load to prevent hydration mismatch */}
         {!showMobileMenu && (
-          <aside style={{ background: '#111827', color: '#e5e7eb', padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <aside style={{ background: '#111827', color: '#e5e7eb', padding: 16, display: 'flex', flexDirection: 'column', gap: 6, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
             {sidebarContent}
           </aside>
         )}

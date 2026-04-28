@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Select, {
+  type StylesConfig,
+} from 'react-select'
 import { AdminFrame } from '@/components/admin/AdminFrame'
 import { AdminGuard } from '@/components/admin/AdminGuard'
+import { Field } from '@/components/admin/Field'
 import { adminDelete, adminGet, adminPost, adminPut, adminUpload } from '@/lib/admin-api'
+import {
+  DEFAULT_BG_TONES,
+  DEFAULT_FRAME_STYLES,
+  DEFAULT_PLACE_LABELS,
+} from '@/lib/data'
 import type { AdminCategory, AdminProduct, AdminProductImage, AdminProductSize } from '@/lib/types'
 
 interface ProductFormState {
@@ -18,10 +27,10 @@ interface ProductFormState {
   meaning: string
   default_bg: string
   default_frame: string
-  bg_tones: string
-  frames: string
+  bg_tones: string[]
+  frames: string[]
   zodiac_ids: string
-  purpose_place: string
+  purpose_place: string[]
   purpose_use: string
   purpose_avoid: string
   specs: string
@@ -51,10 +60,10 @@ const emptyForm: ProductFormState = {
   meaning: '',
   default_bg: 'gold',
   default_frame: 'bronze',
-  bg_tones: '',
-  frames: '',
+  bg_tones: [],
+  frames: [],
   zodiac_ids: '',
-  purpose_place: '',
+  purpose_place: [],
   purpose_use: '',
   purpose_avoid: '',
   specs: '',
@@ -63,6 +72,54 @@ const emptyForm: ProductFormState = {
   requires_size: false,
   is_active: true,
   sort_order: '0',
+}
+
+type SelectOption = {
+  value: string
+  label: string
+}
+
+const bgToneOptions: SelectOption[] = DEFAULT_BG_TONES.map((tone) => ({
+  value: tone.id,
+  label: tone.name,
+}))
+
+const frameOptions: SelectOption[] = DEFAULT_FRAME_STYLES.map((frame) => ({
+  value: frame.id,
+  label: frame.name,
+}))
+
+const placeOptions: SelectOption[] = Object.entries(DEFAULT_PLACE_LABELS).map(([id, name]) => ({
+  value: id,
+  label: name,
+}))
+
+const selectStyles: StylesConfig<SelectOption, boolean> = {
+  control: (base, state) => ({
+    ...base,
+    borderColor: state.isFocused ? '#7f1d1d' : '#d1d5db',
+    boxShadow: 'none',
+    minHeight: 42,
+    '&:hover': {
+      borderColor: '#7f1d1d',
+    },
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    padding: '3px 10px',
+  }),
+  multiValue: (base) => ({
+    ...base,
+    backgroundColor: '#fef2f2',
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: '#7f1d1d',
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 50,
+  }),
 }
 
 export default function AdminProductEditPage() {
@@ -121,10 +178,10 @@ export default function AdminProductEditPage() {
       meaning: product.meaning ?? '',
       default_bg: product.default_bg,
       default_frame: product.default_frame,
-      bg_tones: joinList(product.bg_tones),
-      frames: joinList(product.frames),
+      bg_tones: product.bg_tones ?? [],
+      frames: product.frames ?? [],
       zodiac_ids: joinList(product.zodiac_ids),
-      purpose_place: joinList(product.purpose_place),
+      purpose_place: product.purpose_place ?? [],
       purpose_use: joinList(product.purpose_use),
       purpose_avoid: joinList(product.purpose_avoid),
       specs: stringifySpecs(product.specs),
@@ -181,10 +238,10 @@ export default function AdminProductEditPage() {
       meaning: form.meaning.trim(),
       default_bg: form.default_bg.trim(),
       default_frame: form.default_frame.trim(),
-      bg_tones: splitList(form.bg_tones),
-      frames: splitList(form.frames),
+      bg_tones: form.bg_tones,
+      frames: form.frames,
       zodiac_ids: splitList(form.zodiac_ids),
-      purpose_place: splitList(form.purpose_place),
+      purpose_place: form.purpose_place,
       purpose_use: splitList(form.purpose_use),
       purpose_avoid: splitList(form.purpose_avoid),
       specs: parseSpecs(form.specs),
@@ -276,7 +333,7 @@ export default function AdminProductEditPage() {
 
   return (
     <AdminGuard>
-      <AdminFrame title={isNew ? 'Add Product' : 'Edit Product'} subtitle="Update content and variant options">
+      <AdminFrame title={isNew ? 'Add' : 'Edit'} subtitle="Update content and variant options">
         <form
           onSubmit={(event) => {
             event.preventDefault()
@@ -311,10 +368,24 @@ export default function AdminProductEditPage() {
               <input type="number" value={form.base_price} onChange={(event) => setForm((prev) => ({ ...prev, base_price: event.target.value }))} style={inputStyle} />
             </Field>
             <Field label="Default background">
-              <input value={form.default_bg} onChange={(event) => setForm((prev) => ({ ...prev, default_bg: event.target.value }))} style={inputStyle} />
+              <Select<SelectOption, false>
+                options={bgToneOptions}
+                value={bgToneOptions.find((option) => option.value === form.default_bg) ?? null}
+                onChange={(selected) =>
+                  setForm((prev) => ({ ...prev, default_bg: selected?.value ?? '' }))
+                }
+                styles={selectStyles}
+              />
             </Field>
             <Field label="Default frame">
-              <input value={form.default_frame} onChange={(event) => setForm((prev) => ({ ...prev, default_frame: event.target.value }))} style={inputStyle} />
+              <Select<SelectOption, false>
+                options={frameOptions}
+                value={frameOptions.find((option) => option.value === form.default_frame) ?? null}
+                onChange={(selected) =>
+                  setForm((prev) => ({ ...prev, default_frame: selected?.value ?? '' }))
+                }
+                styles={selectStyles}
+              />
             </Field>
           </div>
 
@@ -326,17 +397,41 @@ export default function AdminProductEditPage() {
           </Field>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
-            <Field label="Background tones (comma separated)">
-              <input value={form.bg_tones} onChange={(event) => setForm((prev) => ({ ...prev, bg_tones: event.target.value }))} style={inputStyle} />
+            <Field label="Background tones">
+              <Select<SelectOption, true>
+                isMulti
+                options={bgToneOptions}
+                value={bgToneOptions.filter((option) => form.bg_tones.includes(option.value))}
+                onChange={(selected) =>
+                  setForm((prev) => ({ ...prev, bg_tones: selected.map((option) => option.value) }))
+                }
+                styles={selectStyles}
+              />
             </Field>
-            <Field label="Frames (comma separated)">
-              <input value={form.frames} onChange={(event) => setForm((prev) => ({ ...prev, frames: event.target.value }))} style={inputStyle} />
+            <Field label="Frames">
+              <Select<SelectOption, true>
+                isMulti
+                options={frameOptions}
+                value={frameOptions.filter((option) => form.frames.includes(option.value))}
+                onChange={(selected) =>
+                  setForm((prev) => ({ ...prev, frames: selected.map((option) => option.value) }))
+                }
+                styles={selectStyles}
+              />
             </Field>
             <Field label="Zodiac IDs (comma separated)">
               <input value={form.zodiac_ids} onChange={(event) => setForm((prev) => ({ ...prev, zodiac_ids: event.target.value }))} style={inputStyle} />
             </Field>
-            <Field label="Purpose place (comma separated)">
-              <input value={form.purpose_place} onChange={(event) => setForm((prev) => ({ ...prev, purpose_place: event.target.value }))} style={inputStyle} />
+            <Field label="Purpose place">
+              <Select<SelectOption, true>
+                isMulti
+                options={placeOptions}
+                value={placeOptions.filter((option) => form.purpose_place.includes(option.value))}
+                onChange={(selected) =>
+                  setForm((prev) => ({ ...prev, purpose_place: selected.map((option) => option.value) }))
+                }
+                styles={selectStyles}
+              />
             </Field>
             <Field label="Purpose use (comma separated)">
               <input value={form.purpose_use} onChange={(event) => setForm((prev) => ({ ...prev, purpose_use: event.target.value }))} style={inputStyle} />
@@ -402,10 +497,11 @@ export default function AdminProductEditPage() {
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {images.map((image) => (
-                <div key={image.id} style={imageRow}>
-                  <div style={{ display: 'grid', gap: 4 }}>
-                    <strong style={{ overflowWrap: 'anywhere' }}>{image.url}</strong>
-                    <span style={{ color: '#6b7280', fontSize: 13 }}>
+                <div key={image.id} style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <img src={image.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                  <div style={{ display: 'grid', gap: 4, flex: 1 }}>
+                    <strong style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{image.url}</strong>
+                    <span style={{ color: '#6b7280', fontSize: 12 }}>
                       bg tone: {image.bg_tone ?? '-'} | frame: {image.frame ?? '-'}
                     </span>
                   </div>
@@ -441,15 +537,6 @@ export default function AdminProductEditPage() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label style={{ display: 'grid', gap: 6 }}>
-      <span style={{ fontSize: 12, color: '#374151' }}>{label}</span>
-      {children}
-    </label>
-  )
-}
-
 function splitList(value: string): string[] {
   return value
     .split(',')
@@ -457,8 +544,8 @@ function splitList(value: string): string[] {
     .filter(Boolean)
 }
 
-function joinList(items: string[]): string {
-  return items.join(', ')
+function joinList(items: string[] | null | undefined): string {
+  return items?.join(', ') ?? ''
 }
 
 function parseSpecs(value: string): Record<string, string> | null {

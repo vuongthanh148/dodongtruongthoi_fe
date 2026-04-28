@@ -95,12 +95,6 @@ export default function AdminCategoriesPage() {
   return (
     <AdminGuard>
       <AdminLayout title="Categories" subtitle="Manage storefront category taxonomy">
-        <div style={{ marginBottom: 10 }}>
-          <button type="button" onClick={startCreate} style={primaryBtn}>
-            New Category
-          </button>
-        </div>
-
         <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 16, display: 'grid', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
             <Field label="ID (create only)">

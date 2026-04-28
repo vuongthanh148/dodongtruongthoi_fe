@@ -4,8 +4,9 @@ import {
   getAdminToken,
   setAdminTokens,
 } from '@/lib/admin-auth'
+import { ADMIN_API_BASE } from '@/lib/api-config'
 
-const ADMIN_BASE = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'}/api/v1/admin`
+const ADMIN_BASE = ADMIN_API_BASE
 let refreshPromise: Promise<boolean> | null = null
 
 function handleUnauthorized(path: string, status: number): void {

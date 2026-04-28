@@ -131,41 +131,94 @@ export default function AdminCampaignsPage() {
   return (
     <AdminGuard>
       <AdminLayout title="Campaigns" subtitle="Set discount windows and product promotion strategy">
-        <div style={{ marginBottom: 10 }}>
-          <button type="button" onClick={startCreate} style={primaryBtn}>
-            New Campaign
-          </button>
-        </div>
-
-        <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 16, display: 'grid', gap: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+        <section
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 12,
+            marginBottom: 16,
+            display: 'grid',
+            gap: 10,
+          }}
+        >
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}
+          >
             <Field label="ID (create only)">
-              <input value={form.id} onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))} style={inputStyle} disabled={Boolean(editingId)} />
+              <input
+                value={form.id}
+                onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
+                style={inputStyle}
+                disabled={Boolean(editingId)}
+              />
             </Field>
             <Field label="Name">
-              <input value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.name}
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Discount type">
-              <select value={form.discount_type} onChange={(event) => setForm((prev) => ({ ...prev, discount_type: event.target.value }))} style={inputStyle}>
+              <select
+                value={form.discount_type}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, discount_type: event.target.value }))
+                }
+                style={inputStyle}
+              >
                 <option value="percentage">percentage</option>
                 <option value="fixed_amount">fixed_amount</option>
               </select>
             </Field>
             <Field label="Discount value">
-              <input type="number" value={form.discount_value} onChange={(event) => setForm((prev) => ({ ...prev, discount_value: event.target.value }))} style={inputStyle} />
+              <input
+                type="number"
+                value={form.discount_value}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, discount_value: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
             <Field label="Starts at">
-              <input type="datetime-local" value={form.starts_at} onChange={(event) => setForm((prev) => ({ ...prev, starts_at: event.target.value }))} style={inputStyle} />
+              <input
+                type="datetime-local"
+                value={form.starts_at}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, starts_at: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
             <Field label="Ends at">
-              <input type="datetime-local" value={form.ends_at} onChange={(event) => setForm((prev) => ({ ...prev, ends_at: event.target.value }))} style={inputStyle} />
+              <input
+                type="datetime-local"
+                value={form.ends_at}
+                onChange={(event) => setForm((prev) => ({ ...prev, ends_at: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
           </div>
           <Field label="Description">
-            <textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.description}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, description: event.target.value }))
+              }
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            <input type="checkbox" checked={form.is_active} onChange={(event) => setForm((prev) => ({ ...prev, is_active: event.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, is_active: event.target.checked }))
+              }
+            />
             Active
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -179,10 +232,35 @@ export default function AdminCampaignsPage() {
         </section>
 
         {manageProductsCampaignId && (
-          <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <section
+            style={{
+              background: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Manage Campaign Products</h3>
-              <button type="button" onClick={() => setManageProductsCampaignId(null)} style={{ border: 'none', background: 'transparent', color: '#7f1d1d', cursor: 'pointer', fontSize: 14 }}>
+              <button
+                type="button"
+                onClick={() => setManageProductsCampaignId(null)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#7f1d1d',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                }}
+              >
                 Close
               </button>
             </div>
@@ -191,9 +269,27 @@ export default function AdminCampaignsPage() {
               <p style={{ color: '#6b7280' }}>Loading products...</p>
             ) : (
               <>
-                <div style={{ display: 'grid', gap: 8, maxHeight: '400px', overflowY: 'auto', marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: 8,
+                    maxHeight: '400px',
+                    overflowY: 'auto',
+                    marginBottom: 12,
+                  }}
+                >
                   {allProducts.map((product) => (
-                    <label key={product.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', border: '1px solid #f3f4f6', borderRadius: 6 }}>
+                    <label
+                      key={product.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        border: '1px solid #f3f4f6',
+                        borderRadius: 6,
+                      }}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedProductIds.has(product.id)}
@@ -216,7 +312,11 @@ export default function AdminCampaignsPage() {
                   <button type="button" onClick={saveProductsToCampaign} style={primaryBtn}>
                     Save Products ({selectedProductIds.size})
                   </button>
-                  <button type="button" onClick={() => setManageProductsCampaignId(null)} style={secondaryBtn}>
+                  <button
+                    type="button"
+                    onClick={() => setManageProductsCampaignId(null)}
+                    style={secondaryBtn}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -225,7 +325,14 @@ export default function AdminCampaignsPage() {
           </section>
         )}
 
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
           {loading ? (
             <div style={{ padding: 16, color: '#6b7280' }}>Loading campaigns...</div>
           ) : (
@@ -245,17 +352,31 @@ export default function AdminCampaignsPage() {
                   <tr key={row.id}>
                     <td style={td}>{row.name}</td>
                     <td style={td}>{row.discount_type}</td>
-                    <td style={td}>{row.discount_type === 'percentage' ? `${row.discount_value}%` : row.discount_value}</td>
-                    <td style={td}>{row.starts_at} - {row.ends_at}</td>
+                    <td style={td}>
+                      {row.discount_type === 'percentage'
+                        ? `${row.discount_value}%`
+                        : row.discount_value}
+                    </td>
+                    <td style={td}>
+                      {row.starts_at} - {row.ends_at}
+                    </td>
                     <td style={td}>{row.is_active ? 'Active' : 'Inactive'}</td>
                     <td style={td}>
                       <button type="button" onClick={() => startEdit(row)} style={actionBtn}>
                         Edit
                       </button>
-                      <button type="button" onClick={() => loadProductsForCampaign(row.id)} style={{ ...actionBtn, marginLeft: 12 }}>
+                      <button
+                        type="button"
+                        onClick={() => loadProductsForCampaign(row.id)}
+                        style={{ ...actionBtn, marginLeft: 12 }}
+                      >
                         Products
                       </button>
-                      <button type="button" onClick={() => handleDelete(row.id)} style={{ ...actionBtn, marginLeft: 12 }}>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(row.id)}
+                        style={{ ...actionBtn, marginLeft: 12 }}
+                      >
                         Delete
                       </button>
                     </td>
@@ -287,9 +408,43 @@ function toIso(value: string) {
   return value ? new Date(value).toISOString() : ''
 }
 
-const th: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 12, color: '#374151' }
-const td: React.CSSProperties = { padding: '10px 12px', borderTop: '1px solid #f3f4f6', fontSize: 14 }
-const inputStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: 6, padding: '10px 12px', fontSize: 14 }
-const primaryBtn: React.CSSProperties = { border: 'none', background: '#7f1d1d', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer' }
-const secondaryBtn: React.CSSProperties = { border: '1px solid #d1d5db', background: 'white', color: '#374151', borderRadius: 6, padding: '9px 12px', cursor: 'pointer' }
-const actionBtn: React.CSSProperties = { border: 'none', background: 'transparent', color: '#7f1d1d', cursor: 'pointer', padding: 0 }
+const th: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '10px 12px',
+  fontSize: 12,
+  color: '#374151',
+}
+const td: React.CSSProperties = {
+  padding: '10px 12px',
+  borderTop: '1px solid #f3f4f6',
+  fontSize: 14,
+}
+const inputStyle: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  borderRadius: 6,
+  padding: '10px 12px',
+  fontSize: 14,
+}
+const primaryBtn: React.CSSProperties = {
+  border: 'none',
+  background: '#7f1d1d',
+  color: 'white',
+  borderRadius: 6,
+  padding: '9px 12px',
+  cursor: 'pointer',
+}
+const secondaryBtn: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  background: 'white',
+  color: '#374151',
+  borderRadius: 6,
+  padding: '9px 12px',
+  cursor: 'pointer',
+}
+const actionBtn: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#7f1d1d',
+  cursor: 'pointer',
+  padding: 0,
+}

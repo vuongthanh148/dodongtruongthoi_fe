@@ -1,4 +1,5 @@
 import type { Category, Product } from '@/lib/types'
+import { API_BASE } from '@/lib/api-config'
 
 export type Banner = {
   id: string
@@ -28,7 +29,12 @@ export type CustomerPhoto = {
   createdAt: string
 }
 
-const API_BASE = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'}/api/v1`
+export type LabelOverrides = {
+  bgTones: Record<string, string>
+  frames: Record<string, string>
+  placeLabels: Record<string, string>
+  specLabels: Record<string, string>
+}
 
 interface AdminProduct {
   id: string
@@ -357,6 +363,69 @@ export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
   }
 }
 
+export async function fetchSettings(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${API_BASE}/settings`, { cache: 'no-store' })
+    if (!res.ok) return {}
+    const data = (await res.json()) as ApiDataEnvelope<Record<string, string>>
+    const settings = unwrapData(data)
+    if (!settings || typeof settings !== 'object') {
+      return {}
+    }
+    return settings
+  } catch {
+    return {}
+  }
+}
+
+export function parseLabelOverrides(settings: Record<string, string>): LabelOverrides {
+  const parsed: LabelOverrides = {
+    bgTones: {},
+    frames: {},
+    placeLabels: {},
+    specLabels: {},
+  }
+
+  for (const [key, value] of Object.entries(settings)) {
+    if (!value || !value.trim()) {
+      continue
+    }
+
+    if (key.startsWith('bg_tone_label.')) {
+      const id = key.slice('bg_tone_label.'.length)
+      if (id) {
+        parsed.bgTones[id] = value.trim()
+      }
+      continue
+    }
+
+    if (key.startsWith('frame_label.')) {
+      const id = key.slice('frame_label.'.length)
+      if (id) {
+        parsed.frames[id] = value.trim()
+      }
+      continue
+    }
+
+    if (key.startsWith('place_label.')) {
+      const id = key.slice('place_label.'.length)
+      if (id) {
+        parsed.placeLabels[id] = value.trim()
+      }
+      continue
+    }
+
+    if (key.startsWith('spec_label.')) {
+      const id = key.slice('spec_label.'.length)
+      if (id) {
+        parsed.specLabels[id] = value.trim()
+      }
+    }
+  }
+
+  return parsed
+}
+
 // Order API functions
 export async function createOrder(
   req: import('@/lib/types').CreateOrderRequest
@@ -367,21 +436,21 @@ export async function createOrder(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         phone: req.phone,
-        customer_name: req.customerName || null,
+        customerName: req.customerName || null,
         address: req.address || null,
         note: req.note || null,
         items: (req.items || []).map((item) => ({
-          product_id: item.productId,
-          product_title: item.productTitle,
-          size_code: item.sizeCode || null,
-          size_label: item.sizeLabel || null,
-          bg_tone: item.bgTone || null,
-          bg_tone_label: item.bgToneLabel || null,
+          productId: item.productId,
+          productTitle: item.productTitle,
+          sizeCode: item.sizeCode || null,
+          sizeLabel: item.sizeLabel || null,
+          bgTone: item.bgTone || null,
+          bgToneLabel: item.bgToneLabel || null,
           frame: item.frame || null,
-          frame_label: item.frameLabel || null,
+          frameLabel: item.frameLabel || null,
           quantity: item.quantity,
-          unit_price: item.unitPrice,
-          variant_image_url: item.variantImageUrl || null,
+          unitPrice: item.unitPrice,
+          variantImageUrl: item.variantImageUrl || null,
         })),
       }),
       cache: 'no-store',

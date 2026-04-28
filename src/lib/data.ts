@@ -24,6 +24,8 @@ export const BG_TONES: BgTone[] = [
   { id: 'dark', name: 'Nen Den Co', hex: '#1e140a' },
 ]
 
+export const DEFAULT_BG_TONES = BG_TONES
+
 export const FRAME_STYLES: FrameStyle[] = [
   { id: 'bronze', name: 'Khung Nau Dong' },
   { id: 'gold', name: 'Khung Vang Antique' },
@@ -31,8 +33,73 @@ export const FRAME_STYLES: FrameStyle[] = [
   { id: 'carved', name: 'Khung Cham Khac' },
 ]
 
+export const DEFAULT_FRAME_STYLES = FRAME_STYLES
+
+export const DEFAULT_PLACE_LABELS: Record<string, string> = {
+  living_room: 'Phòng khách',
+  office: 'Văn phòng',
+  bedroom: 'Phòng ngủ',
+  dining_room: 'Phòng ăn',
+  entrance: 'Hành lang / Lối vào',
+}
+
+export const DEFAULT_SPEC_LABELS: Record<string, string> = {
+  material: 'Chất liệu',
+  technique: 'Kỹ thuật',
+  origin: 'Xuất xứ',
+  style: 'Phong cách',
+  warranty: 'Bảo hành',
+  size: 'Kích thước',
+}
+
+export function mergeLabelOverrides<T extends { id: string; name: string }>(
+  defaults: T[],
+  overrides: Record<string, string>
+): T[] {
+  return defaults.map((entry) => {
+    const override = overrides[entry.id]
+    if (!override || !override.trim()) {
+      return entry
+    }
+
+    return {
+      ...entry,
+      name: override.trim(),
+    }
+  })
+}
+
 // Products are now fetched from API, see src/lib/storefront-api.ts
 export const PRODUCTS: Product[] = []
 
 // Reviews are now fetched from API, see src/lib/storefront-api.ts
 export const REVIEWS: Review[] = []
+
+export const STORY_CARDS = [
+  {
+    eyebrow: 'ĐẾN ĐẬU TRANH',
+    title: 'Một bức tranh — hai mươi ngày — ba thế hệ thợ',
+    body: 'Chúng tôi vẫn giữ nguyên cách làm của cụ ông: đóng thoi nung đỏ, đập mỏng trên đe đá, gõ từng nét bằng búa gỗ mít.',
+    imageSourceIndex: 0, // maps to customerPhotos[0]
+    accent: 'var(--gold)',
+  },
+  {
+    eyebrow: 'LÀNG NGHỀ',
+    title: 'Làng Đại Bái — 900 năm lửa đồng',
+    imageSourceIndex: 0, // maps to banners[0]
+    accent: 'var(--gold)',
+  },
+  {
+    eyebrow: 'QUÁ TRÌNH SẢN XUẤT',
+    title: 'Từ đe đá đến phòng khách — hành trình của mỗi tác phẩm',
+    body: 'Mỗi sản phẩm đi qua 20+ bước, từ lạc mô đến hoàn thiện, để mang đến vẻ đẹp hoàn hảo cho gia đình bạn.',
+    imageSourceIndex: 1, // maps to customerPhotos[1]
+    accent: 'var(--gold)',
+  },
+  {
+    eyebrow: 'CHỨNG CHỈ QUỐC TẾ',
+    title: 'Chứng nhận Bộ Công Thương — cam kết chất lượng',
+    imageSourceIndex: 1, // maps to banners[1]
+    accent: 'var(--gold)',
+  },
+]

@@ -76,6 +76,17 @@
   /* Compatibility tokens */
   --background: var(--bg-page);
   --foreground: var(--text-primary);
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Admin */
+  --admin-sidebar-bg: #111827;
+  --admin-primary: #7f1d1d;
+  --admin-border: #e5e7eb;
+  --admin-muted: #6b7280;
 }
 
 [data-theme='tet'] {

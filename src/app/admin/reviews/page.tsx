@@ -35,7 +35,7 @@ export default function AdminReviewsPage() {
   }
 
   async function handleApprove(id: string, isApproved: boolean) {
-    const saved = await adminPut<AdminReview>(`/reviews/${id}`, { isApproved })
+    const saved = await adminPut<AdminReview>(`/reviews/${id}`, { is_approved: isApproved })
     if (saved) {
       toast.success(isApproved ? 'Review approved' : 'Review disapproved')
       await loadReviews()

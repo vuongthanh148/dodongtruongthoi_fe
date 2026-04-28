@@ -5,43 +5,36 @@ import { Footer } from '@/components/layout/Footer'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
+import { Btn } from '@/components/ui/Btn'
+import { Carousel } from '@/components/ui/Carousel'
 import { ContactBubbles } from '@/components/ui/ContactBubbles'
 import { DongsonBorder } from '@/components/ui/DongsonBorder'
-import { SearchOverlay } from '@/components/ui/SearchOverlay'
-import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
 import { Label } from '@/components/ui/Label'
 import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
+import { SearchOverlay } from '@/components/ui/SearchOverlay'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { BANNER_AUTO_SCROLL_MS, CUSTOMER_PHOTO_AUTO_SCROLL_MS, STORES } from '@/lib/constants'
 import { CATEGORIES } from '@/lib/data'
-import { STORES } from '@/lib/constants'
-import { getSavedProductIds } from '@/lib/storage'
 import {
   fetchBanners,
   fetchCampaigns,
   fetchCategories,
   fetchCustomerPhotos,
-  fetchProducts,
-  type Banner,
-  type Campaign,
+  fetchProducts
 } from '@/lib/storefront-api'
-import type { Category, Product } from '@/lib/types'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import useSWR from 'swr'
 import { SWR_KEYS } from '@/lib/swr-keys'
-
-const BANNER_AUTO_SCROLL_MS = 3000
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import useSWR from 'swr'
 
 export default function Home() {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  const bannerCarouselRef = useRef<HTMLDivElement | null>(null)
-  const bannerDragStartXRef = useRef<number | null>(null)
-  const bannerIsDraggingRef = useRef(false)
+  const [currentCustomerPhotoIndex, setCurrentCustomerPhotoIndex] = useState(0)
 
   const { data: categoriesData = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
   const { data: allProducts = [], isLoading } = useSWR(SWR_KEYS.products, fetchProducts)
@@ -70,76 +63,20 @@ export default function Home() {
       }
       const startsAt = new Date(campaign.startsAt).getTime()
       const endsAt = new Date(campaign.endsAt).getTime()
-      return Number.isFinite(startsAt) && Number.isFinite(endsAt) && startsAt <= now && now <= endsAt
+      return (
+        Number.isFinite(startsAt) && Number.isFinite(endsAt) && startsAt <= now && now <= endsAt
+      )
     })
   }, [campaignsData])
 
-  const scrollToBanner = useCallback((index: number) => {
-    const container = bannerCarouselRef.current
-    if (!container) {
-      return
-    }
-
-    const maxIndex = banners.length > 0 ? banners.length - 1 : 0
-    const clampedIndex = Math.max(0, Math.min(index, maxIndex))
-    container.scrollTo({ left: container.clientWidth * clampedIndex, behavior: 'smooth' })
-    setCurrentBannerIndex(clampedIndex)
-  }, [banners.length])
-
-  function handleBannerPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    bannerDragStartXRef.current = event.clientX
-    bannerIsDraggingRef.current = true
-  }
-
-  function handleBannerPointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    const startX = bannerDragStartXRef.current
-    const endX = event.clientX
-    bannerIsDraggingRef.current = false
-    bannerDragStartXRef.current = null
-
-    if (startX === null) {
-      return
-    }
-
-    const deltaX = startX - endX
-    const swipeThreshold = 35
-    if (deltaX > swipeThreshold) {
-      scrollToBanner(currentBannerIndex + 1)
-    } else if (deltaX < -swipeThreshold) {
-      scrollToBanner(currentBannerIndex - 1)
-    }
-  }
-
-  function handleBannerKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (event.key === 'ArrowRight') {
-      event.preventDefault()
-      scrollToBanner(currentBannerIndex + 1)
-    } else if (event.key === 'ArrowLeft') {
-      event.preventDefault()
-      scrollToBanner(currentBannerIndex - 1)
-    } else if (event.key === 'Home') {
-      event.preventDefault()
-      scrollToBanner(0)
-    } else if (event.key === 'End') {
-      event.preventDefault()
-      scrollToBanner(banners.length - 1)
-    }
-  }
-
   useEffect(() => {
-    if (banners.length <= 1) {
+    if (customerPhotos.length <= 1) {
+      setCurrentCustomerPhotoIndex(0)
       return
     }
 
-    const timer = window.setInterval(() => {
-      const nextIndex = currentBannerIndex >= banners.length - 1 ? 0 : currentBannerIndex + 1
-      scrollToBanner(nextIndex)
-    }, BANNER_AUTO_SCROLL_MS)
-
-    return () => {
-      window.clearInterval(timer)
-    }
-  }, [banners.length, currentBannerIndex, scrollToBanner])
+    setCurrentCustomerPhotoIndex((prev) => Math.min(prev, customerPhotos.length - 1))
+  }, [customerPhotos.length])
 
   return (
     <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
@@ -163,150 +100,112 @@ export default function Home() {
           margin: '14px 16px 0',
           borderRadius: 14,
           overflow: 'hidden',
-          background: '#1a120a',
+          background: 'var(--bg-dark)',
           aspectRatio: '4/5',
         }}
       >
         {banners.length > 0 ? (
-          <>
-            <div
-              style={{
-                display: 'flex',
-                height: '100%',
-                overflowX: 'hidden',
-                scrollBehavior: 'smooth',
-              }}
-              className="noscroll"
-              ref={bannerCarouselRef}
-              tabIndex={0}
-              role="region"
-              aria-label="Banner trang chủ"
-              onPointerDown={handleBannerPointerDown}
-              onPointerUp={handleBannerPointerUp}
-              onPointerCancel={() => {
-                bannerIsDraggingRef.current = false
-                bannerDragStartXRef.current = null
-              }}
-              onKeyDown={handleBannerKeyDown}
-            >
-              {banners.map((banner, index) => (
-                <div
-                  key={banner.id || index}
-                  style={{
-                    position: 'relative',
-                    flex: '0 0 100%',
-                    width: '100%',
-                    height: '100%',
-                    scrollSnapAlign: 'start',
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      backgroundImage: `url(${banner.imageUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background:
-                        'linear-gradient(180deg, rgba(20,14,9,0.25) 0%, transparent 40%, rgba(20,14,9,0.75) 100%)',
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      padding: '28px 22px',
-                    }}
-                  >
-                    <div />
-                    <div style={{ color: '#f4ede0' }}>
-                      {banner.title && (
-                        <Heading
-                          as="h2"
-                          size="xl"
-                          color="#f4ede0"
-                          style={{ fontWeight: 500, marginBottom: 8, textWrap: 'balance', fontSize: 32 }}
-                        >
-                          {banner.title}
-                        </Heading>
-                      )}
-                      {banner.subtitle && (
-                        <div
-                          style={{
-                            fontSize: 14,
-                            lineHeight: 1.55,
-                            marginBottom: 16,
-                            maxWidth: 280,
-                            color: 'rgba(244,237,224,0.75)',
-                          }}
-                        >
-                          {banner.subtitle}
-                        </div>
-                      )}
-                      {banner.linkUrl && (
-                        <Btn
-                          type="button"
-                          size="lg"
-                          onClick={() => {
-                            const nextHref = banner.linkUrl?.trim()
-                            if (!nextHref || nextHref === 'null' || nextHref === 'undefined') {
-                              return
-                            }
-                            router.push(nextHref)
-                          }}
-                          style={{ padding: '11px 20px' }}
-                          icon={<IconChevron size={14} color="white" />}
-                        >
-                          Xem chi tiết
-                        </Btn>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {banners.length > 1 && (
+          <Carousel
+            items={banners}
+            currentIndex={currentBannerIndex}
+            onIndexChange={setCurrentBannerIndex}
+            autoScrollMs={BANNER_AUTO_SCROLL_MS}
+            navColor="light"
+            containerStyle={{
+              position: 'relative',
+              height: '100%',
+            }}
+            scrollContainerStyle={{
+              height: '100%',
+              touchAction: 'pan-y',
+            }}
+            renderItem={(banner) => (
               <div
                 style={{
-                  position: 'absolute',
-                  bottom: 16,
-                  left: 0,
-                  right: 0,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 6,
+                  position: 'relative',
+                  width: '100%',
+                  height: '100%',
                 }}
               >
-                {banners.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => scrollToBanner(idx)}
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      border: 'none',
-                      background:
-                        idx === currentBannerIndex ? 'var(--gold)' : 'rgba(244,237,224,0.3)',
-                      cursor: 'pointer',
-                      transition: 'background 200ms ease',
-                    }}
-                    aria-label={`Go to banner ${idx + 1}`}
-                  />
-                ))}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage: `url(${banner.imageUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background:
+                      'linear-gradient(180deg, rgba(20,14,9,0.25) 0%, transparent 40%, rgba(20,14,9,0.75) 100%)',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    padding: '28px 22px',
+                  }}
+                >
+                  <div />
+                  <div style={{ color: 'var(--text-on-dark)' }}>
+                    {banner.title && (
+                      <Heading
+                        as="h2"
+                        size="xl"
+                        color="var(--text-on-dark)"
+                        style={{
+                          fontWeight: 500,
+                          marginBottom: 8,
+                          textWrap: 'balance',
+                          fontSize: 32,
+                        }}
+                      >
+                        {banner.title}
+                      </Heading>
+                    )}
+                    {banner.subtitle && (
+                      <div
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 1.55,
+                          marginBottom: 16,
+                          maxWidth: 280,
+                          color: 'rgba(244,237,224,0.75)',
+                        }}
+                      >
+                        {banner.subtitle}
+                      </div>
+                    )}
+                    {banner.linkUrl && (
+                      <Btn
+                        type="button"
+                        size="lg"
+                        onClick={() => {
+                          const nextHref = banner.linkUrl?.trim()
+                          if (!nextHref || nextHref === 'null' || nextHref === 'undefined') {
+                            return
+                          }
+                          router.push(nextHref)
+                        }}
+                        style={{ padding: '11px 20px' }}
+                        icon={<IconChevron size={14} color="white" />}
+                      >
+                        Xem chi tiết
+                      </Btn>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
-          </>
+          />
         ) : (
           <>
             <div
@@ -314,7 +213,7 @@ export default function Home() {
                 position: 'absolute',
                 inset: 0,
                 background:
-                  'radial-gradient(ellipse at 30% 30%, rgba(255,200,120,0.25), transparent 55%), radial-gradient(ellipse at 70% 80%, rgba(139,30,30,0.3), transparent 60%), linear-gradient(135deg, #2a1a0c 0%, #160c06 100%)',
+                  'radial-gradient(ellipse at 30% 30%, rgba(255,200,120,0.25), transparent 55%), radial-gradient(ellipse at 70% 80%, rgba(139,30,30,0.3), transparent 60%), linear-gradient(135deg, var(--bg-dark) 0%, var(--primitive-ink-950) 100%)',
               }}
             />
 
@@ -378,7 +277,7 @@ export default function Home() {
                 <Heading
                   as="h1"
                   size="xl"
-                  color="#f4ede0"
+                  color="var(--text-on-dark)"
                   style={{
                     fontWeight: 500,
                     lineHeight: 1.05,
@@ -404,7 +303,7 @@ export default function Home() {
                 </Heading>
                 <div
                   style={{
-                    color: 'rgba(244,237,224,0.75)',
+                    color: 'var(--text-on-dark-muted)',
                     fontSize: 14,
                     lineHeight: 1.55,
                     marginBottom: 16,
@@ -431,6 +330,112 @@ export default function Home() {
         )}
       </div>
 
+      {customerPhotos.length > 0 ? (
+        <section
+          style={{
+            background: 'var(--bg-page)',
+            color: 'var(--text-primary)',
+            padding: '24px 0 30px',
+            marginTop: 16,
+            borderTop: '1px solid rgba(138, 108, 58, 0.25)',
+            borderBottom: '1px solid rgba(138, 108, 58, 0.2)',
+          }}
+        >
+          <div style={{ padding: '0 16px', marginBottom: 12 }}>
+            <Label
+              color="gold"
+              style={{
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+              }}
+            >
+              Khách hàng
+            </Label>
+            <Heading as="h2" size="md" color="var(--text-primary)">
+              Tranh trong nhà khách hàng
+            </Heading>
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+                marginTop: 6,
+                lineHeight: 1.6,
+              }}
+            >
+              Hình ảnh thực tế từ không gian sống của khách hàng trên toàn quốc.
+            </div>
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            <Carousel
+              items={customerPhotos}
+              currentIndex={currentCustomerPhotoIndex}
+              onIndexChange={setCurrentCustomerPhotoIndex}
+              autoScrollMs={CUSTOMER_PHOTO_AUTO_SCROLL_MS}
+              navColor="dark"
+              showDots={false}
+              containerStyle={{
+                position: 'relative',
+              }}
+              scrollContainerStyle={{
+                touchAction: 'pan-y',
+              }}
+              renderItem={(photo) => (
+                <article
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: '1px solid var(--border-soft)',
+                    background: 'var(--primitive-ivory-300)',
+                    aspectRatio: '16 / 9',
+                    boxShadow: '0 10px 28px rgba(55, 34, 17, 0.16)',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundImage: `url(${photo.imageUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'linear-gradient(180deg, rgba(255,255,255,0.04) 20%, rgba(25,16,10,0.48) 100%)',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      fontSize: 13,
+                      color: 'var(--text-on-dark)',
+                      lineHeight: 1.5,
+                      background: 'rgba(43, 24, 12, 0.45)',
+                      border: '1px solid rgba(255, 238, 218, 0.25)',
+                      borderRadius: 8,
+                      padding: '7px 9px',
+                      backdropFilter: 'blur(2px)',
+                    }}
+                  >
+                    {photo.caption || 'Không gian thực tế của khách hàng'}
+                  </div>
+                </article>
+              )}
+            />
+          </div>
+        </section>
+      ) : null}
+
       <DongsonBorder className="mx-4 mt-6" />
 
       <section style={{ paddingTop: 24 }}>
@@ -438,70 +443,68 @@ export default function Home() {
         <div
           style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, padding: '0 16px' }}
         >
-          {isLoading ? (
-            [0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-              >
-                <Skeleton style={{ aspectRatio: '16/10', borderRadius: 8 }} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Skeleton style={{ height: 16, flex: 1 }} />
-                  <Skeleton style={{ height: 16, width: 30 }} />
-                </div>
-              </div>
-            ))
-          ) : (
-            categories.map((category) => (
-              <article
-                key={category.id}
-                onClick={() => router.push(`/categories/${category.id}`)}
-                style={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  padding: 10,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  cursor: 'pointer',
-                }}
-              >
-                <ArtPiece
-                  bg={category.tone}
-                  frame="bronze"
-                  label={category.name}
-                  pad={4}
-                  aspect="16/10"
-                />
+          {isLoading
+            ? [0, 1, 2, 3].map((i) => (
                 <div
+                  key={i}
                   style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                    marginTop: 2,
+                    flexDirection: 'column',
+                    gap: 8,
                   }}
                 >
-                  <Heading as="h3" size="sm" style={{ fontSize: 14.5, lineHeight: 1.15 }}>
-                    {category.name}
-                  </Heading>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-jetbrains), monospace',
-                      fontSize: 13,
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    {String(category.productCount).padStart(2, '0')}
+                  <Skeleton style={{ aspectRatio: '16/10', borderRadius: 8 }} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Skeleton style={{ height: 16, flex: 1 }} />
+                    <Skeleton style={{ height: 16, width: 30 }} />
                   </div>
                 </div>
-              </article>
-            ))
-          )}
+              ))
+            : categories.map((category) => (
+                <article
+                  key={category.id}
+                  onClick={() => router.push(`/categories/${category.id}`)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ArtPiece
+                    bg={category.tone}
+                    frame="bronze"
+                    label={category.name}
+                    pad={4}
+                    aspect="16/10"
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      marginTop: 2,
+                    }}
+                  >
+                    <Heading as="h3" size="sm" style={{ fontSize: 14.5, lineHeight: 1.15 }}>
+                      {category.name}
+                    </Heading>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-jetbrains), monospace',
+                        fontSize: 13,
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {String(category.productCount).padStart(2, '0')}
+                    </div>
+                  </div>
+                </article>
+              ))}
         </div>
       </section>
 
@@ -534,11 +537,20 @@ export default function Home() {
                     {campaign.name}
                   </Heading>
                   {campaign.description ? (
-                    <p style={{ margin: '0 0 10px', fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,0.84)' }}>
+                    <p
+                      style={{
+                        margin: '0 0 10px',
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: 'rgba(255,255,255,0.84)',
+                      }}
+                    >
                       {campaign.description}
                     </p>
                   ) : null}
-                  <div style={{ fontSize: 14, color: 'var(--gold)', fontWeight: 600, marginBottom: 8 }}>
+                  <div
+                    style={{ fontSize: 14, color: 'var(--gold)', fontWeight: 600, marginBottom: 8 }}
+                  >
                     {discountLabel}
                   </div>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 10 }}>
@@ -549,7 +561,9 @@ export default function Home() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => router.push(`/categories/${categories[0]?.id || 'tranh-phong-thuy'}`)}
+                    onClick={() =>
+                      router.push(`/categories/${categories[0]?.id || 'tranh-phong-thuy'}`)
+                    }
                     style={{
                       color: 'white',
                       borderColor: 'rgba(255,255,255,0.4)',
@@ -565,21 +579,28 @@ export default function Home() {
       ) : null}
 
       <section style={{ paddingTop: 32 }}>
-        <SectionHeading eyebrow="Nổi bật" title="Được chọn nhiều nhất" action="Xem tất cả" onActionClick={() => router.push(`/categories/${categories[0]?.id || 'tranh-phong-thuy'}`)} />
+        <SectionHeading
+          eyebrow="Nổi bật"
+          title="Được chọn nhiều nhất"
+          action="Xem tất cả"
+          onActionClick={() =>
+            router.push(`/categories/${categories[0]?.id || 'tranh-phong-thuy'}`)
+          }
+        />
         <div
           style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, padding: '0 16px' }}
         >
           {isLoading ? (
-            [0, 1, 2, 3].map((i) => (
-              <ProductCardSkeleton key={i} />
-            ))
+            [0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} />)
           ) : featuredProducts.length > 0 ? (
             featuredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 noInnerPadding
-                onOpen={(bgTone) => router.push(`/products/${product.id}${bgTone ? `?bgTone=${bgTone}` : ''}`)}
+                onOpen={(bgTone) =>
+                  router.push(`/products/${product.id}${bgTone ? `?bgTone=${bgTone}` : ''}`)
+                }
               />
             ))
           ) : (
@@ -608,13 +629,17 @@ export default function Home() {
         <div style={{ padding: '0 16px', marginBottom: 12 }}>
           <Label style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>Câu chuyện</Label>
         </div>
-        <div style={{ display: 'flex', gap: 10, padding: '0 16px', overflowX: 'auto' }} className="noscroll">
+        <div
+          style={{ display: 'flex', gap: 10, padding: '0 16px', overflowX: 'auto' }}
+          className="noscroll"
+        >
           {(() => {
             const stories = [
               {
                 eyebrow: 'ĐẾN ĐẬU TRANH',
                 title: 'Một bức tranh — hai mươi ngày — ba thế hệ thợ',
                 body: 'Chúng tôi vẫn giữ nguyên cách làm của cụ ông: đóng thoi nung đỏ, đập mỏng trên đe đá, gõ từng nét bằng búa gỗ mít.',
+                image: customerPhotos.length > 0 ? customerPhotos[0]?.imageUrl : undefined,
                 accent: 'var(--gold)',
               },
               {
@@ -627,6 +652,7 @@ export default function Home() {
                 eyebrow: 'QUÁ TRÌNH SẢN XUẤT',
                 title: 'Từ đe đá đến phòng khách — hành trình của mỗi tác phẩm',
                 body: 'Mỗi sản phẩm đi qua 20+ bước, từ lạc mô đến hoàn thiện, để mang đến vẻ đẹp hoàn hảo cho gia đình bạn.',
+                image: customerPhotos.length > 1 ? customerPhotos[1]?.imageUrl : undefined,
                 accent: 'var(--gold)',
               },
               {
@@ -648,12 +674,12 @@ export default function Home() {
                     backgroundImage: hasImage ? `url(${story.image})` : undefined,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
+                    backgroundColor: hasImage ? undefined : 'var(--bg-dark)',
                     borderRadius: 10,
                     overflow: 'hidden',
                     aspectRatio: hasImage ? '3/4' : undefined,
                     flex: hasImage ? '0 0 72%' : '0 0 82%',
                     cursor: 'pointer',
-                    background: hasImage ? undefined : 'var(--bg-dark)',
                     padding: hasImage ? undefined : '22px 18px',
                     color: 'var(--text-on-dark)',
                     display: 'flex',
@@ -737,12 +763,21 @@ export default function Home() {
                           {story.title}
                         </Heading>
                         {story.body && (
-                          <p style={{ fontSize: 15, lineHeight: 1.6, color: 'rgba(244,237,224,0.7)', margin: '0 0 12px 0' }}>
+                          <p
+                            style={{
+                              fontSize: 15,
+                              lineHeight: 1.6,
+                              color: 'rgba(244,237,224,0.7)',
+                              margin: '0 0 12px 0',
+                            }}
+                          >
                             {story.body}
                           </p>
                         )}
                       </div>
-                      <div style={{ fontSize: 13, color: story.accent, fontStyle: 'italic' }}>→</div>
+                      <div style={{ fontSize: 13, color: story.accent, fontStyle: 'italic' }}>
+                        →
+                      </div>
                     </>
                   )}
                 </div>
@@ -755,7 +790,9 @@ export default function Home() {
       {/* Stores/Map section */}
       <section style={{ paddingTop: 32 }}>
         <div style={{ padding: '0 16px', marginBottom: 12 }}>
-          <Label style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>Hệ thống cửa hàng</Label>
+          <Label style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Hệ thống cửa hàng
+          </Label>
         </div>
         <div style={{ display: 'grid', gap: 10, padding: '0 16px' }}>
           {STORES.map((store, idx) => (
@@ -771,7 +808,14 @@ export default function Home() {
               <Heading as="h3" size="sm" style={{ marginBottom: 6, fontSize: 14 }}>
                 {store.name}
               </Heading>
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.5 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 8,
+                  lineHeight: 1.5,
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <IconMapPin size={13} color="var(--text-muted)" />
                   {store.address}
@@ -780,7 +824,9 @@ export default function Home() {
                   <IconPhone size={13} color="var(--text-muted)" />
                   {store.phone}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{store.hours}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  {store.hours}
+                </div>
               </div>
               <Btn
                 type="button"
@@ -799,99 +845,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {customerPhotos.length > 0 ? (
-        <section
-          style={{
-            background: 'var(--bg-dark)',
-            color: 'var(--text-on-dark)',
-            padding: '24px 0 30px',
-            marginTop: 32,
-          }}
-        >
-          <div style={{ padding: '0 16px', marginBottom: 12 }}>
-            <Label
-              color="gold"
-              style={{
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-              }}
-            >
-              Khách hàng
-            </Label>
-            <Heading as="h2" size="md" color="var(--text-on-dark)">
-              Tranh trong nhà khách hàng
-            </Heading>
-            <div style={{ fontSize: 13, color: 'rgba(244,237,224,0.72)', marginTop: 6, lineHeight: 1.6 }}>
-              Hình ảnh thực tế từ không gian sống của khách hàng trên toàn quốc.
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: 10,
-              padding: '0 16px',
-              overflowX: 'auto',
-            }}
-            className="noscroll"
-          >
-            {customerPhotos.map((photo, index) => {
-              const isPortrait = index % 3 !== 1
-              const ratio = isPortrait ? '3 / 4' : '4 / 3'
-              const width = isPortrait ? '62vw' : '78vw'
-
-              return (
-                <article
-                  key={photo.id}
-                  style={{
-                    position: 'relative',
-                    flex: `0 0 ${width}`,
-                    maxWidth: isPortrait ? 300 : 360,
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    border: '1px solid rgba(244,237,224,0.12)',
-                    background: '#1a120a',
-                    aspectRatio: ratio,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      backgroundImage: `url(${photo.imageUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background:
-                        'linear-gradient(180deg, rgba(20,14,9,0.08) 15%, rgba(20,14,9,0.65) 100%)',
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: 10,
-                      right: 10,
-                      bottom: 10,
-                      fontSize: 13,
-                      color: 'rgba(244,237,224,0.92)',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {photo.caption || 'Không gian thực tế của khách hàng'}
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        </section>
-      ) : null}
 
       <Footer />
 
