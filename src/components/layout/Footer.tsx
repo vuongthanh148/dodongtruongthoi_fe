@@ -17,26 +17,24 @@ import { HOTLINE, SHOP_ADDRESS, SITE_NAME, SHOP_EMAIL, COMPANY_NAME, GOOGLE_MAPS
 export function Footer() {
   return (
     <footer style={{ margin: '28px 0 0 0' }}>
-      {/* ZONE 1: Brand Block (dark bg) */}
       <div
         style={{
           background: 'var(--bg-dark)',
           color: 'var(--text-on-dark)',
-          padding: '28px 20px',
+          padding: '28px 20px 24px',
         }}
       >
-        {/* Logo + brand side by side */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 12,
-            marginBottom: 16,
+            gap: 10,
+            marginBottom: 14,
           }}
         >
           <DrumMark size={36} color="var(--gold)" />
-          <div style={{ textAlign: 'left' }}>
+          <div style={{ textAlign: 'center' }}>
             <div
               style={{
                 fontFamily: 'var(--font-cormorant), serif',
@@ -64,8 +62,7 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Social icons */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           {[
             { Icon: IconZalo, href: SOCIAL_LINKS.zalo },
             { Icon: IconMessenger, href: SOCIAL_LINKS.messenger },
@@ -79,8 +76,13 @@ export function Footer() {
               size="sm"
               onClick={() => window.open(href, '_blank')}
               style={{
-                padding: 8,
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                padding: 0,
                 color: 'var(--gold)',
+                border: '1px solid rgba(244, 237, 224, 0.18)',
+                background: 'rgba(255,255,255,0.03)',
               }}
             >
               <Icon size={20} />
@@ -89,78 +91,75 @@ export function Footer() {
         </div>
       </div>
 
-      {/* ZONE 2: Links Grid (page bg) */}
       <div
         style={{
           background: 'var(--bg-page)',
-          padding: '20px',
+          padding: '22px 20px',
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: '20px',
           borderBottom: '1px solid var(--border-soft)',
         }}
       >
-        {/* Left column: KHÁM PHÁ */}
         <div>
           <div
             style={{
-              fontSize: 13,
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: 10,
               fontWeight: 600,
-              letterSpacing: '0.12em',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
-              color: 'var(--text-muted)',
+              color: 'var(--bronze)',
               marginBottom: 12,
             }}
           >
             Khám phá
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Link href="/" style={{ fontSize: 15, color: 'var(--text-secondary)', textDecoration: 'none' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'var(--font-lora), serif' }}>
+            <Link href="/" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
               Trang chủ
             </Link>
-            <Link href="/saved" style={{ fontSize: 15, color: 'var(--text-secondary)', textDecoration: 'none' }}>
+            <Link href="/saved" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
               Sản phẩm đã lưu
             </Link>
           </div>
         </div>
 
-        {/* Right column: THÔNG TIN */}
         <div>
           <div
             style={{
-              fontSize: 13,
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: 10,
               fontWeight: 600,
-              letterSpacing: '0.12em',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
-              color: 'var(--text-muted)',
+              color: 'var(--bronze)',
               marginBottom: 12,
             }}
           >
             Thông tin
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Link href="/lang-nghe" style={{ fontSize: 15, color: 'var(--text-secondary)', textDecoration: 'none' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'var(--font-lora), serif' }}>
+            <Link href="/lang-nghe" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
               Câu chuyện làng nghề →
             </Link>
-            <Link href="/huong-dan-mua-hang" style={{ fontSize: 15, color: 'var(--text-secondary)', textDecoration: 'none' }}>
+            <Link href="/huong-dan-mua-hang" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
               Hướng dẫn mua hàng →
             </Link>
-            <Link href="/faq" style={{ fontSize: 15, color: 'var(--text-secondary)', textDecoration: 'none' }}>
+            <Link href="/faq" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
               Câu hỏi thường gặp →
             </Link>
           </div>
         </div>
       </div>
 
-      {/* ZONE 3: Contact Strip */}
       <div
         style={{
-          background: 'var(--bg-surface-alt)',
+          background: 'var(--bg-surface)',
           padding: '16px 20px',
           borderBottom: '1px solid var(--border-soft)',
         }}
       >
-        {/* Contact top row */}
         <div
           style={{
             display: 'flex',
@@ -196,7 +195,6 @@ export function Footer() {
           </Btn>
         </div>
 
-        {/* Contact info */}
         <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
           <IconMail size={14} color="var(--text-muted)" />
           {SHOP_EMAIL}
@@ -224,7 +222,6 @@ export function Footer() {
         </button>
       </div>
 
-      {/* ZONE 4: Bottom Bar (dark bg) */}
       <div
         style={{
           background: 'var(--bg-dark)',
@@ -248,22 +245,20 @@ export function Footer() {
 export function FooterMinimal() {
   return (
     <footer style={{ marginTop: 'auto' }}>
-      {/* Brand Block (dark bg) */}
       <div
         style={{
           background: 'var(--bg-dark)',
           color: 'var(--text-on-dark)',
-          padding: '28px 20px',
+          padding: '24px 20px',
         }}
       >
-        {/* Logo + brand side by side */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 12,
-            marginBottom: 16,
+            gap: 10,
+            marginBottom: 12,
           }}
         >
           <DrumMark size={36} color="var(--gold)" />
@@ -295,8 +290,7 @@ export function FooterMinimal() {
           </div>
         </div>
 
-        {/* Social icons */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           {[
             { Icon: IconZalo, href: SOCIAL_LINKS.zalo },
             { Icon: IconMessenger, href: SOCIAL_LINKS.messenger },
@@ -310,13 +304,16 @@ export function FooterMinimal() {
               size="sm"
               onClick={() => window.open(href, '_blank')}
               style={{
-                color: 'var(--text-on-dark)',
-                opacity: 0.8,
-                padding: '8px',
-                minWidth: 0,
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                color: 'var(--gold)',
+                border: '1px solid rgba(244, 237, 224, 0.18)',
+                background: 'rgba(255,255,255,0.03)',
+                padding: 0,
               }}
             >
-              <Icon size={20} color="var(--text-on-dark)" />
+              <Icon size={20} color="var(--gold)" />
             </Btn>
           ))}
         </div>

@@ -47,7 +47,11 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
   const [savedCount, setSavedCount] = useState(0)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSavedCount(getSavedProducts().length)
+  }, [])
+
+  useEffect(() => {
     if (open) {
       fetchCategories().then(setCategories)
     }
@@ -243,7 +247,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
             >
               <div>
                 <Heading size="sm" style={{ color: 'var(--text-primary)' }}>{item.label}</Heading>
-                <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-secondary)', marginTop: 2, fontWeight: 400 }}>
+                <div suppressHydrationWarning style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-secondary)', marginTop: 2, fontWeight: 400 }}>
                   {item.id === 'saved' ? `${savedCount} mục` : item.hint}
                 </div>
               </div>

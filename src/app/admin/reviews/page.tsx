@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AdminGuard } from '@/components/admin/AdminGuard'
+import { AdminLayout } from '@/components/admin/AdminLayout'
 import { adminDelete, adminGet, adminPut } from '@/lib/admin-api'
 import type { AdminReview } from '@/lib/types'
+import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 type FilterMode = 'all' | 'pending' | 'approved'
 
@@ -14,11 +14,7 @@ export default function AdminReviewsPage() {
   const [rows, setRows] = useState<AdminReview[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadReviews()
-  }, [filter])
-
-  async function loadReviews() {
+  const loadReviews = useCallback(async () => {
     setLoading(true)
     try {
       const path =
@@ -32,7 +28,13 @@ export default function AdminReviewsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter])
+
+  useEffect(() => {
+    (async () => {
+      await loadReviews()
+    })()
+  }, [loadReviews])
 
   async function handleApprove(id: string, isApproved: boolean) {
     const saved = await adminPut<AdminReview>(`/reviews/${id}`, { is_approved: isApproved })
@@ -59,7 +61,10 @@ export default function AdminReviewsPage() {
 
   return (
     <AdminGuard>
-      <AdminLayout title="Reviews" subtitle="Moderate customer product reviews before they appear on the storefront">
+      <AdminLayout
+        title="Reviews"
+        subtitle="Moderate customer product reviews before they appear on the storefront"
+      >
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <FilterButton active={filter === 'all'} onClick={() => setFilter('all')}>
             All
@@ -72,7 +77,14 @@ export default function AdminReviewsPage() {
           </FilterButton>
         </div>
 
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
           {loading ? (
             <div style={{ padding: 24, color: '#6b7280', fontSize: 14 }}>Loading reviews...</div>
           ) : rows.length === 0 ? (
@@ -97,7 +109,14 @@ export default function AdminReviewsPage() {
                     <td style={{ ...td, color: '#6b7280', fontSize: 12 }}>{row.product_id}</td>
                     <td style={td}>{renderStars(row.rating)}</td>
                     <td style={{ ...td, maxWidth: 280 }}>
-                      <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <span
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
                         {row.body ?? <em style={{ color: '#9ca3af' }}>No comment</em>}
                       </span>
                     </td>
@@ -120,15 +139,27 @@ export default function AdminReviewsPage() {
                     <td style={td}>
                       <div style={{ display: 'flex', gap: 12 }}>
                         {row.is_approved ? (
-                          <button type="button" onClick={() => handleApprove(row.id, false)} style={actionBtn}>
+                          <button
+                            type="button"
+                            onClick={() => handleApprove(row.id, false)}
+                            style={actionBtn}
+                          >
                             Reject
                           </button>
                         ) : (
-                          <button type="button" onClick={() => handleApprove(row.id, true)} style={{ ...actionBtn, color: '#166534' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleApprove(row.id, true)}
+                            style={{ ...actionBtn, color: '#166534' }}
+                          >
                             Approve
                           </button>
                         )}
-                        <button type="button" onClick={() => handleDelete(row.id)} style={actionBtn}>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(row.id)}
+                          style={actionBtn}
+                        >
                           Delete
                         </button>
                       </div>
@@ -144,7 +175,15 @@ export default function AdminReviewsPage() {
   )
 }
 
-function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function FilterButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
   return (
     <button
       type="button"
@@ -168,11 +207,29 @@ function FilterButton({ active, onClick, children }: { active: boolean; onClick:
 function renderStars(rating: number) {
   return (
     <span style={{ color: '#d97706', fontSize: 13, letterSpacing: 1 }}>
-      {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+      {'★'.repeat(rating)}
+      {'☆'.repeat(5 - rating)}
     </span>
   )
 }
 
-const th: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 12, color: '#374151' }
-const td: React.CSSProperties = { padding: '10px 12px', borderTop: '1px solid #f3f4f6', fontSize: 14, verticalAlign: 'top' }
-const actionBtn: React.CSSProperties = { border: 'none', background: 'transparent', color: '#7f1d1d', cursor: 'pointer', padding: 0, fontSize: 14 }
+const th: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '10px 12px',
+  fontSize: 12,
+  color: '#374151',
+}
+const td: React.CSSProperties = {
+  padding: '10px 12px',
+  borderTop: '1px solid #f3f4f6',
+  fontSize: 14,
+  verticalAlign: 'top',
+}
+const actionBtn: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#7f1d1d',
+  cursor: 'pointer',
+  padding: 0,
+  fontSize: 14,
+}

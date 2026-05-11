@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ArtPiece } from '@/components/ui/ArtPiece'
 import type { Category } from '@/lib/types'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 
@@ -10,10 +11,6 @@ interface CategoriesSectionProps {
 }
 
 export function CategoriesSection({ categories, loading }: CategoriesSectionProps) {
-  if (loading) {
-    return null
-  }
-
   return (
     <section style={{ padding: '32px 16px', background: 'var(--bg-page)' }}>
       <div style={{ marginBottom: 24, paddingLeft: 0 }}>
@@ -36,17 +33,15 @@ export function CategoriesSection({ categories, loading }: CategoriesSectionProp
               style={{
                 aspectRatio: '1',
                 borderRadius: 'var(--radius-md)',
-                background: `var(--bg-${category.tone || 'surface'})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 28,
+                overflow: 'hidden',
               }}
             >
-              {/* Placeholder for category image */}
+              <ArtPiece bg={category.tone} frame="bronze" label={category.name} pad={8} aspect="1 / 1" />
             </div>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{category.name}</p>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)' }}>{category.productCount} sản phẩm</p>
+            {!loading ? (
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)' }}>{category.productCount} sản phẩm</p>
+            ) : null}
           </Link>
         ))}
       </div>

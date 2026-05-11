@@ -52,7 +52,7 @@ export default function OrdersPage() {
     try {
       const result = await getOrdersByPhone(normalizedPhone)
       setOrders(result || [])
-    } catch (err) {
+    } catch {
       setError('Có lỗi khi tra cứu đơn hàng.')
       setOrders([])
     } finally {
@@ -61,7 +61,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-page]">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
       <TopBar
         title="Đơn hàng của tôi"
         onBack={() => router.back()}
@@ -172,6 +172,7 @@ export default function OrdersPage() {
         )}
       </div>
 
+      <div style={{ flex: 1 }} />
       <FooterMinimal />
     </div>
   )

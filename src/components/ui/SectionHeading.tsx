@@ -1,6 +1,5 @@
 import { IconChevron } from '@/components/icons'
-import { Heading } from '@/components/ui/Heading'
-import { Label } from '@/components/ui/Label'
+import { DongsonBorder } from '@/components/ui/DongsonBorder'
 
 interface SectionHeadingProps {
   eyebrow?: string
@@ -12,14 +11,33 @@ interface SectionHeadingProps {
 export function SectionHeading({ eyebrow, title, action, onActionClick }: SectionHeadingProps) {
   return (
     <div className="mb-3 px-4">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           {eyebrow ? (
-            <Label className="mb-1">
+            <div
+              style={{
+                marginBottom: 6,
+                fontFamily: 'var(--font-jetbrains), monospace',
+                fontSize: 10,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: 'var(--bronze)',
+              }}
+            >
               {eyebrow}
-            </Label>
+            </div>
           ) : null}
-          <Heading size="lg">{title}</Heading>
+          <div
+            style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontSize: 22,
+              fontWeight: 600,
+              lineHeight: 1.05,
+              color: 'var(--text-primary)',
+            }}
+          >
+            {title}
+          </div>
         </div>
         {action ? (
           <button
@@ -28,6 +46,7 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
             style={{
               background: 'transparent',
               border: 'none',
+              padding: 0,
               color: 'var(--accent)',
               fontFamily: 'var(--font-lora), serif',
               fontStyle: 'italic',
@@ -35,14 +54,17 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 3,
+              gap: 4,
+              whiteSpace: 'nowrap',
             }}
           >
             {action} <IconChevron size={12} color="var(--accent)" />
           </button>
         ) : null}
       </div>
-      <div className="dongson-rule mt-2.5" />
+      <div style={{ marginTop: 10 }}>
+        <DongsonBorder />
+      </div>
     </div>
   )
 }

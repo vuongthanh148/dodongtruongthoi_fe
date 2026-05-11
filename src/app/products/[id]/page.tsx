@@ -554,7 +554,7 @@ export default function ProductDetailPage() {
           }}
         >
           <div>
-            <Label>Chọn nền tranh</Label>
+            <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Chọn nền tranh</div>
             <Heading as="h3" size="sm" style={{ fontSize: 17, marginTop: 2 }}>
               {displayBgTones.find((tone) => tone.id === resolvedBgTone)?.name}
             </Heading>
@@ -610,7 +610,7 @@ export default function ProductDetailPage() {
       </div>
 
       <div style={{ padding: '20px 16px 0' }}>
-        <Label>Chọn khung</Label>
+        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Chọn khung</div>
         <Heading as="h3" size="sm" style={{ fontSize: 17, margin: '2px 0 10px' }}>
           {displayFrameStyles.find((item) => item.id === resolvedFrame)?.name}
         </Heading>
@@ -660,8 +660,8 @@ export default function ProductDetailPage() {
       </div>
 
       <div style={{ padding: '20px 16px 0' }}>
-        <Label>Kích thước</Label>
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 10 }}>
+        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>Kích thước</div>
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 0 }}>
           {product.sizes.map((size) => (
             <button
               key={size.id}
@@ -729,7 +729,7 @@ export default function ProductDetailPage() {
           {activeTab === 'description' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div>
-                <Label style={{ letterSpacing: '0.18em', marginBottom: 8 }}>
+                <Label style={{ fontSize: 9.5, letterSpacing: '0.18em', marginBottom: 8 }}>
                   Về tác phẩm
                 </Label>
                 <p
@@ -744,7 +744,7 @@ export default function ProductDetailPage() {
                 </p>
               </div>
               <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 20 }}>
-                <Label style={{ letterSpacing: '0.18em', marginBottom: 8 }}>
+                <Label style={{ fontSize: 9.5, letterSpacing: '0.18em', marginBottom: 8 }}>
                   Ý nghĩa phong thủy
                 </Label>
                 <p
@@ -763,7 +763,7 @@ export default function ProductDetailPage() {
 
           {activeTab === 'guide' ? (
             <div>
-              <Label style={{ letterSpacing: '0.18em', marginBottom: 14 }}>
+              <Label style={{ fontSize: 9.5, letterSpacing: '0.18em', marginBottom: 14 }}>
                 Vị trí phù hợp
               </Label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -1,159 +1,146 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { Btn } from '@/components/ui/Btn'
+import { DrumMark } from '@/components/icons'
+import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Heading } from '@/components/ui/Heading'
-import { Label } from '@/components/ui/Label'
 import { STORY_CARDS } from '@/lib/data'
 import type { Banner, CustomerPhoto } from '@/lib/storefront-api'
 
 interface StoriesSectionProps {
-  banners: Banner[]
-  customerPhotos: CustomerPhoto[]
+  banners?: Banner[]
+  customerPhotos?: CustomerPhoto[]
+  coverImageUrl?: string
 }
 
-export function StoriesSection({ banners, customerPhotos }: StoriesSectionProps) {
+export function StoriesSection({ banners = [], customerPhotos = [], coverImageUrl }: StoriesSectionProps) {
   const router = useRouter()
+  const story = STORY_CARDS[0]
+  const resolvedCoverImageUrl =
+    coverImageUrl ?? customerPhotos[0]?.imageUrl ?? banners[0]?.imageUrl ?? customerPhotos[1]?.imageUrl ?? banners[1]?.imageUrl
 
   return (
     <section
       style={{
-        background: 'var(--bg-surface-alt)',
-        padding: '24px 0 32px',
+        background: 'var(--bg-dark)',
+        padding: '32px 22px 28px',
         margin: '32px 0 0',
+        color: 'var(--text-on-dark)',
       }}
     >
-      <div style={{ padding: '0 16px', marginBottom: 12 }}>
-        <Label style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>Câu chuyện</Label>
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 9.5, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--gold)' }}>Câu chuyện làng nghề</div>
       </div>
-      <div style={{ display: 'flex', gap: 10, padding: '0 16px', overflowX: 'auto' }} className="noscroll">
-        {STORY_CARDS.map((story, idx) => {
-          let imageUrl: string | undefined
 
-          // Map story image source index to actual images from banners or customer photos
-          if (story.eyebrow === 'ĐẾN ĐẬU TRANH') {
-            imageUrl = customerPhotos[0]?.imageUrl || undefined
-          } else if (story.eyebrow === 'LÀNG NGHỀ') {
-            imageUrl = banners[0]?.imageUrl || undefined
-          } else if (story.eyebrow === 'QUÁ TRÌNH SẢN XUẤT') {
-            imageUrl = customerPhotos[1]?.imageUrl || undefined
-          } else if (story.eyebrow === 'CHỨNG CHỈ QUỐC TẾ') {
-            imageUrl = banners[1]?.imageUrl || undefined
-          }
-
-          const hasImage = !!imageUrl
-
-          return (
+      <div
+        style={{
+          display: 'grid',
+          gap: 14,
+          padding: 0,
+        }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            border: '1px solid rgba(244,237,224,0.1)',
+            background: 'rgba(255,255,255,0.02)',
+          }}
+        >
+          <div style={{ aspectRatio: '16 / 9', position: 'relative', borderRadius: 6 }}>
+            {resolvedCoverImageUrl ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: `url(${resolvedCoverImageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, padding: 10 }}>
+                <ArtPiece bg="dark" frame="carved" label={story.title} pad={10} aspect="16 / 9" />
+              </div>
+            )}
             <div
-              key={idx}
-              onClick={() => router.push('/lang-nghe')}
               style={{
-                position: 'relative',
-                backgroundImage: hasImage ? `url(${imageUrl})` : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundColor: hasImage ? undefined : 'var(--bg-dark)',
-                borderRadius: 10,
-                overflow: 'hidden',
-                aspectRatio: hasImage ? '3/4' : undefined,
-                flex: hasImage ? '0 0 72%' : '0 0 82%',
-                cursor: 'pointer',
-                padding: hasImage ? undefined : '22px 18px',
-                color: 'var(--text-on-dark)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: hasImage ? 'flex-end' : 'space-between',
+                position: 'absolute',
+                right: -40,
+                top: -28,
+                opacity: 0.06,
+                pointerEvents: 'none',
               }}
             >
-              {hasImage && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    padding: '20px 16px 16px',
-                    background: 'linear-gradient(to top, rgba(20,14,9,0.92) 0%, rgba(20,14,9,0.6) 60%, transparent 100%)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: '0.2em',
-                      color: story.accent,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {story.eyebrow}
-                  </div>
-                  <Heading
-                    as="h3"
-                    size="sm"
-                    style={{
-                      fontSize: 15,
-                      color: 'var(--text-on-dark)',
-                      fontWeight: 500,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {story.title}
-                  </Heading>
-                  {story.body && (
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--text-on-dark-muted)',
-                        marginTop: 6,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {story.body}
-                    </div>
-                  )}
-                </div>
-              )}
-              {!hasImage && (
-                <>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: '0.2em',
-                      color: story.accent,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {story.eyebrow}
-                  </div>
-                  <div>
-                    <Heading
-                      as="h3"
-                      size="sm"
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 500,
-                        lineHeight: 1.2,
-                        marginBottom: 8,
-                        color: 'var(--text-on-dark)',
-                      }}
-                    >
-                      {story.title}
-                    </Heading>
-                    {story.body && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          lineHeight: 1.5,
-                          color: 'var(--text-on-dark-muted)',
-                        }}
-                      >
-                        {story.body}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+              <DrumMark size={190} color="var(--gold)" />
             </div>
-          )
-        })}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(180deg, rgba(20,14,9,0.14) 0%, rgba(20,14,9,0.2) 50%, rgba(20,14,9,0.88) 100%)',
+              }}
+            />
+          </div>
+
+          <div style={{ padding: '18px 16px 16px' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-jetbrains), monospace',
+                fontSize: 10,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: 'var(--gold)',
+                marginBottom: 8,
+              }}
+            >
+              {story.eyebrow}
+            </div>
+            <Heading
+              as="h3"
+              size="md"
+              style={{
+                fontFamily: 'var(--font-cormorant), serif',
+                fontSize: 24,
+                fontWeight: 500,
+                lineHeight: 1.15,
+                color: 'var(--text-on-dark)',
+                marginBottom: 10,
+              }}
+            >
+              {story.title}
+            </Heading>
+            {story.body ? (
+              <div
+                style={{
+                  fontSize: 11.5,
+                  lineHeight: 1.55,
+                  color: 'rgba(244,237,224,0.65)',
+                  marginBottom: 20,
+                }}
+              >
+                {story.body}
+              </div>
+            ) : null}
+            <Btn
+              type="button"
+              variant="ghost"
+              size="md"
+              onClick={() => router.push('/lang-nghe')}
+              style={{
+                color: 'var(--gold)',
+                border: '1px solid rgba(201,169,97,0.5)',
+                borderRadius: 2,
+                background: 'transparent',
+                padding: '10px 18px',
+              }}
+            >
+              Đọc câu chuyện →
+            </Btn>
+          </div>
+        </div>
       </div>
     </section>
   )

@@ -30,10 +30,8 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
   const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
 
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
@@ -100,8 +98,7 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
     </>
   )
 
-  // Suppress hydration mismatch by rendering default layout until mounted
-  const gridCols = !mounted ? '220px 1fr' : (showMobileMenu ? '1fr' : '220px 1fr')
+  const gridCols = showMobileMenu ? '1fr' : '220px 1fr'
 
   return (
     <>
@@ -114,7 +111,7 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
         )}
 
         <main style={{ padding: 20 }}>
-          {mounted && showMobileMenu && (
+          { showMobileMenu && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <button
                 type="button"
@@ -137,7 +134,7 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
             </div>
           )}
 
-          {!mounted || !showMobileMenu ? (
+          {!showMobileMenu ? (
             <div style={{ marginBottom: 16 }}>
               <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: '#111827' }}>{title}</h1>
               {subtitle ? <p style={{ margin: '4px 0 0', color: '#6b7280' }}>{subtitle}</p> : null}
@@ -149,7 +146,7 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
       </div>
 
       {/* Mobile sidebar overlay */}
-      {mounted && showMobileMenu && sidebarOpen && (
+      { showMobileMenu && sidebarOpen && (
         <>
           <div
             style={{

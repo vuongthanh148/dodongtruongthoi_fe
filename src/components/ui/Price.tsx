@@ -11,7 +11,7 @@ interface PriceProps {
 
 const sizeMap: Record<PriceSize, number> = {
   sm: 13,
-  md: 15,
+  md: 14,
   lg: 22,
 }
 

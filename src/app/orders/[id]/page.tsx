@@ -43,7 +43,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         } else {
           setError('Không tìm thấy đơn hàng.')
         }
-      } catch (err) {
+      } catch {
         setError('Có lỗi khi tải thông tin đơn hàng.')
       } finally {
         setLoading(false)

@@ -1,20 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Select, {
-  type StylesConfig,
-} from 'react-select'
 import { AdminFrame } from '@/components/admin/AdminFrame'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 import { Field } from '@/components/admin/Field'
 import { adminDelete, adminGet, adminPost, adminPut, adminUpload } from '@/lib/admin-api'
-import {
-  DEFAULT_BG_TONES,
-  DEFAULT_FRAME_STYLES,
-  DEFAULT_PLACE_LABELS,
-} from '@/lib/data'
-import type { AdminCategory, AdminProduct, AdminProductImage, AdminProductSize } from '@/lib/types'
+import { DEFAULT_BG_TONES, DEFAULT_FRAME_STYLES, DEFAULT_PLACE_LABELS } from '@/lib/data'
+import type { AdminCategory, AdminProduct, AdminProductImage } from '@/lib/types'
+import { useParams, useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import Select, { type StylesConfig } from 'react-select'
 
 interface ProductFormState {
   id: string
@@ -141,11 +135,7 @@ export default function AdminProductEditPage() {
 
   const effectiveProductId = savedProductId || (isNew ? '' : productId)
 
-  useEffect(() => {
-    loadPage()
-  }, [productId])
-
-  async function loadPage() {
+  const loadPage = useCallback(async () => {
     setLoading(true)
 
     const categoryData = await adminGet<AdminCategory[]>('/categories')
@@ -203,7 +193,13 @@ export default function AdminProductEditPage() {
     )
     setImages(product.images ?? [])
     setLoading(false)
-  }
+  }, [productId, isNew])
+
+  useEffect(() => {
+    (async () => {
+      await loadPage()
+    })()
+  }, [loadPage])
 
   function addSizeRow() {
     setSizes((prev) => [
@@ -219,7 +215,9 @@ export default function AdminProductEditPage() {
   }
 
   function updateSizeRow(index: number, patch: Partial<SizeFormRow>) {
-    setSizes((prev) => prev.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)))
+    setSizes((prev) =>
+      prev.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row))
+    )
   }
 
   function removeSizeRow(index: number) {
@@ -301,7 +299,10 @@ export default function AdminProductEditPage() {
       formData.append('frame', uploadFrame)
     }
 
-    const uploaded = await adminUpload<AdminProductImage>(`/products/${effectiveProductId}/images`, formData)
+    const uploaded = await adminUpload<AdminProductImage>(
+      `/products/${effectiveProductId}/images`,
+      formData
+    )
     if (uploaded) {
       setUploadFile(null)
       setUploadBgTone('')
@@ -339,14 +340,34 @@ export default function AdminProductEditPage() {
             event.preventDefault()
             saveProduct()
           }}
-          style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, display: 'grid', gap: 12 }}
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 14,
+            display: 'grid',
+            gap: 12,
+          }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}
+          >
             <Field label="ID (create only)">
-              <input value={form.id} onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))} style={inputStyle} disabled={!isNew} />
+              <input
+                value={form.id}
+                onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
+                style={inputStyle}
+                disabled={!isNew}
+              />
             </Field>
             <Field label="Category">
-              <select value={form.category_id} onChange={(event) => setForm((prev) => ({ ...prev, category_id: event.target.value }))} style={inputStyle}>
+              <select
+                value={form.category_id}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, category_id: event.target.value }))
+                }
+                style={inputStyle}
+              >
                 <option value="">Select category</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
@@ -356,16 +377,35 @@ export default function AdminProductEditPage() {
               </select>
             </Field>
             <Field label="Title">
-              <input value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.title}
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Subtitle">
-              <input value={form.subtitle} onChange={(event) => setForm((prev) => ({ ...prev, subtitle: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.subtitle}
+                onChange={(event) => setForm((prev) => ({ ...prev, subtitle: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Badge">
-              <input value={form.badge} onChange={(event) => setForm((prev) => ({ ...prev, badge: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.badge}
+                onChange={(event) => setForm((prev) => ({ ...prev, badge: event.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Base price">
-              <input type="number" value={form.base_price} onChange={(event) => setForm((prev) => ({ ...prev, base_price: event.target.value }))} style={inputStyle} />
+              <input
+                type="number"
+                value={form.base_price}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, base_price: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
             <Field label="Default background">
               <Select<SelectOption, false>
@@ -390,13 +430,27 @@ export default function AdminProductEditPage() {
           </div>
 
           <Field label="Description">
-            <textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.description}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, description: event.target.value }))
+              }
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
           <Field label="Meaning">
-            <textarea value={form.meaning} onChange={(event) => setForm((prev) => ({ ...prev, meaning: event.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.meaning}
+              onChange={(event) => setForm((prev) => ({ ...prev, meaning: event.target.value }))}
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}
+          >
             <Field label="Background tones">
               <Select<SelectOption, true>
                 isMulti
@@ -420,7 +474,13 @@ export default function AdminProductEditPage() {
               />
             </Field>
             <Field label="Zodiac IDs (comma separated)">
-              <input value={form.zodiac_ids} onChange={(event) => setForm((prev) => ({ ...prev, zodiac_ids: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.zodiac_ids}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, zodiac_ids: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
             <Field label="Purpose place">
               <Select<SelectOption, true>
@@ -428,44 +488,95 @@ export default function AdminProductEditPage() {
                 options={placeOptions}
                 value={placeOptions.filter((option) => form.purpose_place.includes(option.value))}
                 onChange={(selected) =>
-                  setForm((prev) => ({ ...prev, purpose_place: selected.map((option) => option.value) }))
+                  setForm((prev) => ({
+                    ...prev,
+                    purpose_place: selected.map((option) => option.value),
+                  }))
                 }
                 styles={selectStyles}
               />
             </Field>
             <Field label="Purpose use (comma separated)">
-              <input value={form.purpose_use} onChange={(event) => setForm((prev) => ({ ...prev, purpose_use: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.purpose_use}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, purpose_use: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
             <Field label="Purpose avoid (comma separated)">
-              <input value={form.purpose_avoid} onChange={(event) => setForm((prev) => ({ ...prev, purpose_avoid: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.purpose_avoid}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, purpose_avoid: event.target.value }))
+                }
+                style={inputStyle}
+              />
             </Field>
           </div>
 
           <Field label="Specs (one key: value per line)">
-            <textarea value={form.specs} onChange={(event) => setForm((prev) => ({ ...prev, specs: event.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.specs}
+              onChange={(event) => setForm((prev) => ({ ...prev, specs: event.target.value }))}
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}
+          >
             <label style={checkboxLabel}>
-              <input type="checkbox" checked={form.requires_bg_tone} onChange={(event) => setForm((prev) => ({ ...prev, requires_bg_tone: event.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={form.requires_bg_tone}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, requires_bg_tone: event.target.checked }))
+                }
+              />
               Requires bg tone
             </label>
             <label style={checkboxLabel}>
-              <input type="checkbox" checked={form.requires_frame} onChange={(event) => setForm((prev) => ({ ...prev, requires_frame: event.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={form.requires_frame}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, requires_frame: event.target.checked }))
+                }
+              />
               Requires frame
             </label>
             <label style={checkboxLabel}>
-              <input type="checkbox" checked={form.requires_size} onChange={(event) => setForm((prev) => ({ ...prev, requires_size: event.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={form.requires_size}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, requires_size: event.target.checked }))
+                }
+              />
               Requires size
             </label>
             <label style={checkboxLabel}>
-              <input type="checkbox" checked={form.is_active} onChange={(event) => setForm((prev) => ({ ...prev, is_active: event.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, is_active: event.target.checked }))
+                }
+              />
               Active
             </label>
           </div>
 
           <Field label="Sort order">
-            <input type="number" value={form.sort_order} onChange={(event) => setForm((prev) => ({ ...prev, sort_order: event.target.value }))} style={inputStyle} />
+            <input
+              type="number"
+              value={form.sort_order}
+              onChange={(event) => setForm((prev) => ({ ...prev, sort_order: event.target.value }))}
+              style={inputStyle}
+            />
           </Field>
 
           <section style={sectionStyle}>
@@ -478,10 +589,32 @@ export default function AdminProductEditPage() {
             <div style={{ display: 'grid', gap: 10 }}>
               {sizes.map((row, index) => (
                 <div key={row.id} style={gridRow}>
-                  <input placeholder="Size label" value={row.size_label} onChange={(event) => updateSizeRow(index, { size_label: event.target.value })} style={inputStyle} />
-                  <input placeholder="Size code" value={row.size_code} onChange={(event) => updateSizeRow(index, { size_code: event.target.value })} style={inputStyle} />
-                  <input type="number" placeholder="Price" value={row.price} onChange={(event) => updateSizeRow(index, { price: event.target.value })} style={inputStyle} />
-                  <input type="number" placeholder="Sort" value={row.sort_order} onChange={(event) => updateSizeRow(index, { sort_order: event.target.value })} style={inputStyle} />
+                  <input
+                    placeholder="Size label"
+                    value={row.size_label}
+                    onChange={(event) => updateSizeRow(index, { size_label: event.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    placeholder="Size code"
+                    value={row.size_code}
+                    onChange={(event) => updateSizeRow(index, { size_code: event.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price"
+                    value={row.price}
+                    onChange={(event) => updateSizeRow(index, { price: event.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Sort"
+                    value={row.sort_order}
+                    onChange={(event) => updateSizeRow(index, { sort_order: event.target.value })}
+                    style={inputStyle}
+                  />
                   <button type="button" onClick={() => removeSizeRow(index)} style={secondaryBtn}>
                     Remove
                   </button>
@@ -493,12 +626,24 @@ export default function AdminProductEditPage() {
           <section style={sectionStyle}>
             <div style={sectionHeader}>
               <h2 style={sectionTitle}>Images</h2>
-              <span style={{ color: '#6b7280', fontSize: 13 }}>{effectiveProductId ? effectiveProductId : 'Save the product first to upload images'}</span>
+              <span style={{ color: '#6b7280', fontSize: 13 }}>
+                {effectiveProductId
+                  ? effectiveProductId
+                  : 'Save the product first to upload images'}
+              </span>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {images.map((image) => (
-                <div key={image.id} style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <img src={image.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                <div
+                  key={image.id}
+                  style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.url}
+                    alt=""
+                    style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }}
+                  />
                   <div style={{ display: 'grid', gap: 4, flex: 1 }}>
                     <strong style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{image.url}</strong>
                     <span style={{ color: '#6b7280', fontSize: 12 }}>
@@ -512,11 +657,35 @@ export default function AdminProductEditPage() {
               ))}
             </div>
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-              <input type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-                <input placeholder="bgTone" value={uploadBgTone} onChange={(event) => setUploadBgTone(event.target.value)} style={inputStyle} />
-                <input placeholder="frame" value={uploadFrame} onChange={(event) => setUploadFrame(event.target.value)} style={inputStyle} />
-                <button type="button" onClick={uploadImage} disabled={!effectiveProductId || !uploadFile} style={primaryBtn}>
+              <input
+                type="file"
+                onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
+              />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: 10,
+                }}
+              >
+                <input
+                  placeholder="bgTone"
+                  value={uploadBgTone}
+                  onChange={(event) => setUploadBgTone(event.target.value)}
+                  style={inputStyle}
+                />
+                <input
+                  placeholder="frame"
+                  value={uploadFrame}
+                  onChange={(event) => setUploadFrame(event.target.value)}
+                  style={inputStyle}
+                />
+                <button
+                  type="button"
+                  onClick={uploadImage}
+                  disabled={!effectiveProductId || !uploadFile}
+                  style={primaryBtn}
+                >
                   Upload image
                 </button>
               </div>
@@ -527,7 +696,11 @@ export default function AdminProductEditPage() {
             <button type="submit" disabled={saving} style={primaryBtn}>
               {saving ? 'Saving...' : 'Save Product'}
             </button>
-            <button type="button" onClick={() => router.push('/admin/products')} style={secondaryBtn}>
+            <button
+              type="button"
+              onClick={() => router.push('/admin/products')}
+              style={secondaryBtn}
+            >
               Cancel
             </button>
           </div>
@@ -574,12 +747,61 @@ function stringifySpecs(specs: Record<string, string> | null | undefined): strin
     .join('\n')
 }
 
-const inputStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: 6, padding: '10px 12px', fontSize: 14, width: '100%' }
-const primaryBtn: React.CSSProperties = { border: 'none', background: '#7f1d1d', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer' }
-const secondaryBtn: React.CSSProperties = { border: '1px solid #d1d5db', background: 'white', color: '#374151', borderRadius: 6, padding: '9px 12px', cursor: 'pointer' }
-const sectionStyle: React.CSSProperties = { border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'grid', gap: 12 }
-const sectionHeader: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }
+const inputStyle: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  borderRadius: 6,
+  padding: '10px 12px',
+  fontSize: 14,
+  width: '100%',
+}
+const primaryBtn: React.CSSProperties = {
+  border: 'none',
+  background: '#7f1d1d',
+  color: 'white',
+  borderRadius: 6,
+  padding: '9px 12px',
+  cursor: 'pointer',
+}
+const secondaryBtn: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  background: 'white',
+  color: '#374151',
+  borderRadius: 6,
+  padding: '9px 12px',
+  cursor: 'pointer',
+}
+const sectionStyle: React.CSSProperties = {
+  border: '1px solid #e5e7eb',
+  borderRadius: 8,
+  padding: 12,
+  display: 'grid',
+  gap: 12,
+}
+const sectionHeader: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+}
 const sectionTitle: React.CSSProperties = { margin: 0, fontSize: 18, fontWeight: 700 }
-const gridRow: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 0.8fr auto', gap: 8, alignItems: 'center' }
-const imageRow: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: '1px solid #f3f4f6', borderRadius: 8, padding: 10 }
-const checkboxLabel: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }
+const gridRow: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1.5fr 1fr 1fr 0.8fr auto',
+  gap: 8,
+  alignItems: 'center',
+}
+const imageRow: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  border: '1px solid #f3f4f6',
+  borderRadius: 8,
+  padding: 10,
+}
+const checkboxLabel: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 14,
+}

@@ -1,6 +1,34 @@
 import type { Category, Product } from '@/lib/types'
 import { API_BASE } from '@/lib/api-config'
 
+type RawOrderItem = {
+  product_id: string
+  product_title: string
+  product_subtitle?: string
+  size_code?: string
+  size_label?: string
+  bg_tone?: string
+  bg_tone_label?: string
+  frame?: string
+  frame_label?: string
+  quantity: number
+  unit_price: number
+  variant_image_url?: string
+}
+
+type RawOrder = {
+  id: string
+  phone: string
+  customer_name?: string
+  address?: string
+  note?: string
+  status?: 'pending_confirm' | 'confirmed' | 'processing' | 'shipped' | 'completed' | 'cancelled'
+  total_amount?: number
+  items?: RawOrderItem[]
+  created_at: string
+  updated_at?: string
+}
+
 export type Banner = {
   id: string
   title: string | null
@@ -469,7 +497,7 @@ export async function getOrdersByPhone(phone: string): Promise<import('@/lib/typ
     url.searchParams.set('phone', phone)
     const res = await fetch(url.toString(), { cache: 'no-store' })
     if (!res.ok) return []
-    const data = (await res.json()) as { data?: any[] }
+    const data = (await res.json()) as { data?: RawOrder[] }
     const orders = data.data || []
     return orders.map(normalizeOrder)
   } catch {
@@ -481,7 +509,7 @@ export async function getOrderById(id: string): Promise<import('@/lib/types').Or
   try {
     const res = await fetch(`${API_BASE}/orders/${id}`, { cache: 'no-store' })
     if (!res.ok) return null
-    const data = (await res.json()) as { data?: any }
+    const data = (await res.json()) as { data?: RawOrder }
     if (!data.data) return null
     return normalizeOrder(data.data)
   } catch {
@@ -490,7 +518,7 @@ export async function getOrderById(id: string): Promise<import('@/lib/types').Or
 }
 
 // Helper to normalize order from backend
-function normalizeOrder(raw: any): import('@/lib/types').Order {
+function normalizeOrder(raw: RawOrder): import('@/lib/types').Order {
   return {
     id: raw.id,
     phone: raw.phone,
@@ -499,7 +527,7 @@ function normalizeOrder(raw: any): import('@/lib/types').Order {
     note: raw.note || undefined,
     status: raw.status || 'pending_confirm',
     totalAmount: raw.total_amount || 0,
-    items: (raw.items || []).map((item: any) => ({
+    items: (raw.items || []).map((item: RawOrderItem) => ({
       productId: item.product_id,
       productTitle: item.product_title,
       productSubtitle: item.product_subtitle,

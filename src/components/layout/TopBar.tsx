@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
 import { DrumMark, IconChevron, IconHeart, IconMenu, IconSearch } from '@/components/icons'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
 import { getSavedProducts } from '@/lib/storage'
+import { useEffect, useState } from 'react'
 
 interface TopBarProps {
   title?: string
+  variant?: 'solid' | 'overlay'
   showLogo?: boolean
   savedCount?: number
   onBack?: () => void
@@ -14,15 +15,26 @@ interface TopBarProps {
   onSearch?: () => void
 }
 
-export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, onMenu, onOpenSaved, onSearch }: TopBarProps) {
+export function TopBar({
+  title,
+  variant = 'solid',
+  showLogo = false,
+  savedCount,
+  onBack,
+  onMenu,
+  onOpenSaved,
+  onSearch,
+}: TopBarProps) {
   const [scrolled, setScrolled] = useState(false)
-  const [savedCount, setSavedCount] = useState(0)
-  const [isHydrated, setIsHydrated] = useState(false)
+  const [storedSavedCount, setStoredSavedCount] = useState(0)
+  const displayedSavedCount = typeof savedCount === 'number' ? savedCount : storedSavedCount
 
   useEffect(() => {
-    setIsHydrated(true)
-    setSavedCount(getSavedProducts().length)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStoredSavedCount(getSavedProducts().length)
+  }, [])
 
+  useEffect(() => {
     function handleScroll() {
       setScrolled(window.scrollY > 2)
     }
@@ -41,12 +53,19 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        background: 'var(--bg-page)',
-        borderBottom: '1px solid var(--border-soft)',
+        background:
+          variant === 'overlay'
+            ? 'linear-gradient(180deg, rgba(20, 14, 9, 0.75) 0%, rgba(20, 14, 9, 0.18) 100%)'
+            : 'var(--bg-page)',
+        borderBottom:
+          variant === 'overlay'
+            ? ''
+            : '1px solid var(--border-soft)',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        boxShadow: scrolled ? '0 2px 12px rgba(0,0,0,0.08)' : 'none',
+        boxShadow: scrolled && variant !== 'overlay' ? '0 2px 12px rgba(0,0,0,0.08)' : 'none',
+        backdropFilter: variant === 'overlay' ? 'blur(8px)' : 'none',
       }}
     >
       {onBack ? (
@@ -55,7 +74,10 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
           onClick={onBack}
           variant="ghost"
           size="sm"
-          style={{ padding: 4, color: 'var(--text-primary)' }}
+          style={{
+            padding: 4,
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+          }}
         >
           <IconChevron dir="left" size={22} />
         </Btn>
@@ -65,15 +87,26 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
           onClick={onMenu}
           variant="ghost"
           size="sm"
-          style={{ padding: 4, color: 'var(--text-primary)' }}
+          style={{
+            padding: 4,
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+          }}
         >
           <IconMenu size={22} />
         </Btn>
       )}
 
       {showLogo ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'center' }}>
-          <DrumMark size={26} color="var(--accent)" />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
+          <DrumMark size={26} color={variant === 'overlay' ? 'var(--gold)' : 'var(--accent)'} />
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
@@ -81,7 +114,7 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
                 fontWeight: 600,
                 fontSize: 16,
                 letterSpacing: '0.03em',
-                color: 'var(--accent)',
+                color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--accent)',
                 lineHeight: 1,
               }}
             >
@@ -92,7 +125,7 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
                 fontFamily: 'var(--font-lora), serif',
                 fontStyle: 'italic',
                 fontSize: 9,
-                color: 'var(--bronze)',
+                color: variant === 'overlay' ? 'rgba(244,237,224,0.75)' : 'var(--bronze)',
                 letterSpacing: '0.1em',
               }}
             >
@@ -101,11 +134,30 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
           </div>
         </div>
       ) : (
-        <Heading size="sm" as="div" style={{ flex: 1, textAlign: 'center' }}>{title}</Heading>
+        <Heading
+          size="sm"
+          as="div"
+          style={{
+            flex: 1,
+            textAlign: 'center',
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+          }}
+        >
+          {title}
+        </Heading>
       )}
 
       {onSearch && (
-        <Btn type="button" variant="ghost" size="sm" onClick={onSearch} style={{ padding: 4, color: 'var(--text-primary)' }}>
+        <Btn
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onSearch}
+          style={{
+            padding: 4,
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+          }}
+        >
           <IconSearch size={20} />
         </Btn>
       )}
@@ -116,31 +168,34 @@ export function TopBar({ title, showLogo = false, savedCount: _unused, onBack, o
           onClick={onOpenSaved}
           variant="ghost"
           size="sm"
-          style={{ padding: 4, color: 'var(--text-primary)', position: 'relative' }}
+          style={{
+            padding: 4,
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+            position: 'relative',
+          }}
         >
           <IconHeart size={20} />
-          {isHydrated && savedCount > 0 ? (
-            <span
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                minWidth: 14,
-                height: 14,
-                padding: '0 3px',
-                background: 'var(--accent)',
-                color: 'white',
-                borderRadius: 7,
-                fontSize: 9,
-                fontWeight: 700,
-                display: 'grid',
-                placeItems: 'center',
-                lineHeight: 1,
-              }}
-            >
-              {savedCount}
-            </span>
-          ) : null}
+          <span
+            suppressHydrationWarning
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              minWidth: 14,
+              height: 14,
+              padding: '0 3px',
+              background: 'var(--accent)',
+              color: 'white',
+              borderRadius: 7,
+              fontSize: 9,
+              fontWeight: 700,
+              display: displayedSavedCount > 0 ? 'grid' : 'none',
+              placeItems: 'center',
+              lineHeight: 1,
+            }}
+          >
+            {displayedSavedCount || ''}
+          </span>
         </Btn>
       ) : null}
     </header>

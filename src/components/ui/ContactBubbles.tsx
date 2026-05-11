@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { IconClose, IconFacebook, IconMessenger, IconTiktok, IconZalo } from '@/components/icons'
 import { SOCIAL_LINKS } from '@/lib/constants'
+import { useState } from 'react'
 
 const links = [
   { label: 'Zalo', href: SOCIAL_LINKS.zalo, Icon: IconZalo },
@@ -18,27 +18,36 @@ export function ContactBubbles() {
     <div
       style={{
         position: 'fixed',
-        right: 10,
-        bottom: 22,
+        right: 12,
+        bottom: 'max(18px, env(safe-area-inset-bottom, 0px))',
+        maxHeight: 'calc(100dvh - 80px)',
+        overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 7,
+        gap: 8,
         zIndex: 60,
         alignItems: 'flex-end',
       }}
     >
       {open
         ? links.map(({ href, label, Icon }) => (
-            <a key={label} href={href} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+            >
               <span
                 style={{
                   fontSize: 10,
-                  color: 'white',
-                  background: 'rgba(20,14,9,0.75)',
-                  backdropFilter: 'blur(6px)',
-                  padding: '3px 7px',
-                  borderRadius: 10,
+                  color: 'var(--text-on-dark)',
+                  background: 'rgba(20,14,9,0.76)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '4px 8px',
+                  borderRadius: 999,
                   fontFamily: 'var(--font-be-vietnam), sans-serif',
+                  border: '1px solid rgba(244,237,224,0.14)',
                 }}
               >
                 {label}
@@ -48,13 +57,13 @@ export function ContactBubbles() {
                   width: 36,
                   height: 36,
                   borderRadius: '50%',
-                  background: 'var(--bg-card)',
-                  boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
+                  background: 'var(--accent)',
+                  boxShadow: '0 10px 24px rgba(0,0,0,0.28)',
                   display: 'grid',
                   placeItems: 'center',
                 }}
               >
-                <Icon size={22} />
+                <Icon size={20} color="white" />
               </span>
             </a>
           ))
@@ -63,13 +72,13 @@ export function ContactBubbles() {
         type="button"
         onClick={() => setOpen((state) => !state)}
         style={{
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           borderRadius: '50%',
           background: open ? 'var(--text-primary)' : 'var(--accent)',
           border: 'none',
           color: 'white',
-          boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
+          boxShadow: '0 10px 24px rgba(0,0,0,0.32)',
           display: 'grid',
           placeItems: 'center',
           cursor: 'pointer',

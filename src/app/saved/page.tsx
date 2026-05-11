@@ -62,7 +62,7 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
+    <div className="paper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
       <TopBar title="Sản phẩm đã lưu" onBack={() => window.history.back()} />
 
       <div style={{ padding: '10px 16px 6px' }}>
@@ -80,32 +80,35 @@ export default function SavedPage() {
       </div>
 
       {savedProducts.length === 0 ? (
-        <div style={{ padding: '60px 30px', textAlign: 'center' }}>
-          <DrumMark size={52} color="var(--bronze)" />
-          <Heading size="md" style={{ marginTop: 14 }}>
-            Chưa có sản phẩm nào
-          </Heading>
-          <div
-            style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.55 }}
-          >
-            Bấm nút yêu thích ở trang chi tiết để lưu tác phẩm.
+        <>
+          <div style={{ padding: '60px 30px', textAlign: 'center' }}>
+            <DrumMark size={52} color="var(--bronze)" />
+            <Heading size="md" style={{ marginTop: 14 }}>
+              Chưa có sản phẩm nào
+            </Heading>
+            <div
+              style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.55 }}
+            >
+              Bấm nút yêu thích ở trang chi tiết để lưu tác phẩm.
+            </div>
+            <Link
+              href="/"
+              style={{
+                display: 'inline-block',
+                marginTop: 16,
+                color: 'var(--accent)',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Về trang chủ
+            </Link>
           </div>
-          <Link
-            href="/"
-            style={{
-              display: 'inline-block',
-              marginTop: 16,
-              color: 'var(--accent)',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Về trang chủ
-          </Link>
-        </div>
+          <div style={{ flex: 1 }} />
+        </>
       ) : (
         <div
-          style={{ padding: '14px 16px 100px', display: 'flex', flexDirection: 'column', gap: 10 }}
+          style={{ padding: '14px 16px 100px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}
         >
           {savedProducts.map((product) => {
             if (!product) {
@@ -189,6 +192,7 @@ export default function SavedPage() {
           })}
         </div>
       )}
+      {savedProducts.length === 0 ? null : <div style={{ flex: 1 }} />}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FooterMinimal } from '@/components/layout/Footer'
@@ -11,33 +11,8 @@ import type { CartItem } from '@/lib/types'
 
 export default function CartPage() {
   const router = useRouter()
-  const [items, setItems] = useState<CartItem[]>([])
-  const [mounted, setMounted] = useState(false)
+  const [items, setItems] = useState<CartItem[]>(() => getCartItems())
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  useEffect(() => {
-    setItems(getCartItems())
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[--bg-page]">
-        <TopBar
-          title="Giỏ hàng"
-          onMenu={() => setIsMenuOpen(true)}
-          onOpenSaved={() => router.push('/saved')}
-        />
-        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-
-        <div className="flex items-center justify-center py-16">
-          <p className="text-center text-[--text-secondary]">Đang tải...</p>
-        </div>
-
-        <FooterMinimal />
-      </div>
-    )
-  }
 
   const handleRemove = (index: number) => {
     removeCartItem(index)
@@ -56,7 +31,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-[--bg-page]">
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
         <TopBar
           title="Giỏ hàng"
           onMenu={() => setIsMenuOpen(true)}
@@ -92,13 +67,14 @@ export default function CartPage() {
           </div>
         </div>
 
+        <div style={{ flex: 1 }} />
         <FooterMinimal />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-page]">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
       <TopBar
         title="Giỏ hàng"
         onMenu={() => setIsMenuOpen(true)}
@@ -196,6 +172,7 @@ export default function CartPage() {
         </div>
       </div>
 
+      <div style={{ flex: 1 }} />
       <FooterMinimal />
     </div>
   )

@@ -25,8 +25,8 @@ export function CustomerPhotosSection({ photos }: CustomerPhotosSectionProps) {
         color: 'var(--text-primary)',
         padding: '24px 0 30px',
         marginTop: 16,
-        borderTop: '1px solid var(--border-soft)',
-        borderBottom: '1px solid var(--border-soft)',
+        borderTop: '1px solid rgba(138, 108, 58, 0.25)',
+        borderBottom: '1px solid rgba(138, 108, 58, 0.2)',
       }}
     >
       <div style={{ padding: '0 16px', marginBottom: 12 }}>
@@ -43,7 +43,14 @@ export function CustomerPhotosSection({ photos }: CustomerPhotosSectionProps) {
         <Heading as="h2" size="md" color="var(--text-primary)">
           Tranh trong nhà khách hàng
         </Heading>
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6 }}>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            marginTop: 6,
+            lineHeight: 1.6,
+          }}
+        >
           Hình ảnh thực tế từ không gian sống của khách hàng trên toàn quốc.
         </div>
       </div>

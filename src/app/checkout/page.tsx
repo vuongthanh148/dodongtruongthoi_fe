@@ -12,8 +12,7 @@ import type { CartItem } from '@/lib/types'
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const [items, setItems] = useState<CartItem[]>([])
-  const [mounted, setMounted] = useState(false)
+  const [items] = useState<CartItem[]>(() => getCartItems())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -25,33 +24,10 @@ export default function CheckoutPage() {
   const [note, setNote] = useState('')
 
   useEffect(() => {
-    const cartItems = getCartItems()
-    if (cartItems.length === 0) {
+    if (items.length === 0) {
       router.push('/cart')
-      return
     }
-    setItems(cartItems)
-    setMounted(true)
-  }, [router])
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[--bg-page]">
-        <TopBar
-          title="Đặt hàng"
-          onMenu={() => setIsMenuOpen(true)}
-          onOpenSaved={() => router.push('/saved')}
-        />
-        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-
-        <div className="flex items-center justify-center py-16">
-          <p className="text-center text-[--text-secondary]">Đang tải...</p>
-        </div>
-
-        <FooterMinimal />
-      </div>
-    )
-  }
+  }, [router, items.length])
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
 
@@ -104,14 +80,14 @@ export default function CheckoutPage() {
         setError('Có lỗi khi đặt hàng. Vui lòng thử lại.')
         setLoading(false)
       }
-    } catch (err) {
+    } catch {
       setError('Có lỗi khi kết nối. Vui lòng thử lại.')
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-page]">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
       <TopBar
         title="Đặt hàng"
         onMenu={() => setIsMenuOpen(true)}
@@ -247,6 +223,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      <div style={{ flex: 1 }} />
       <FooterMinimal />
     </div>
   )

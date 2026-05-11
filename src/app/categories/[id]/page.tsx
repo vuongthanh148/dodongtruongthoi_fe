@@ -13,7 +13,6 @@ import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { CATEGORIES } from '@/lib/data'
 import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
 import { ArtPiece } from '@/components/ui/ArtPiece'
-import type { Category, Product } from '@/lib/types'
 import useSWR from 'swr'
 import { SWR_KEYS } from '@/lib/swr-keys'
 

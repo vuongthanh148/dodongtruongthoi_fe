@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AdminGuard } from '@/components/admin/AdminGuard'
+import { AdminLayout } from '@/components/admin/AdminLayout'
 import { adminDelete, adminGet, adminPut, adminUpload } from '@/lib/admin-api'
 import type { AdminCustomerPhoto } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 const emptyForm = {
   caption: '',
@@ -123,7 +123,10 @@ export default function AdminCustomerPhotosPage() {
       return
     }
 
-    const updated = await adminPut<AdminCustomerPhoto>(`/customer-photos/${editingPhoto.id}`, payload)
+    const updated = await adminPut<AdminCustomerPhoto>(
+      `/customer-photos/${editingPhoto.id}`,
+      payload
+    )
     if (updated) {
       toast.success('Photo updated')
       await loadPhotos()
@@ -181,7 +184,9 @@ export default function AdminCustomerPhotosPage() {
           }}
         >
           <h3 style={{ margin: 0, fontSize: 16 }}>Upload New Photo</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}
+          >
             <Field label="Image file">
               <input
                 type="file"
@@ -206,7 +211,9 @@ export default function AdminCustomerPhotosPage() {
                 style={inputStyle}
               />
             </Field>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginTop: 22 }}>
+            <label
+              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginTop: 22 }}
+            >
               <input
                 type="checkbox"
                 checked={uploadActive}
@@ -222,11 +229,28 @@ export default function AdminCustomerPhotosPage() {
           </div>
         </section>
 
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'grid', gap: 10 }}>
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 12,
+            display: 'grid',
+            gap: 10,
+          }}
+        >
           {loading ? <p style={{ color: '#6b7280', margin: 0 }}>Loading photos...</p> : null}
-          {!loading && rows.length === 0 ? <p style={{ color: '#6b7280', margin: 0 }}>No photos found.</p> : null}
+          {!loading && rows.length === 0 ? (
+            <p style={{ color: '#6b7280', margin: 0 }}>No photos found.</p>
+          ) : null}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 10,
+            }}
+          >
             {rows.map((photo) => (
               <article
                 key={photo.id}
@@ -238,10 +262,16 @@ export default function AdminCustomerPhotosPage() {
                   gap: 8,
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo.image_url}
                   alt={photo.caption || 'Customer photo'}
-                  style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 6 }}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '4 / 3',
+                    objectFit: 'cover',
+                    borderRadius: 6,
+                  }}
                 />
 
                 <div style={{ display: 'grid', gap: 2 }}>
@@ -296,7 +326,9 @@ export default function AdminCustomerPhotosPage() {
                 gap: 12,
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
                 <h3 style={{ margin: 0, fontSize: 16 }}>Edit Customer Photo</h3>
                 <button type="button" onClick={resetEdit} style={secondaryBtn}>
                   Close
@@ -306,10 +338,16 @@ export default function AdminCustomerPhotosPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'grid', gap: 8 }}>
                   <span style={{ fontSize: 12, color: '#374151' }}>Current image</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={editingPhoto.image_url}
                     alt={editingPhoto.caption || 'Current photo'}
-                    style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 8 }}
+                    style={{
+                      width: '100%',
+                      aspectRatio: '4 / 3',
+                      objectFit: 'cover',
+                      borderRadius: 8,
+                    }}
                   />
                 </div>
                 <div style={{ display: 'grid', gap: 8 }}>
@@ -324,16 +362,26 @@ export default function AdminCustomerPhotosPage() {
                     If you choose a file, save will upload new image and remove the old one.
                   </span>
                   {editFile ? (
-                    <span style={{ fontSize: 12, color: '#166534' }}>Selected: {editFile.name}</span>
+                    <span style={{ fontSize: 12, color: '#166534' }}>
+                      Selected: {editFile.name}
+                    </span>
                   ) : null}
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 10,
+                }}
+              >
                 <Field label="Caption">
                   <input
                     value={form.caption}
-                    onChange={(event) => setForm((prev) => ({ ...prev, caption: event.target.value }))}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, caption: event.target.value }))
+                    }
                     style={inputStyle}
                   />
                 </Field>
@@ -341,7 +389,9 @@ export default function AdminCustomerPhotosPage() {
                   <input
                     type="number"
                     value={form.sort_order}
-                    onChange={(event) => setForm((prev) => ({ ...prev, sort_order: event.target.value }))}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, sort_order: event.target.value }))
+                    }
                     style={inputStyle}
                   />
                 </Field>
@@ -351,7 +401,9 @@ export default function AdminCustomerPhotosPage() {
                 <input
                   type="checkbox"
                   checked={form.is_active}
-                  onChange={(event) => setForm((prev) => ({ ...prev, is_active: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, is_active: event.target.checked }))
+                  }
                 />
                 Show
               </label>
