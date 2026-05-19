@@ -205,8 +205,8 @@ export function SearchOverlay({ open, onClose, categories, initialProducts }: Se
               >
                 <div style={{ width: 112, flexShrink: 0 }}>
                   <ArtPiece
-                    bg={(product.defaultBg as 'gold' | 'red' | 'bronze' | 'dark') || 'bronze'}
-                    frame={(product.defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved') || 'bronze'}
+                    bg={((product.defaultVariant['bg_tone']) as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+                    frame={((product.defaultVariant['frame']) as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
                     label={product.title}
                     pad={5}
                     aspect="4/3"

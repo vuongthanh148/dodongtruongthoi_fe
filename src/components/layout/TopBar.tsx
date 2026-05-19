@@ -1,4 +1,4 @@
-import { DrumMark, IconChevron, IconHeart, IconMenu, IconSearch } from '@/components/icons'
+import { IconHeart, IconMenu, IconSearch } from '@/components/icons'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
 import { getSavedProducts } from '@/lib/storage'
@@ -9,7 +9,6 @@ interface TopBarProps {
   variant?: 'solid' | 'overlay'
   showLogo?: boolean
   savedCount?: number
-  onBack?: () => void
   onMenu?: () => void
   onOpenSaved?: () => void
   onSearch?: () => void
@@ -20,7 +19,6 @@ export function TopBar({
   variant = 'solid',
   showLogo = false,
   savedCount,
-  onBack,
   onMenu,
   onOpenSaved,
   onSearch,
@@ -68,33 +66,18 @@ export function TopBar({
         backdropFilter: variant === 'overlay' ? 'blur(8px)' : 'none',
       }}
     >
-      {onBack ? (
-        <Btn
-          type="button"
-          onClick={onBack}
-          variant="ghost"
-          size="sm"
-          style={{
-            padding: 4,
-            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
-          }}
-        >
-          <IconChevron dir="left" size={22} />
-        </Btn>
-      ) : (
-        <Btn
-          type="button"
-          onClick={onMenu}
-          variant="ghost"
-          size="sm"
-          style={{
-            padding: 4,
-            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
-          }}
-        >
-          <IconMenu size={22} />
-        </Btn>
-      )}
+      <Btn
+        type="button"
+        onClick={onMenu}
+        variant="ghost"
+        size="sm"
+        style={{
+          padding: 4,
+          color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+        }}
+      >
+        <IconMenu size={22} />
+      </Btn>
 
       {showLogo ? (
         <div
@@ -106,11 +89,10 @@ export function TopBar({
             justifyContent: 'center',
           }}
         >
-          <DrumMark size={26} color={variant === 'overlay' ? 'var(--gold)' : 'var(--accent)'} />
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                fontFamily: 'var(--font-cormorant), serif',
+                fontFamily: 'var(--font-lora), serif',
                 fontWeight: 600,
                 fontSize: 16,
                 letterSpacing: '0.03em',
@@ -197,7 +179,7 @@ export function TopBar({
             {displayedSavedCount || ''}
           </span>
         </Btn>
-      ) : null}
+      ) : !onSearch ? <div style={{ width: 30, flexShrink: 0 }} /> : null}
     </header>
   )
 }

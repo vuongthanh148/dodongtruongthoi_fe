@@ -8,6 +8,7 @@ import { clearAdminToken } from '@/lib/admin-auth'
 const navItems = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/products', label: 'Products' },
+  { href: '/admin/images', label: 'Images' },
   { href: '/admin/categories', label: 'Categories' },
   { href: '/admin/banners', label: 'Banners' },
   { href: '/admin/customer-photos', label: 'Customer Photos' },

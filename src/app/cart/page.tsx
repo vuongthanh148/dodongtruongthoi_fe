@@ -1,18 +1,68 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FooterMinimal } from '@/components/layout/Footer'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
+import { ArtPiece } from '@/components/ui/ArtPiece'
 import { getCartItems, removeCartItem, setCartItems } from '@/lib/storage'
+import { fetchProduct } from '@/lib/storefront-api'
+import { resolveSKUPrice } from '@/lib/sku'
 import type { CartItem } from '@/lib/types'
+
+function IconShield({ size = 24, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  )
+}
+function IconTruck({ size = 24, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13" />
+      <path d="M16 8h4l3 4v5h-7V8z" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
+  )
+}
+function IconReturn({ size = 24, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 14l-5-5 5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+    </svg>
+  )
+}
 
 export default function CartPage() {
   const router = useRouter()
-  const [items, setItems] = useState<CartItem[]>(() => getCartItems())
+  const [items, setItems] = useState<CartItem[]>(() =>
+    typeof window !== 'undefined' ? getCartItems() : []
+  )
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({})
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const stored = getCartItems()
+
+    const uniqueIds = [...new Set(stored.map((i) => i.productId))]
+    Promise.all(uniqueIds.map((id) => fetchProduct(id))).then((products) => {
+      const map: Record<string, number> = {}
+      stored.forEach((item, idx) => {
+        const product = products[uniqueIds.indexOf(item.productId)]
+        if (!product) return
+        const size = product.sizes.find((s) => s.id === item.sizeId)
+        const sizeCode = size?.code ?? null
+        const live = resolveSKUPrice(product.skus, sizeCode, item.selectedAttrs ?? {}, product.discountPrice ?? product.price)
+        map[idx] = live
+      })
+      setLivePrices(map)
+    })
+  }, [])
 
   const handleRemove = (index: number) => {
     removeCartItem(index)
@@ -27,150 +77,171 @@ export default function CartPage() {
     setItems(updated)
   }
 
-  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+  const effectivePrice = (item: CartItem, index: number) =>
+    livePrices[index] !== undefined ? livePrices[index] : item.unitPrice
+  const subtotal = items.reduce((sum, item, i) => sum + effectivePrice(item, i) * item.quantity, 0)
+  const fmtVND = (n: number) => n.toLocaleString('vi-VN') + 'đ'
 
-  if (items.length === 0) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
-        <TopBar
-          title="Giỏ hàng"
-          onMenu={() => setIsMenuOpen(true)}
-          onOpenSaved={() => router.push('/saved')}
-        />
-        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-
-        <div className="max-w-2xl mx-auto px-4 py-12">
-          <h1 className="text-3xl font-serif mb-8 text-center">Giỏ Hàng</h1>
-          <div className="text-center py-12">
-            <p className="text-[--text-secondary] mb-6">Giỏ hàng của bạn đang trống</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/"
-                className="inline-block px-6 py-3 bg-[--accent] text-white rounded hover:opacity-90 transition-opacity"
-              >
-                Tiếp Tục Mua Sắm
-              </Link>
-              <button
-                type="button"
-                disabled
-                className="inline-block px-6 py-3 border rounded opacity-80 cursor-not-allowed"
-                style={{
-                  borderColor: 'rgba(120, 120, 120, 0.35)',
-                  background: '#f3f4f6',
-                  color: '#374151',
-                }}
-              >
-                Tiến Hành Đặt Hàng
-              </button>
-            </div>
-            <p className="text-xs text-[--text-secondary] mt-3">Thêm sản phẩm vào giỏ để tiếp tục đặt hàng.</p>
-          </div>
-        </div>
-
-        <div style={{ flex: 1 }} />
-        <FooterMinimal />
+  const emptyState = (
+    <div style={{ padding: '80px 30px', textAlign: 'center' }}>
+      <svg width={64} height={64} viewBox="0 0 24 24" fill="none" stroke="var(--border)" strokeWidth="1.2" style={{ margin: '0 auto 14px' }}>
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+        <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+      </svg>
+      <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>Giỏ hàng trống</div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
+        Khám phá bộ sưu tập tranh đồng và đỉnh đồng truyền thống.
       </div>
-    )
-  }
+      <button
+        type="button"
+        onClick={() => router.push('/')}
+        style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '13px 24px', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 14, cursor: 'pointer' }}
+      >
+        Tiếp tục mua sắm
+      </button>
+    </div>
+  )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
+    <div suppressHydrationWarning style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
       <TopBar
-        title="Giỏ hàng"
+        title="Giỏ Hàng"
         onMenu={() => setIsMenuOpen(true)}
         onOpenSaved={() => router.push('/saved')}
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-serif mb-8">Giỏ Hàng</h1>
+      {items.length === 0 ? emptyState : (
+        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 1 }}>
 
-        {/* Items List */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+          {/* Items */}
           {items.map((item, index) => (
-            <div key={index} className="border-b last:border-b-0 p-4 sm:p-6 flex gap-4">
-              {/* Variant Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-serif text-lg text-[--accent] mb-1">
-                  {item.productTitle || item.productId}
-                </h3>
-                <div className="text-sm text-[--text-secondary] space-y-1">
-                  {item.sizeLabel && <p>Kích thước: {item.sizeLabel}</p>}
-                  {item.bgToneLabel && (
-                    <p>
-                      Tông màu: {item.bgToneLabel}
-                    </p>
-                  )}
-                  {item.frameLabel && (
-                    <p>
-                      Khung: {item.frameLabel}
-                    </p>
-                  )}
-                </div>
+            <div
+              key={index}
+              style={{
+                background: 'var(--bg-card)',
+                borderBottom: '1px solid var(--border-soft)',
+                padding: '14px 0',
+                display: 'grid',
+                gridTemplateColumns: '80px 1fr',
+                gap: 12,
+              }}
+            >
+              {/* Thumbnail */}
+              <div style={{ background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
+                <ArtPiece
+                  bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+                  frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+                  label=""
+                  pad={4}
+                  aspect="1/1"
+                />
               </div>
 
-              {/* Qty & Price */}
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleUpdateQuantity(index, item.quantity - 1)}
-                    className="px-2 py-1 border border-[--text-secondary] rounded hover:bg-gray-100"
-                  >
-                    −
-                  </button>
-                  <span className="w-8 text-center font-medium">{item.quantity}</span>
-                  <button
-                    onClick={() => handleUpdateQuantity(index, item.quantity + 1)}
-                    className="px-2 py-1 border border-[--text-secondary] rounded hover:bg-gray-100"
-                  >
-                    +
-                  </button>
-                </div>
-                <p className="text-sm text-[--text-secondary]">
-                  {(item.unitPrice * item.quantity).toLocaleString('vi-VN')}₫
-                </p>
+              {/* Content */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, position: 'relative' }}>
+                {/* Remove button */}
                 <button
+                  type="button"
                   onClick={() => handleRemove(index)}
-                  className="text-sm text-red-600 hover:text-red-800 mt-2"
+                  style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  Xóa
+                  ×
                 </button>
+
+                <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, paddingRight: 24 }}>
+                  {item.productTitle || item.productId}
+                </div>
+
+                {(item.sizeLabel || (item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0)) && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {[item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                  {/* Qty stepper */}
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+                    <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity - 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>−</button>
+                    <div style={{ width: 28, textAlign: 'center', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-primary)' }}>{item.quantity}</div>
+                    <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity + 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>+</button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                    {livePrices[index] !== undefined && livePrices[index] !== item.unitPrice && (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
+                        {fmtVND(item.unitPrice * item.quantity)}
+                      </div>
+                    )}
+                    <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: livePrices[index] !== undefined && livePrices[index] !== item.unitPrice ? 'var(--accent)' : 'var(--text-primary)' }}>
+                      {fmtVND(effectivePrice(item, index) * item.quantity)}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
-        </div>
 
-        {/* Summary & Actions */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4 pb-4 border-b">
-              <span className="text-lg font-serif">Tổng Cộng:</span>
-              <span className="text-2xl font-serif text-[--accent]">
-                {subtotal.toLocaleString('vi-VN')}₫
-              </span>
+          {/* Summary box — dark ink */}
+          <div style={{ marginTop: 16, background: 'var(--bg-dark)', borderRadius: 14, padding: 16, color: 'var(--text-on-dark)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
+                <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
+                <span>Phí vận chuyển</span><span style={{ fontStyle: 'italic', fontSize: 12 }}>Xác nhận sau</span>
+              </div>
+            </div>
+            <div style={{ height: 1, background: 'rgba(201,169,97,0.2)', marginBottom: 12 }} />
+            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 4 }}>Tổng cộng</div>
+            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)' }}>
+              {fmtVND(subtotal)}
             </div>
 
-            <div className="flex gap-3 flex-col sm:flex-row">
-              <Link
-                href="/"
-                className="flex-1 px-4 py-3 border border-[--accent] text-[--accent] rounded text-center hover:bg-gray-50 transition-colors"
-              >
-                Tiếp Tục Mua Sắm
-              </Link>
-              <Link
-                href="/checkout"
-                className="flex-1 px-4 py-3 rounded text-center transition-opacity"
-                style={{
-                  background: '#7f1d1d',
-                  color: '#ffffff',
-                }}
-              >
-                Tiến Hành Đặt Hàng
-              </Link>
-            </div>
+            <Link
+              href="/checkout"
+              style={{
+                display: 'block', width: '100%', marginTop: 16,
+                background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6,
+                padding: '13px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
+                fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center',
+                textDecoration: 'none', boxSizing: 'border-box',
+              }}
+            >
+              Tiến hành đặt hàng →
+            </Link>
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              style={{
+                display: 'block', width: '100%', marginTop: 8,
+                background: 'transparent', color: 'var(--text-on-dark)',
+                border: '1px solid rgba(244,237,224,0.35)', borderRadius: 6,
+                padding: '12px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
+                fontSize: 13.5, cursor: 'pointer', textAlign: 'center', boxSizing: 'border-box',
+              }}
+            >
+              Tiếp tục mua sắm
+            </button>
+          </div>
+
+          {/* Trust row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', marginTop: 16, gap: 8 }}>
+            {[
+              { Icon: IconShield, label: 'Bảo hành 10 năm' },
+              { Icon: IconTruck, label: 'Giao lắp toàn quốc' },
+              { Icon: IconReturn, label: 'Đổi trả 7 ngày' },
+            ].map(({ Icon, label }) => (
+              <div key={label} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                  <Icon size={24} color="var(--bronze)" />
+                </div>
+                {label}
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       <div style={{ flex: 1 }} />
       <FooterMinimal />

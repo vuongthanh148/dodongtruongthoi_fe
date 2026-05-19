@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { ProductCardSkeleton, ProductCardV2 } from '@/components/ui/ProductCard'
 import { FEATURED_PRODUCTS_COUNT } from '@/lib/constants'
 import type { Product, Category } from '@/lib/types'
@@ -19,6 +20,7 @@ export function FeaturedProductsSection({
   activeCategoryId = 'all',
   categories = [],
 }: FeaturedProductsSectionProps) {
+  const router = useRouter()
   const filteredProducts = useMemo(() => {
     const nextProducts = activeCategoryId === 'all' ? products : products.filter((product) => product.categoryId === activeCategoryId)
     return nextProducts.slice(0, FEATURED_PRODUCTS_COUNT)
@@ -46,7 +48,7 @@ export function FeaturedProductsSection({
           </div>
           <div
             style={{
-              fontFamily: 'var(--font-cormorant), serif',
+              fontFamily: 'var(--font-lora), serif',
               fontSize: 24,
               fontWeight: 600,
               color: 'var(--text-primary)',
@@ -78,7 +80,14 @@ export function FeaturedProductsSection({
             .fill(null)
             .map((_, i) => <ProductCardSkeleton key={i} compact />)
         ) : (
-          filteredProducts.map((product) => <ProductCardV2 key={product.id} product={product} />)
+          filteredProducts.map((product, idx) => (
+            <ProductCardV2
+              key={product.id}
+              product={product}
+              tall={idx % 2 === 0}
+              onOpen={() => router.push(`/products/${product.id}`)}
+            />
+          ))
         )}
       </div>
     </section>

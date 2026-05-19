@@ -7,20 +7,50 @@ export interface Category {
   tone: CategoryTone
 }
 
+export interface VariantAttr {
+  key: string
+  value: string
+}
+
+export interface VariantOption {
+  key: string
+  label: string
+  values: string[]
+}
+
+export interface LibraryImage {
+  id: string
+  name: string
+  url: string
+  cloudinary_public_id: string
+  created_at: string
+}
+
 export interface ProductImage {
   id: string
+  product_id: string
+  image_id: string
   url: string
-  altText: string
-  bgTone: string | null
-  frame: string | null
-  sortOrder: number
+  name: string
+  sort_order: number
+  attrs: VariantAttr[]
+  created_at: string
 }
 
 export interface ProductSize {
   id: string
   name: string
-  code: 's' | 'm' | 'l' | 'xl'
+  code: string
   price: number
+}
+
+export interface ProductSKU {
+  id: string
+  product_id: string
+  size_code: string | null
+  attrs: Record<string, string>
+  price: number
+  sort_order: number
 }
 
 export interface Product {
@@ -34,10 +64,8 @@ export interface Product {
   price: number
   discountPrice?: number
   discountLabel?: string
-  defaultBg: string
-  defaultFrame: string
-  bgTones: string[]
-  frames: string[]
+  variantOptions: VariantOption[]
+  defaultVariant: Record<string, string>
   description: string
   meaning: string
   specs: Record<string, string>
@@ -49,17 +77,7 @@ export interface Product {
   }
   images: ProductImage[]
   sizes: ProductSize[]
-}
-
-export interface BgTone {
-  id: string
-  name: string
-  hex: string
-}
-
-export interface FrameStyle {
-  id: string
-  name: string
+  skus: ProductSKU[]
 }
 
 export interface Review {
@@ -82,8 +100,7 @@ export interface CustomerPhoto {
 
 export interface SavedProductVariant {
   productId: string
-  bgTone?: string
-  frame?: string
+  attrs?: Record<string, string>
   sizeId?: string
 }
 
@@ -92,10 +109,7 @@ export interface CartItem {
   productTitle?: string
   sizeId?: string
   sizeLabel?: string
-  bgTone?: string
-  bgToneLabel?: string
-  frame?: string
-  frameLabel?: string
+  selectedAttrs?: Record<string, string>
   quantity: number
   unitPrice: number
   variantImageUrl?: string
@@ -128,10 +142,7 @@ export interface OrderItem {
   productSubtitle?: string
   sizeCode?: string
   sizeLabel?: string
-  bgTone?: string
-  bgToneLabel?: string
-  frame?: string
-  frameLabel?: string
+  selectedAttrs?: Record<string, string>
   quantity: number
   unitPrice: number
   variantImageUrl?: string
@@ -157,14 +168,23 @@ export interface AdminProductSize {
   sort_order: number
 }
 
+export interface AdminProductSKU {
+  id: string
+  product_id: string
+  size_code: string | null
+  attrs: Record<string, string>
+  price: number
+  sort_order: number
+}
+
 export interface AdminProductImage {
   id: string
   product_id: string
-  bg_tone: string | null
-  frame: string | null
+  image_id: string
   url: string
-  alt_text: string | null
+  name: string
   sort_order: number
+  attrs: VariantAttr[]
 }
 
 export interface AdminProduct {
@@ -176,17 +196,13 @@ export interface AdminProduct {
   base_price: number
   description: string | null
   meaning: string | null
-  default_bg: string
-  default_frame: string
-  bg_tones: string[]
-  frames: string[]
+  variant_options: VariantOption[]
+  default_variant: Record<string, string>
   zodiac_ids: string[]
   purpose_place: string[]
   purpose_use: string[]
   purpose_avoid: string[]
   specs: Record<string, string> | null
-  requires_bg_tone: boolean
-  requires_frame: boolean
   requires_size: boolean
   is_active: boolean
   sort_order: number
@@ -246,10 +262,7 @@ export interface AdminOrderItem {
   product_subtitle?: string
   size_code?: string
   size_label?: string
-  bg_tone?: string
-  bg_tone_label?: string
-  frame?: string
-  frame_label?: string
+  selected_attrs?: Record<string, string>
   quantity: number
   unit_price: number
   variant_image_url?: string
@@ -284,10 +297,7 @@ export interface CreateOrderRequest {
     productTitle: string
     sizeCode?: string
     sizeLabel?: string
-    bgTone?: string
-    bgToneLabel?: string
-    frame?: string
-    frameLabel?: string
+    selectedAttrs?: Record<string, string>
     quantity: number
     unitPrice: number
     variantImageUrl?: string

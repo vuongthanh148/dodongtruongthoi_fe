@@ -20,7 +20,7 @@ export function Price({ amount, size = 'md', strikethrough = false, className }:
     <span
       className={className}
       style={{
-        fontFamily: 'var(--font-cormorant), serif',
+        fontFamily: 'var(--font-lora), serif',
         fontWeight: 700,
         color: strikethrough ? 'var(--text-muted)' : 'var(--accent)',
         textDecoration: strikethrough ? 'line-through' : 'none',

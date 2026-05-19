@@ -2,6 +2,7 @@
 
 import { IconClose, IconCompare, IconHeart, IconStar } from '@/components/icons'
 import { TopBar } from '@/components/layout/TopBar'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
@@ -12,14 +13,14 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
 import {
-  BG_TONES,
   DEFAULT_PLACE_LABELS,
   DEFAULT_SPEC_LABELS,
-  FRAME_STYLES,
   PRODUCTS,
-  mergeLabelOverrides,
+  ZODIAC,
 } from '@/lib/data'
 import { addRecentlyViewed, getSavedProducts, getRecentlyViewedIds, toggleSavedProduct, upsertCartItem } from '@/lib/storage'
+import { pickVariantImage } from '@/lib/image'
+import { resolveSKUPrice, resolveSizeDisplayPrice } from '@/lib/sku'
 import {
   fetchProduct,
   fetchProductReviews,
@@ -42,31 +43,21 @@ type ArtFrame = 'bronze' | 'gold' | 'dark' | 'carved'
 function CompareModal({
   product,
   onClose,
-  activeBg,
-  activeFrame,
-  bgTones,
-  frameStyles,
+  activeAttrs,
 }: {
   product: Product
   onClose: () => void
-  activeBg: string | undefined
-  activeFrame: string | undefined
-  bgTones: Array<{ id: string; name: string }>
-  frameStyles: Array<{ id: string; name: string }>
+  activeAttrs: Record<string, string>
 }) {
+  const bgToneOpt = product.variantOptions.find((o) => o.key === 'bg_tone')
+  const bgValues = bgToneOpt?.values ?? []
+  const activeBg = activeAttrs['bg_tone'] ?? product.defaultVariant['bg_tone'] ?? bgValues[0] ?? 'gold'
+  const activeFrame = activeAttrs['frame'] ?? product.defaultVariant['frame'] ?? 'bronze'
+
   const [combos, setCombos] = useState(() => [
-    {
-      bg: (activeBg ?? product.defaultBg) as ArtBg,
-      frame: (activeFrame ?? product.defaultFrame) as ArtFrame,
-    },
-    {
-      bg: (product.bgTones[1] ?? product.bgTones[0]) as ArtBg,
-      frame: (product.frames[1] ?? product.frames[0]) as ArtFrame,
-    },
-    {
-      bg: (product.bgTones[2] ?? product.bgTones[0]) as ArtBg,
-      frame: product.frames[0] as ArtFrame,
-    },
+    { bg: activeBg as ArtBg, frame: activeFrame as ArtFrame },
+    { bg: (bgValues[1] ?? bgValues[0] ?? 'gold') as ArtBg, frame: activeFrame as ArtFrame },
+    { bg: (bgValues[2] ?? bgValues[0] ?? 'gold') as ArtBg, frame: activeFrame as ArtFrame },
   ])
 
   return (
@@ -123,63 +114,32 @@ function CompareModal({
           background: 'var(--bg-page)',
         }}
       >
-        {combos.map((combo, i) => {
-          const bgInfo = bgTones.find((b) => b.id === combo.bg)
-          const frameInfo = frameStyles.find((f) => f.id === combo.frame)
-          return (
-            <div
-              key={i}
-              style={{
-                background: 'var(--bg-card)',
-                borderRadius: 8,
-                padding: 10,
-                border: '1px solid var(--border)',
-              }}
-            >
-              <ArtPiece bg={combo.bg} frame={combo.frame} label="" pad={10} aspect="4/3" />
-              <div
-                style={{
-                  marginTop: 8,
-                  fontSize: 13,
-                  color: 'var(--text-secondary)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <span>{bgInfo?.name}</span>
-                <span style={{ color: 'var(--text-muted)' }}>·</span>
-                <span>{frameInfo?.name}</span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                {product.bgTones.map((tone) => (
-                  <button
-                    key={tone}
-                    type="button"
-                    onClick={() =>
-                      setCombos((cs) =>
-                        cs.map((cc, j) => (j === i ? { ...cc, bg: tone as ArtBg } : cc))
-                      )
-                    }
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      padding: 3,
-                      cursor: 'pointer',
-                      borderRadius: 999,
-                      display: 'grid',
-                      placeItems: 'center',
-                      minWidth: 34,
-                      minHeight: 34,
-                    }}
-                    aria-label={`Chọn nền ${bgTones.find((b) => b.id === tone)?.name ?? tone}`}
-                  >
-                    <VariantSwatch tone={tone} size={22} active={tone === combo.bg} />
-                  </button>
-                ))}
-              </div>
+        {combos.map((combo, i) => (
+          <div
+            key={i}
+            style={{ background: 'var(--bg-card)', borderRadius: 8, padding: 10, border: '1px solid var(--border)' }}
+          >
+            <ArtPiece bg={combo.bg} frame={combo.frame} label="" pad={10} aspect="4/3" />
+            <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+              <span>{combo.bg}</span>
+              <span style={{ color: 'var(--text-muted)' }}>·</span>
+              <span>{combo.frame}</span>
             </div>
-          )
-        })}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              {bgValues.map((tone) => (
+                <button
+                  key={tone}
+                  type="button"
+                  onClick={() => setCombos((cs) => cs.map((cc, j) => (j === i ? { ...cc, bg: tone as ArtBg } : cc)))}
+                  style={{ border: 'none', background: 'transparent', padding: 3, cursor: 'pointer', borderRadius: 999, display: 'grid', placeItems: 'center', minWidth: 34, minHeight: 34 }}
+                  aria-label={`Chọn nền ${tone}`}
+                >
+                  <VariantSwatch tone={tone} size={22} active={tone === combo.bg} />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -189,8 +149,8 @@ export default function ProductDetailPage() {
   const params = useParams<{ id: string }>()
   const searchParams = useSearchParams()
 
-  const [bgTone, setBgTone] = useState<string | undefined>(undefined)
-  const [frame, setFrame] = useState<string | undefined>(undefined)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({})
   const [sizeId, setSizeId] = useState('')
   const [activeTab, setActiveTab] = useState<TabId>('description')
   const [savedVariants, setSavedVariants] = useState<SavedProductVariant[]>(() =>
@@ -198,11 +158,10 @@ export default function ProductDetailPage() {
   )
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [showCompare, setShowCompare] = useState(false)
+  const [zoomOpen, setZoomOpen] = useState(false)
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const touchStartXRef = useRef<number | null>(null)
 
-  const queryBgTone = searchParams.get('bgTone') ?? undefined
-  const queryFrame = searchParams.get('frame') ?? undefined
   const querySizeId = searchParams.get('sizeId') ?? ''
 
   const { data: product = null, isLoading } = useSWR(
@@ -223,14 +182,6 @@ export default function ProductDetailPage() {
   const { data: settings = {} } = useSWR(SWR_KEYS.settings, fetchSettings)
 
   const labelOverrides = useMemo(() => parseLabelOverrides(settings), [settings])
-  const displayBgTones = useMemo(
-    () => mergeLabelOverrides(BG_TONES, labelOverrides.bgTones),
-    [labelOverrides.bgTones]
-  )
-  const displayFrameStyles = useMemo(
-    () => mergeLabelOverrides(FRAME_STYLES, labelOverrides.frames),
-    [labelOverrides.frames]
-  )
   const placeLabels = useMemo(
     () => ({ ...DEFAULT_PLACE_LABELS, ...labelOverrides.placeLabels }),
     [labelOverrides.placeLabels]
@@ -240,8 +191,17 @@ export default function ProductDetailPage() {
     [labelOverrides.specLabels]
   )
 
-  const resolvedBgTone = bgTone ?? queryBgTone ?? product?.defaultBg
-  const resolvedFrame = frame ?? queryFrame ?? product?.defaultFrame
+  // Merge: explicit user selection wins, then product default
+  const resolvedAttrs = useMemo(() => ({ ...(product?.defaultVariant ?? {}), ...selectedAttrs }), [product, selectedAttrs])
+  // For ArtPiece backward compat: derive bg/frame from attrs if present
+  const resolvedBgTone = resolvedAttrs['bg_tone'] ?? 'gold'
+  const resolvedFrame = resolvedAttrs['frame'] ?? 'bronze'
+  // Pick image by matching variant attrs; fall back to activeImageIndex
+  const attrMatchedImage = useMemo(
+    () => product ? pickVariantImage(product.images, resolvedAttrs) : null,
+    [product, resolvedAttrs]
+  )
+  const activeImage = attrMatchedImage ?? product?.images[activeImageIndex] ?? null
   const resolvedSizeId = sizeId || querySizeId || (product?.sizes[0]?.id ?? '')
 
   const { data: recentIds = [] } = useSWR(
@@ -265,16 +225,10 @@ export default function ProductDetailPage() {
   const category = product?.categoryId ?? ''
 
   const selectedSize = product?.sizes.find((size) => size.id === resolvedSizeId) ?? product?.sizes[0]
-  const currentPrice = selectedSize?.price ?? product?.discountPrice ?? product?.price ?? 0
-  const isSaved = product
-    ? savedVariants.some(
-        (v) =>
-          v.productId === product.id &&
-          v.bgTone === resolvedBgTone &&
-          v.frame === resolvedFrame &&
-          v.sizeId === selectedSize?.id
-      )
-    : false
+  const currentPrice = product
+    ? resolveSKUPrice(product.skus, selectedSize?.code, resolvedAttrs, product.discountPrice ?? product.price)
+    : 0
+  const isSaved = product ? savedVariants.some((v) => v.productId === product.id) : false
   const imageCount = (product?.images.length ?? 0) > 0 ? (product?.images.length ?? 0) : 1
 
   function scrollToImage(index: number) {
@@ -329,7 +283,8 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
-        <TopBar title="Chi tiết sản phẩm" onBack={() => window.history.back()} />
+        <TopBar title="Chi tiết sản phẩm" onMenu={() => setIsMenuOpen(true)} />
+        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
         <div style={{ padding: '12px 16px 0' }}>
           <div
             style={{
@@ -370,13 +325,41 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
+    <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh', paddingBottom: 100 }}>
+      {/* Zoom overlay */}
+      {zoomOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setZoomOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setZoomOpen(false)}
+            style={{ position: 'absolute', top: 16, right: 16, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <IconClose size={20} color="white" />
+          </button>
+          <div style={{ maxWidth: '90vw', maxHeight: '90vh', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <ArtPiece
+              bg={resolvedBgTone as ArtBg}
+              frame={resolvedFrame as ArtFrame}
+              label={product.title}
+              pad={16}
+              aspect="4/3"
+              imgSrc={activeImage?.url}
+            />
+          </div>
+        </div>
+      )}
+
       <TopBar
         title="Chi tiết sản phẩm"
-        onBack={() => window.history.back()}
+       
+        onMenu={() => setIsMenuOpen(true)}
         onOpenSaved={() => (window.location.href = '/saved')}
         savedCount={savedVariants.length}
       />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
       <div style={{ padding: '12px 16px 0' }}>
         <div
@@ -388,6 +371,30 @@ export default function ProductDetailPage() {
             position: 'relative',
           }}
         >
+          {/* Overlaid back + save buttons */}
+          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 10 }}>
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              aria-label="Quay lại"
+            >
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+          </div>
+          <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setSavedVariants(toggleSavedProduct(product.id, resolvedAttrs, selectedSize?.id))
+              }}
+              style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              aria-label="Lưu sản phẩm"
+            >
+              <IconHeart size={18} color={isSaved ? 'var(--accent)' : 'white'} />
+            </button>
+          </div>
+
           <div
             ref={carouselRef}
             style={{
@@ -398,6 +405,7 @@ export default function ProductDetailPage() {
               scrollPaddingLeft: 0,
               gap: 0,
               aspectRatio: '4/3',
+              cursor: 'zoom-in',
             }}
             className="noscroll"
             tabIndex={0}
@@ -406,6 +414,7 @@ export default function ProductDetailPage() {
             onTouchStart={handleCarouselTouchStart}
             onTouchEnd={handleCarouselTouchEnd}
             onKeyDown={handleCarouselKeyDown}
+            onClick={() => setZoomOpen(true)}
             onScroll={(e) => {
               const element = e.currentTarget
               const scrollWidth = element.scrollWidth / imageCount
@@ -431,29 +440,18 @@ export default function ProductDetailPage() {
                 >
                   <Image
                     src={image.url}
-                    alt={image.altText || product.title}
+                    alt={image.name || product.title}
                     width={1200}
                     height={900}
                     unoptimized
                     priority={index === 0}
                     loading={index === 0 ? 'eager' : 'lazy'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
               ))
             ) : (
-              <div
-                style={{
-                  minWidth: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <div style={{ minWidth: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ArtPiece
                   bg={resolvedBgTone as 'gold' | 'red' | 'bronze' | 'dark'}
                   frame={resolvedFrame as 'bronze' | 'gold' | 'dark' | 'carved'}
@@ -464,22 +462,20 @@ export default function ProductDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Zoom hint */}
+          <div style={{ position: 'absolute', bottom: 44, right: 12, fontSize: 10, color: 'rgba(255,255,255,0.6)', pointerEvents: 'none', background: 'rgba(0,0,0,0.3)', borderRadius: 4, padding: '3px 7px' }}>
+            Nhấn để phóng to
+          </div>
+
+          {/* Carousel dots */}
           <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center', gap: 6, background: 'rgba(20, 14, 9, 0.6)', backdropFilter: 'blur(6px)', padding: '8px 14px', borderRadius: 20 }}>
             {(product.images.length > 0 ? product.images : [{}]).map((_, index) => (
               <button
                 key={index}
                 type="button"
-                onClick={() => scrollToImage(index)}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: index === activeImageIndex ? 'white' : 'rgba(255, 255, 255, 0.4)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  transition: 'background 150ms ease',
-                }}
+                onClick={(e) => { e.stopPropagation(); scrollToImage(index) }}
+                style={{ width: 6, height: 6, borderRadius: '50%', background: index === activeImageIndex ? 'white' : 'rgba(255,255,255,0.4)', border: 'none', cursor: 'pointer', padding: 0, transition: 'background 150ms ease' }}
               />
             ))}
           </div>
@@ -545,142 +541,88 @@ export default function ProductDetailPage() {
       </div>
 
       <div style={{ padding: '18px 16px 0' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            marginBottom: 10,
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Chọn nền tranh</div>
-            <Heading as="h3" size="sm" style={{ fontSize: 17, marginTop: 2 }}>
-              {displayBgTones.find((tone) => tone.id === resolvedBgTone)?.name}
-            </Heading>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+            Tùy chọn
           </div>
           <Btn
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setShowCompare(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              borderRadius: 100,
-              padding: '6px 10px',
-              fontSize: 13,
-              color: 'var(--text-primary)',
-              borderColor: 'var(--border)',
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 100, padding: '6px 10px', fontSize: 13, color: 'var(--text-primary)', borderColor: 'var(--border)' }}
           >
             <IconCompare size={12} /> So sánh
           </Btn>
         </div>
 
-        <div
-          style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 0 4px' }}
-          className="noscroll"
-        >
-          {product.bgTones.map((tone) => (
-            <button
-              key={tone}
-              type="button"
-              onClick={() => setBgTone(tone)}
-              style={{
-                flexShrink: 0,
-                padding: '6px 10px 6px 6px',
-                borderRadius: 100,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                border: tone === resolvedBgTone ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                background: tone === resolvedBgTone ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
-                cursor: 'pointer',
-              }}
-            >
-              <VariantSwatch tone={tone} size={18} active={tone === resolvedBgTone} />
-              <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                {displayBgTones.find((item) => item.id === tone)?.name}
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* Dynamic variant selectors from product.variantOptions */}
+        {product.variantOptions.map((opt) => (
+          <div key={opt.key} style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+              {opt.label} · <span style={{ color: 'var(--text-secondary)' }}>{resolvedAttrs[opt.key] ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {opt.values.map((val) => {
+                const active = resolvedAttrs[opt.key] === val
+                if (opt.key === 'bg_tone') {
+                  return (
+                    <button key={val} type="button" onClick={() => setSelectedAttrs(a => ({ ...a, [opt.key]: val }))}
+                      style={{ flexShrink: 0, padding: '6px 10px 6px 6px', borderRadius: 100, display: 'flex', alignItems: 'center', gap: 7, border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)', background: active ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)', cursor: 'pointer' }}>
+                      <VariantSwatch tone={val} size={18} active={active} />
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{val}</span>
+                    </button>
+                  )
+                }
+                return (
+                  <button key={val} type="button" onClick={() => setSelectedAttrs(a => ({ ...a, [opt.key]: val }))}
+                    style={{ padding: '6px 14px', borderRadius: 100, border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)', background: active ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)', cursor: 'pointer', fontSize: 13, color: active ? 'var(--accent)' : 'var(--text-primary)' }}>
+                    {val}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div style={{ padding: '20px 16px 0' }}>
-        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Chọn khung</div>
-        <Heading as="h3" size="sm" style={{ fontSize: 17, margin: '2px 0 10px' }}>
-          {displayFrameStyles.find((item) => item.id === resolvedFrame)?.name}
-        </Heading>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 7 }}>
-          {product.frames.map((frameId) => (
-            <button
-              key={frameId}
-              type="button"
-              onClick={() => setFrame(frameId)}
-              style={{
-                padding: 4,
-                borderRadius: 6,
-                cursor: 'pointer',
-                border: frameId === resolvedFrame ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                background: frameId === resolvedFrame ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              <div
-                className={`art-frame frame-${frameId}`}
-                style={{ ['--p' as string]: '3px', width: '100%', aspectRatio: '1/1' }}
-              >
-                <div className={`bronze-art ${resolvedBgTone}`} style={{ width: '100%', height: '100%' }} />
-              </div>
-              <div
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <div style={{ width: 22, height: 22, borderRadius: 11, background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{product.variantOptions.length + 1}</div>
+          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Kích thước</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {product.sizes.map((size) => {
+            const on = size.id === resolvedSizeId
+            return (
+              <button
+                key={size.id}
+                type="button"
+                onClick={() => setSizeId(size.id)}
                 style={{
-                  fontSize: 13,
-                  fontFamily: 'var(--font-be-vietnam), sans-serif',
-                  color: frameId === resolvedFrame ? 'var(--accent)' : 'var(--text-muted)',
-                  textAlign: 'center',
-                  lineHeight: 1.2,
-                  height: 34,
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  width: '100%',
+                  padding: 12,
+                  background: on ? 'rgba(139,30,30,0.06)' : 'transparent',
+                  border: 'none',
+                  borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
                 }}
               >
-                {displayFrameStyles.find((item) => item.id === frameId)?.name}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ padding: '20px 16px 0' }}>
-        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>Kích thước</div>
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 0 }}>
-          {product.sizes.map((size) => (
-            <button
-              key={size.id}
-              type="button"
-              onClick={() => setSizeId(size.id)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 4,
-                border:
-                  size.id === resolvedSizeId ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                background: size.id === resolvedSizeId ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
-                {size.name}
-              </span>
-            </button>
-          ))}
+                <div>
+                  <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 14, fontWeight: 600, color: on ? 'var(--accent)' : 'var(--text-primary)' }}>
+                    {size.name}
+                  </div>
+                </div>
+                <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 16, color: on ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                  {resolveSizeDisplayPrice(product.skus, size.code, size.price).toLocaleString('vi-VN')}đ
+                </div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -691,6 +633,10 @@ export default function ProductDetailPage() {
             borderBottom: '1px solid var(--border-soft)',
             padding: '0 8px',
             overflowX: 'auto',
+            position: 'sticky',
+            top: 0,
+            zIndex: 15,
+            background: 'var(--bg-page)',
           }}
           className="noscroll"
         >
@@ -707,17 +653,18 @@ export default function ProductDetailPage() {
               style={{
                 flex: '1 0 auto',
                 padding: '12px 14px',
-                minWidth: 90,
+                minWidth: 70,
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-cormorant), serif',
-                fontSize: 15,
+                fontFamily: 'var(--font-be-vietnam), sans-serif',
+                fontSize: 12.5,
                 fontWeight: 600,
                 color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-muted)',
                 borderBottom:
                   activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
                 marginBottom: -1,
+                whiteSpace: 'nowrap',
               }}
             >
               {tab.label}
@@ -762,36 +709,76 @@ export default function ProductDetailPage() {
           ) : null}
 
           {activeTab === 'guide' ? (
-            <div>
-              <Label style={{ fontSize: 9.5, letterSpacing: '0.18em', marginBottom: 14 }}>
-                Vị trí phù hợp
-              </Label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {product.purpose.place.map((entry) => (
-                  <div
-                    key={entry}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      fontSize: 13,
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <span
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <Label style={{ fontSize: 9.5, letterSpacing: '0.18em', marginBottom: 14 }}>
+                  Vị trí phù hợp
+                </Label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {product.purpose.place.map((entry) => (
+                    <div
+                      key={entry}
                       style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        background: 'var(--bronze)',
-                        opacity: 0.6,
-                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        fontSize: 13,
+                        color: 'var(--text-secondary)',
+                        lineHeight: 1.5,
                       }}
-                    />
-                    {placeLabels[entry] ?? entry}
-                  </div>
-                ))}
+                    >
+                      <span
+                        style={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: '50%',
+                          background: 'var(--bronze)',
+                          opacity: 0.6,
+                          flexShrink: 0,
+                        }}
+                      />
+                      {placeLabels[entry] ?? entry}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 20 }}>
+                <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 12 }}>
+                  Tuổi Phong Thủy
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(product.zodiacIds?.length > 0
+                    ? product.zodiacIds.map((id) => ZODIAC.find((z) => z.id === id)).filter((z): z is typeof ZODIAC[0] => z !== undefined)
+                    : ZODIAC
+                  ).map((z) => (
+                    <div
+                      key={z.id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '56px 1fr',
+                        gap: 10,
+                        alignItems: 'center',
+                        padding: '10px 12px',
+                        background: 'rgba(201,169,97,0.06)',
+                        borderRadius: 6,
+                      }}
+                    >
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: 'white', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontFamily: 'var(--font-lora), serif' }}>
+                          {z.name}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
+                          Tuổi {z.name}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+                          {z.years}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ) : null}
@@ -831,6 +818,29 @@ export default function ProductDetailPage() {
 
           {activeTab === 'reviews' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Rating summary */}
+              {product.rating > 0 && (
+                <div style={{ display: 'flex', gap: 14, paddingBottom: 18, borderBottom: '1px solid var(--border-soft)', marginBottom: 6, alignItems: 'center' }}>
+                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 36, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)', lineHeight: 1 }}>
+                      {product.rating.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                      {product.reviewCount} đánh giá
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {[5, 4, 3, 2, 1].map((star) => (
+                      <div key={star} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', width: 8, textAlign: 'right' }}>{star}</div>
+                        <div style={{ flex: 1, height: 5, background: 'var(--border-soft)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: 'var(--gold)', width: star === 5 ? '80%' : star === 4 ? '15%' : '5%', borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {reviews.length === 0 ? (
                 <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chưa có đánh giá nào.</p>
               ) : (
@@ -865,68 +875,72 @@ export default function ProductDetailPage() {
 
       {/* Related Products Section */}
       {relatedProducts.length > 0 && (
-        <section style={{ padding: '24px 0', borderBottom: '1px solid var(--border-soft)' }}>
-          <SectionHeading eyebrow="Gợi ý" title="Sản phẩm liên quan" />
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              padding: '0 16px',
-              overflowX: 'auto',
-            }}
-            className="noscroll"
-          >
+        <section style={{ padding: '28px 0 0' }}>
+          <div style={{ padding: '0 16px', marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 3 }}>Cùng danh mục</div>
+            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)' }}>Sản phẩm liên quan</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }} className="noscroll">
             {relatedLoading
-              ? [0, 1].map((i) => (
-                  <div key={i} style={{ flex: '0 0 48%' }}>
+              ? [0, 1, 2].map((i) => (
+                  <div key={i} style={{ flexShrink: 0, width: 148, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
                     <ProductCardSkeleton compact />
                   </div>
                 ))
-              : relatedProducts.map((prod) => (
-                  <div
-                    key={prod.id}
-                    style={{ flex: '0 0 48%' }}
-                  >
-                    <ProductCard
-                      product={prod}
-                      compact
-                      onOpen={(bgTone) =>
-                        (window.location.href = `/products/${prod.id}${bgTone ? `?bgTone=${bgTone}` : ''}`)
-                      }
-                    />
-                  </div>
-                ))}
+              : relatedProducts.map((prod) => {
+                  const imgUrl = prod.images[0]?.url ?? null
+                  return (
+                    <div
+                      key={prod.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { window.location.href = `/products/${prod.id}` }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = `/products/${prod.id}` }}
+                      style={{ flexShrink: 0, width: 148, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-page)', cursor: 'pointer' }}
+                    >
+                      <div style={{ background: 'var(--bg-surface)', padding: 8 }}>
+                        <ArtPiece bg={(prod.defaultVariant['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'} frame={(prod.defaultVariant['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'} label="" pad={6} aspect="4/3" imgSrc={imgUrl} />
+                      </div>
+                      <div style={{ padding: '8px 10px 12px' }}>
+                        <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{prod.title}</div>
+                        <div style={{ fontFamily: 'var(--font-lora), serif', color: 'var(--accent)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 13, marginTop: 4 }}>{(prod.discountPrice ?? prod.price).toLocaleString('vi-VN')}đ</div>
+                      </div>
+                    </div>
+                  )
+                })}
           </div>
         </section>
       )}
 
       {/* Recently Viewed Section */}
       {recentlyViewedProducts.length > 0 && (
-        <section style={{ padding: '24px 0', borderBottom: '1px solid var(--border-soft)' }}>
-          <SectionHeading eyebrow="Lịch sử" title="Đã xem gần đây" />
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              padding: '0 16px',
-              overflowX: 'auto',
-            }}
-            className="noscroll"
-          >
-            {recentlyViewedProducts.map((prod) => (
-              <div
-                key={prod.id}
-                style={{ flex: '0 0 48%' }}
-              >
-                <ProductCard
-                  product={prod}
-                  compact
-                  onOpen={(bgTone) =>
-                    (window.location.href = `/products/${prod.id}${bgTone ? `?bgTone=${bgTone}` : ''}`)
-                  }
-                />
-              </div>
-            ))}
+        <section style={{ padding: '24px 0 0' }}>
+          <div style={{ padding: '0 16px', marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 3 }}>Gợi nhớ</div>
+            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)' }}>Đã xem gần đây</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }} className="noscroll">
+            {recentlyViewedProducts.map((prod) => {
+              const imgUrl = prod.images[0]?.url ?? null
+              return (
+                <div
+                  key={prod.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { window.location.href = `/products/${prod.id}` }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = `/products/${prod.id}` }}
+                  style={{ flexShrink: 0, width: 136, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-page)', cursor: 'pointer' }}
+                >
+                  <div style={{ background: 'var(--bg-surface)', padding: 8 }}>
+                    <ArtPiece bg={(prod.defaultVariant['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'} frame={(prod.defaultVariant['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'} label="" pad={5} aspect="4/3" imgSrc={imgUrl} />
+                  </div>
+                  <div style={{ padding: '7px 10px 10px' }}>
+                    <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{prod.title}</div>
+                    <div style={{ fontFamily: 'var(--font-lora), serif', color: 'var(--accent)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 13, marginTop: 3 }}>{(prod.discountPrice ?? prod.price).toLocaleString('vi-VN')}đ</div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </section>
       )}
@@ -951,7 +965,7 @@ export default function ProductDetailPage() {
           variant={isSaved ? 'outline' : 'ghost'}
           size="lg"
           onClick={() =>
-            setSavedVariants(toggleSavedProduct(product.id, resolvedBgTone, resolvedFrame, selectedSize?.id))
+            setSavedVariants(toggleSavedProduct(product.id, resolvedAttrs, selectedSize?.id))
           }
           style={{
             padding: '12px 14px',
@@ -977,32 +991,52 @@ export default function ProductDetailPage() {
           type="button"
           size="lg"
           onClick={() => {
-            const bgToneOption = displayBgTones.find((t) => t.id === resolvedBgTone)
-            const frameOption = displayFrameStyles.find((f) => f.id === resolvedFrame)
             upsertCartItem({
               productId: product.id,
               productTitle: product.title,
               sizeId: selectedSize?.id,
               sizeLabel: selectedSize?.name,
-              bgTone: resolvedBgTone,
-              bgToneLabel: bgToneOption?.name,
-              frame: resolvedFrame,
-              frameLabel: frameOption?.name,
+              selectedAttrs: resolvedAttrs,
               quantity: 1,
               unitPrice: currentPrice,
             })
-            window.location.href = '/cart'
           }}
           style={{
             flex: 1,
             padding: '12px 14px',
             borderRadius: 4,
             fontSize: 13,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
+            letterSpacing: '0.03em',
+            background: 'transparent',
+            border: '1px solid var(--text-primary)',
+            color: 'var(--text-primary)',
           }}
         >
-          Thêm vào giỏ hàng
+          Thêm vào giỏ
+        </Btn>
+        <Btn
+          type="button"
+          size="lg"
+          onClick={() => {
+            upsertCartItem({
+              productId: product.id,
+              productTitle: product.title,
+              sizeId: selectedSize?.id,
+              sizeLabel: selectedSize?.name,
+              selectedAttrs: resolvedAttrs,
+              quantity: 1,
+              unitPrice: currentPrice,
+            })
+            window.location.href = '/cart'
+          }}
+          style={{
+            flex: 1.3,
+            padding: '12px 14px',
+            borderRadius: 4,
+            fontSize: 13,
+          }}
+        >
+          Mua ngay · {currentPrice.toLocaleString('vi-VN')}đ
         </Btn>
       </div>
 
@@ -1010,10 +1044,7 @@ export default function ProductDetailPage() {
         <CompareModal
           product={product}
           onClose={() => setShowCompare(false)}
-          activeBg={resolvedBgTone}
-          activeFrame={resolvedFrame}
-          bgTones={displayBgTones}
-          frameStyles={displayFrameStyles}
+          activeAttrs={resolvedAttrs}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Btn } from '@/components/ui/Btn'
+
 import { DrumMark } from '@/components/icons'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Heading } from '@/components/ui/Heading'
@@ -27,8 +27,14 @@ export function StoriesSection({ banners = [], customerPhotos = [], coverImageUr
         padding: '32px 22px 28px',
         margin: '32px 0 0',
         color: 'var(--text-on-dark)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* DrumMark watermark bottom-left */}
+      <div style={{ position: 'absolute', left: -40, bottom: -40, opacity: 0.04, pointerEvents: 'none', zIndex: 0 }}>
+        <DrumMark size={200} color="var(--gold)" />
+      </div>
       <div style={{ marginBottom: 10 }}>
         <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 9.5, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--gold)' }}>Câu chuyện làng nghề</div>
       </div>
@@ -102,7 +108,7 @@ export function StoriesSection({ banners = [], customerPhotos = [], coverImageUr
               as="h3"
               size="md"
               style={{
-                fontFamily: 'var(--font-cormorant), serif',
+                fontFamily: 'var(--font-lora), serif',
                 fontSize: 24,
                 fontWeight: 500,
                 lineHeight: 1.15,
@@ -124,21 +130,22 @@ export function StoriesSection({ banners = [], customerPhotos = [], coverImageUr
                 {story.body}
               </div>
             ) : null}
-            <Btn
+            <button
               type="button"
-              variant="ghost"
-              size="md"
               onClick={() => router.push('/lang-nghe')}
               style={{
-                color: 'var(--gold)',
-                border: '1px solid rgba(201,169,97,0.5)',
-                borderRadius: 2,
                 background: 'transparent',
-                padding: '10px 18px',
+                color: 'var(--gold)',
+                border: '1px solid var(--gold)',
+                borderRadius: 100,
+                fontSize: 13,
+                padding: '10px 20px',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-be-vietnam), sans-serif',
               }}
             >
               Đọc câu chuyện →
-            </Btn>
+            </button>
           </div>
         </div>
       </div>

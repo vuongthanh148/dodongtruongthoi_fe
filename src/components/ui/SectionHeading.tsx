@@ -29,7 +29,7 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
           ) : null}
           <div
             style={{
-              fontFamily: 'var(--font-cormorant), serif',
+              fontFamily: 'var(--font-lora), serif',
               fontSize: 22,
               fontWeight: 600,
               lineHeight: 1.05,

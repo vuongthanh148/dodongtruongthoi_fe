@@ -23,13 +23,27 @@ const badgeMap: Record<NonNullable<Product['badge']>, string> = {
   sale: 'Sale',
 }
 
+function getBgToneValues(product: Product): string[] {
+  return product.variantOptions.find((o) => o.key === 'bg_tone')?.values ?? []
+}
+
+function getDefaultBgTone(product: Product): string {
+  return product.defaultVariant['bg_tone'] ?? 'gold'
+}
+
+function getDefaultFrame(product: Product): string {
+  return product.defaultVariant['frame'] ?? 'bronze'
+}
+
 function getPrimaryImage(product: Product): string | null {
   return product.images[0]?.url ?? null
 }
 
 export function ProductCard({ product, compact = false, noInnerPadding = false, onOpen }: ProductCardProps) {
-  const [bgTone, setBgTone] = useState(product.defaultBg)
+  const [bgTone, setBgTone] = useState(getDefaultBgTone(product))
   const displayPrice = useMemo(() => product.discountPrice ?? product.price, [product.discountPrice, product.price])
+  const bgToneValues = getBgToneValues(product)
+  const defaultFrame = getDefaultFrame(product)
 
   return (
     <Card
@@ -62,7 +76,7 @@ export function ProductCard({ product, compact = false, noInnerPadding = false, 
       }}
     >
       <div style={{ padding: noInnerPadding ? 0 : 8, background: 'var(--bg-surface-alt)', position: 'relative' }}>
-        <ArtPiece bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'} frame={product.defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'} label={product.title} pad={6} aspect="4/3" />
+        <ArtPiece bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'} frame={defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'} label={product.title} pad={6} aspect="4/3" />
         {product.badge && badgeMap[product.badge] ? (
           <span
             style={{
@@ -87,20 +101,22 @@ export function ProductCard({ product, compact = false, noInnerPadding = false, 
       <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <Heading as="h3" size="sm" style={{ lineHeight: 1.2 }}>{product.title}</Heading>
         {!compact ? <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', height: 'auto' }}>{product.subtitle}</p> : null}
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
-          {product.bgTones.slice(0, 4).map((tone) => (
-            <VariantSwatch
-              key={tone}
-              tone={tone}
-              active={bgTone === tone}
-              size={compact ? 16 : 14}
-              onClick={(event) => {
-                event.stopPropagation()
-                setBgTone(tone)
-              }}
-            />
-          ))}
-        </div>
+        {bgToneValues.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
+            {bgToneValues.slice(0, 4).map((tone) => (
+              <VariantSwatch
+                key={tone}
+                tone={tone}
+                active={bgTone === tone}
+                size={compact ? 16 : 14}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setBgTone(tone)
+                }}
+              />
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 }}>
           <Price amount={displayPrice} size="md" />
           {product.rating > 0 ? (
@@ -117,12 +133,17 @@ export function ProductCard({ product, compact = false, noInnerPadding = false, 
 interface ProductCardV2Props {
   product: Product
   onOpen?: (bgTone?: string) => void
+  tall?: boolean
+  style?: React.CSSProperties
 }
 
-export function ProductCardV2({ product, onOpen }: ProductCardV2Props) {
-  const [bgTone, setBgTone] = useState(product.defaultBg)
+export function ProductCardV2({ product, onOpen, tall = false, style: styleProp }: ProductCardV2Props) {
+  const [bgTone, setBgTone] = useState(getDefaultBgTone(product))
   const displayPrice = useMemo(() => product.discountPrice ?? product.price, [product.discountPrice, product.price])
   const imageUrl = getPrimaryImage(product)
+  const aspectRatio = tall ? '3 / 4' : '4 / 3'
+  const bgToneValues = getBgToneValues(product)
+  const defaultFrame = getDefaultFrame(product)
 
   return (
     <div
@@ -142,36 +163,20 @@ export function ProductCardV2({ product, onOpen }: ProductCardV2Props) {
         borderBottom: '1px solid var(--border)',
         background: 'var(--bg-page)',
         cursor: 'pointer',
+        ...styleProp,
         minHeight: '100%',
       }}
     >
       <div style={{ position: 'relative', background: 'var(--bg-surface)', padding: 10 }}>
         <div style={{ position: 'relative' }}>
-          {imageUrl ? (
-            <div
-              style={{
-                aspectRatio: '4 / 3',
-                overflow: 'hidden',
-                border: '1px solid var(--border-soft)',
-                background: 'var(--bg-page)',
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt={product.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-          ) : (
-            <ArtPiece
-              bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'}
-              frame={product.defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'}
-              label={product.title}
-              pad={8}
-              aspect="4 / 3"
-            />
-          )}
+          <ArtPiece
+            bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'}
+            frame={defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'}
+            label={product.title}
+            pad={8}
+            aspect={aspectRatio}
+            imgSrc={imageUrl ?? undefined}
+          />
         </div>
 
         {product.badge && badgeMap[product.badge] ? (
@@ -201,7 +206,7 @@ export function ProductCardV2({ product, onOpen }: ProductCardV2Props) {
           as="h3"
           size="sm"
           style={{
-            fontFamily: 'var(--font-cormorant), serif',
+            fontFamily: 'var(--font-lora), serif',
             fontSize: 14.5,
             fontWeight: 600,
             lineHeight: 1.15,
@@ -212,36 +217,38 @@ export function ProductCardV2({ product, onOpen }: ProductCardV2Props) {
           {product.title}
         </Heading>
 
-        <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-          {product.bgTones.slice(0, 3).map((tone) => (
-            <button
-              key={tone}
-              type="button"
-              aria-label={`Chọn tông ${tone}`}
-              onClick={(event) => {
-                event.stopPropagation()
-                setBgTone(tone)
-              }}
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                border: `1px solid ${bgTone === tone ? 'var(--accent)' : 'var(--border)'}`,
-                background:
-                  tone === 'gold'
-                    ? 'var(--gold)'
-                    : tone === 'red'
-                      ? 'var(--accent)'
-                      : tone === 'bronze'
-                        ? 'var(--bronze)'
-                        : 'var(--bg-dark)',
-                boxShadow: bgTone === tone ? '0 0 0 2px rgba(139,30,30,0.08)' : 'none',
-                padding: 0,
-                cursor: 'pointer',
-              }}
-            />
-          ))}
-        </div>
+        {bgToneValues.length > 0 && (
+          <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+            {bgToneValues.slice(0, 3).map((tone) => (
+              <button
+                key={tone}
+                type="button"
+                aria-label={`Chọn tông ${tone}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setBgTone(tone)
+                }}
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  border: `1px solid ${bgTone === tone ? 'var(--accent)' : 'var(--border)'}`,
+                  background:
+                    tone === 'gold'
+                      ? 'var(--gold)'
+                      : tone === 'red'
+                        ? 'var(--accent)'
+                        : tone === 'bronze'
+                          ? 'var(--bronze)'
+                          : 'var(--bg-dark)',
+                  boxShadow: bgTone === tone ? '0 0 0 2px rgba(139,30,30,0.08)' : 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginTop: 'auto' }}>
           <Price amount={displayPrice} size="md" />

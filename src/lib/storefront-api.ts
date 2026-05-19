@@ -1,16 +1,16 @@
 import type { Category, Product } from '@/lib/types'
 import { API_BASE } from '@/lib/api-config'
 
+const apiFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, headers: { 'ngrok-skip-browser-warning': '1', ...init?.headers } })
+
 type RawOrderItem = {
   product_id: string
   product_title: string
   product_subtitle?: string
   size_code?: string
   size_label?: string
-  bg_tone?: string
-  bg_tone_label?: string
-  frame?: string
-  frame_label?: string
+  selected_attrs?: Record<string, string>
   quantity: number
   unit_price: number
   variant_image_url?: string
@@ -75,10 +75,8 @@ interface AdminProduct {
   discount_price?: number
   description: string | null
   meaning: string | null
-  default_bg: string
-  default_frame: string
-  bg_tones: string[]
-  frames: string[]
+  variant_options: import('@/lib/types').VariantOption[]
+  default_variant: Record<string, string>
   zodiac_ids: string[]
   purpose_place: string[]
   purpose_use: string[]
@@ -97,10 +95,18 @@ interface AdminProduct {
   images: Array<{
     id: string
     product_id: string
-    bg_tone: string | null
-    frame: string | null
+    image_id: string
     url: string
-    alt_text: string | null
+    name: string
+    sort_order: number
+    attrs: import('@/lib/types').VariantAttr[]
+  }>
+  skus: Array<{
+    id: string
+    product_id: string
+    size_code: string | null
+    attrs: Record<string, string>
+    price: number
     sort_order: number
   }>
 }
@@ -114,6 +120,7 @@ interface AdminCategory {
   image_url: string | null
   sort_order: number
   is_active: boolean
+  product_count?: number
 }
 
 interface AdminReviewItem {
@@ -183,7 +190,7 @@ function normalizeCategory(raw: AdminCategory): Category {
   return {
     id: raw.id,
     name: raw.name,
-    productCount: 0,
+    productCount: raw.product_count ?? 0,
     tone: normalizeTone(raw.tone),
   }
 }
@@ -192,17 +199,16 @@ function normalizeProduct(raw: AdminProduct): Product {
   const normalizedImages = (raw.images || [])
     .map((img) => {
       const normalizedUrl = normalizeNullableText(img.url)
-      if (!normalizedUrl) {
-        return null
-      }
-
+      if (!normalizedUrl) return null
       return {
         id: img.id,
+        product_id: img.product_id,
+        image_id: img.image_id,
         url: normalizedUrl,
-        altText: normalizeNullableText(img.alt_text) || '',
-        bgTone: img.bg_tone,
-        frame: img.frame,
-        sortOrder: img.sort_order,
+        name: img.name || '',
+        sort_order: img.sort_order,
+        attrs: img.attrs || [],
+        created_at: '',
       }
     })
     .filter((img): img is NonNullable<typeof img> => img !== null)
@@ -215,12 +221,10 @@ function normalizeProduct(raw: AdminProduct): Product {
     badge: (raw.badge || undefined) as 'best_seller' | 'new' | 'sale' | undefined,
     rating: raw.rating || 0,
     reviewCount: raw.review_count || 0,
-    price: raw.base_price,
+    price: raw.price ?? raw.base_price,
     discountPrice: raw.discount_price,
-    defaultBg: raw.default_bg,
-    defaultFrame: raw.default_frame,
-    bgTones: raw.bg_tones || [],
-    frames: raw.frames || [],
+    variantOptions: raw.variant_options || [],
+    defaultVariant: raw.default_variant || {},
     description: raw.description || '',
     meaning: raw.meaning || '',
     specs: raw.specs || {},
@@ -234,15 +238,23 @@ function normalizeProduct(raw: AdminProduct): Product {
     sizes: (raw.sizes || []).map((size) => ({
       id: size.id,
       name: size.size_label,
-      code: size.size_code as 's' | 'm' | 'l' | 'xl',
+      code: size.size_code,
       price: size.price,
+    })),
+    skus: (raw.skus || []).map((sku: { id: string; product_id: string; size_code: string | null; attrs: Record<string, string>; price: number; sort_order: number }) => ({
+      id: sku.id,
+      product_id: sku.product_id,
+      size_code: sku.size_code ?? null,
+      attrs: sku.attrs || {},
+      price: sku.price,
+      sort_order: sku.sort_order,
     })),
   }
 }
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${API_BASE}/categories`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/categories`, { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminCategory[] } | AdminCategory[]
     const categories = Array.isArray(data) ? data : data.data || []
@@ -254,7 +266,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchCategory(id: string): Promise<Category | null> {
   try {
-    const res = await fetch(`${API_BASE}/categories/${id}`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/categories/${id}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as ApiDataEnvelope<AdminCategory>
     const raw = unwrapData(data)
@@ -280,7 +292,7 @@ export async function fetchProducts(params?: {
     if (params?.limit) url.searchParams.set('limit', params.limit.toString())
     if (params?.offset) url.searchParams.set('offset', params.offset.toString())
 
-    const res = await fetch(url.toString(), { cache: 'no-store' })
+    const res = await apiFetch(url.toString(), { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminProduct[] } | AdminProduct[]
     const products = Array.isArray(data) ? data : data.data || []
@@ -292,7 +304,7 @@ export async function fetchProducts(params?: {
 
 export async function fetchProduct(id: string): Promise<Product | null> {
   try {
-    const res = await fetch(`${API_BASE}/products/${id}`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/products/${id}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as ApiDataEnvelope<AdminProduct>
     const raw = unwrapData(data)
@@ -315,7 +327,7 @@ export type Review = {
 
 export async function fetchProductReviews(productId: string): Promise<Review[]> {
   try {
-    const res = await fetch(`${API_BASE}/products/${productId}/reviews`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/products/${productId}/reviews`, { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminReviewItem[] }
     return (data.data || []).map((r) => ({
@@ -332,7 +344,7 @@ export async function fetchProductReviews(productId: string): Promise<Review[]> 
 
 export async function fetchBanners(): Promise<Banner[]> {
   try {
-    const res = await fetch(`${API_BASE}/banners`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/banners`, { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminBannerItem[] }
     const banners = data.data || []
@@ -353,7 +365,7 @@ export async function fetchBanners(): Promise<Banner[]> {
 
 export async function fetchCampaigns(): Promise<Campaign[]> {
   try {
-    const res = await fetch(`${API_BASE}/campaigns`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/campaigns`, { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminCampaignItem[] }
     const campaigns = data.data || []
@@ -374,7 +386,7 @@ export async function fetchCampaigns(): Promise<Campaign[]> {
 
 export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
   try {
-    const res = await fetch(`${API_BASE}/customer-photos`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/customer-photos`, { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminCustomerPhotoItem[] }
     const photos = data.data || []
@@ -393,7 +405,7 @@ export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
 
 export async function fetchSettings(): Promise<Record<string, string>> {
   try {
-    const res = await fetch(`${API_BASE}/settings`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/settings`, { cache: 'no-store' })
     if (!res.ok) return {}
     const data = (await res.json()) as ApiDataEnvelope<Record<string, string>>
     const settings = unwrapData(data)
@@ -459,7 +471,7 @@ export async function createOrder(
   req: import('@/lib/types').CreateOrderRequest
 ): Promise<{ id: string } | null> {
   try {
-    const res = await fetch(`${API_BASE}/orders`, {
+    const res = await apiFetch(`${API_BASE}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -472,10 +484,7 @@ export async function createOrder(
           productTitle: item.productTitle,
           sizeCode: item.sizeCode || null,
           sizeLabel: item.sizeLabel || null,
-          bgTone: item.bgTone || null,
-          bgToneLabel: item.bgToneLabel || null,
-          frame: item.frame || null,
-          frameLabel: item.frameLabel || null,
+          selectedAttrs: item.selectedAttrs || null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           variantImageUrl: item.variantImageUrl || null,
@@ -495,7 +504,7 @@ export async function getOrdersByPhone(phone: string): Promise<import('@/lib/typ
   try {
     const url = new URL(`${API_BASE}/orders`)
     url.searchParams.set('phone', phone)
-    const res = await fetch(url.toString(), { cache: 'no-store' })
+    const res = await apiFetch(url.toString(), { cache: 'no-store' })
     if (!res.ok) return []
     const data = (await res.json()) as { data?: RawOrder[] }
     const orders = data.data || []
@@ -507,7 +516,7 @@ export async function getOrdersByPhone(phone: string): Promise<import('@/lib/typ
 
 export async function getOrderById(id: string): Promise<import('@/lib/types').Order | null> {
   try {
-    const res = await fetch(`${API_BASE}/orders/${id}`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/orders/${id}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as { data?: RawOrder }
     if (!data.data) return null
@@ -533,10 +542,7 @@ function normalizeOrder(raw: RawOrder): import('@/lib/types').Order {
       productSubtitle: item.product_subtitle,
       sizeCode: item.size_code,
       sizeLabel: item.size_label,
-      bgTone: item.bg_tone,
-      bgToneLabel: item.bg_tone_label,
-      frame: item.frame,
-      frameLabel: item.frame_label,
+      selectedAttrs: item.selected_attrs,
       quantity: item.quantity,
       unitPrice: item.unit_price,
       variantImageUrl: item.variant_image_url,

@@ -21,7 +21,7 @@ export function StoreLocationsSection() {
           >
             <div
               style={{
-                fontFamily: 'var(--font-cormorant), serif',
+                fontFamily: 'var(--font-lora), serif',
                 fontWeight: 600,
                 fontSize: 19,
                 color: 'var(--text-primary)',
@@ -38,7 +38,7 @@ export function StoreLocationsSection() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <IconPhone size={13} color="var(--bronze)" />
-                <span style={{ fontFamily: 'var(--font-cormorant), serif', fontWeight: 600, fontSize: 16, color: 'var(--accent)' }}>{store.phone}</span>
+                <span style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 16, color: 'var(--accent)' }}>{store.phone}</span>
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--text-muted)', paddingLeft: 21 }}>
                 {store.hours}

@@ -37,7 +37,7 @@ export function Footer() {
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                fontFamily: 'var(--font-cormorant), serif',
+                fontFamily: 'var(--font-lora), serif',
                 fontSize: 18,
                 fontWeight: 600,
                 color: 'var(--gold)',
@@ -265,7 +265,7 @@ export function FooterMinimal() {
           <div style={{ textAlign: 'left' }}>
             <div
               style={{
-                fontFamily: 'var(--font-cormorant), serif',
+                fontFamily: 'var(--font-lora), serif',
                 fontSize: 18,
                 fontWeight: 600,
                 color: 'var(--gold)',

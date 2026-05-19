@@ -27,7 +27,7 @@ export function TrustBar() {
         >
           <div
             style={{
-              fontFamily: 'var(--font-cormorant), serif',
+              fontFamily: 'var(--font-lora), serif',
               fontSize: 17,
               fontWeight: 600,
               color: 'var(--gold)',

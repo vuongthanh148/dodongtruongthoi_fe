@@ -1,25 +1,92 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { IconChevron, IconFilter } from '@/components/icons'
+import { IconFilter, IconGrid, IconList, IconStar } from '@/components/icons'
 import { TopBar } from '@/components/layout/TopBar'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
-import { Input } from '@/components/ui/Input'
-import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
+import { ProductCardSkeleton, ProductCardV2 } from '@/components/ui/ProductCard'
 import { CATEGORIES } from '@/lib/data'
 import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
 import { ArtPiece } from '@/components/ui/ArtPiece'
+import { Price } from '@/components/ui/Price'
 import useSWR from 'swr'
 import { SWR_KEYS } from '@/lib/swr-keys'
+import type { Product } from '@/lib/types'
+
+// ── List-view row component ──────────────────────────────────────────────────
+function CatListRow({ product, categories, onOpen }: { product: Product; categories: { id: string; name: string }[]; onOpen: () => void }) {
+  const catName = categories.find((c) => c.id === product.categoryId)?.name ?? ''
+  const price = product.discountPrice ?? product.price
+  const imageUrl = product.images[0]?.url ?? null
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '80px 1fr',
+        borderBottom: '1px solid var(--border-soft)',
+        cursor: 'pointer',
+        background: 'var(--bg-page)',
+      }}
+    >
+      <div style={{ background: 'var(--bg-surface)', padding: 8 }}>
+        <ArtPiece
+          bg={(product.defaultVariant['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+          frame={(product.defaultVariant['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+          label=""
+          pad={5}
+          aspect="1/1"
+          imgSrc={imageUrl}
+        />
+      </div>
+      <div style={{ padding: '12px 14px 12px 10px', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+        {catName ? (
+          <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 9, letterSpacing: '0.12em', color: 'var(--bronze)', textTransform: 'uppercase' }}>
+            {catName}
+          </div>
+        ) : null}
+        <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {product.title}
+        </div>
+        <div style={{ fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', fontSize: 12, color: 'var(--bronze)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+          {product.subtitle}
+        </div>
+        {(() => {
+          const bgOpt = product.variantOptions.find((o) => o.key === 'bg_tone')
+          const swatchColors: Record<string, string> = { gold: '#c9a961', red: '#8b2020', bronze: '#6b4423', dark: '#1e140a' }
+          return bgOpt && bgOpt.values.length > 0 ? (
+            <div style={{ display: 'flex', gap: 3, marginTop: 2 }}>
+              {bgOpt.values.slice(0, 4).map((v) => (
+                <div key={v} style={{ width: 10, height: 10, borderRadius: '50%', background: swatchColors[v] ?? '#888', border: '1px solid rgba(0,0,0,0.12)' }} />
+              ))}
+            </div>
+          ) : null
+        })()}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+          <Price amount={price} size="md" />
+          {product.rating > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10.5, color: 'var(--text-muted)' }}>
+              <IconStar size={10} color="#c9a961" /> {Number(product.rating.toFixed(1))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function CategoryPage() {
   const params = useParams<{ id: string }>()
   const initialCategory = params.id
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeCategoryId, setActiveCategoryId] = useState(initialCategory)
   const [sort, setSort] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating-desc'>(
     'featured'
@@ -31,6 +98,7 @@ export default function CategoryPage() {
   const [query, setQuery] = useState('')
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [pendingPriceRange, setPendingPriceRange] = useState<
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
@@ -140,183 +208,160 @@ export default function CategoryPage() {
 
   return (
     <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
-      <TopBar title="Danh mục" onBack={() => window.history.back()} />
+      <TopBar title={category?.name ?? 'Danh mục'} onMenu={() => setIsMenuOpen(true)} />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-      {category && (
-        <>
-          <div style={{ padding: '4px 16px 0', fontSize: 13, color: 'var(--text-muted)', display: 'flex', gap: 6, alignItems: 'center' }}>
-            <Link href="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-              Trang chủ
-            </Link>
-            <IconChevron size={10} color="var(--text-muted)" />
-            <span style={{ color: 'var(--text-primary)' }}>{category.name}</span>
-          </div>
-
-          <div style={{ padding: '10px 16px 6px' }}>
-            <Heading as="h1" size="xl">{category.name}</Heading>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', fontSize: 14, color: 'var(--bronze)', lineHeight: 1.6 }}>
-              {products.length} tác phẩm · chạm thủ công 100%
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Category filter pills */}
-      <div style={{ padding: '10px 0 4px', overflowX: 'auto' }} className="noscroll">
-        <div style={{ display: 'flex', gap: 8, padding: '0 16px' }}>
+      {/* Category pills strip — sticky below TopBar */}
+      <div style={{ position: 'sticky', top: 57, zIndex: 30, background: 'var(--bg-page)', borderBottom: '1px solid var(--border-soft)' }}>
+        <div style={{ display: 'flex', overflowX: 'auto', padding: '10px 14px', gap: 7 }} className="noscroll">
           {categories.map((item) => {
             const isActive = item.id === activeCategoryId
             return (
-              <Btn
+              <button
                 key={item.id}
                 type="button"
                 onClick={() => setActiveCategoryId(item.id)}
-                variant={isActive ? 'primary' : 'outline'}
-                size="sm"
                 style={{
                   flexShrink: 0,
-                  padding: '7px 13px',
+                  padding: '6px 12px',
                   borderRadius: 100,
-                  borderColor: isActive ? 'var(--accent)' : 'var(--border)',
-                  color: isActive ? 'white' : 'var(--text-primary)',
+                  background: isActive ? 'var(--bg-dark)' : 'transparent',
+                  color: isActive ? 'var(--text-on-dark)' : 'var(--text-primary)',
+                  border: isActive ? '1px solid var(--bg-dark)' : '1px solid var(--border)',
+                  fontFamily: 'var(--font-be-vietnam), sans-serif',
+                  fontSize: 12,
+                  cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  transition: 'all 150ms',
                 }}
               >
                 {item.name}
-              </Btn>
+              </button>
             )
           })}
         </div>
       </div>
 
-      {/* Sticky filter action bar */}
-      <div
-        style={{
-          position: 'sticky',
-          top: 57,
-          zIndex: 40,
-          background: 'var(--bg-page)',
-          padding: '10px 16px',
-          borderBottom: '1px solid var(--border-soft)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Tìm trong danh mục..."
-          type="text"
-          style={{ flex: 1 }}
-        />
-        <Btn
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setPendingPriceRange(priceRange)
-            setPendingRating(ratingFilter)
-            setFilterSheetOpen(true)
-          }}
+      {/* Sort/filter/view bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '10px 14px',
+        borderBottom: '1px solid var(--border-soft)',
+        gap: 8,
+      }}>
+        <div style={{ flex: 1, fontSize: 12, color: 'var(--text-muted)' }}>
+          {visibleProducts.length} sản phẩm
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as typeof sort)}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            flexShrink: 0,
-            padding: '8px 12px',
-            fontSize: 14,
+            background: 'transparent',
+            border: 'none',
+            fontSize: 12,
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-be-vietnam), sans-serif',
+            cursor: 'pointer',
+            outline: 'none',
+          }}
+        >
+          <option value="featured">Nổi bật</option>
+          <option value="price-asc">Giá: thấp → cao</option>
+          <option value="price-desc">Giá: cao → thấp</option>
+          <option value="rating-desc">Đánh giá cao</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => { setPendingPriceRange(priceRange); setPendingRating(ratingFilter); setFilterSheetOpen(true) }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+            padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 4,
+            background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'var(--text-primary)',
             position: 'relative',
           }}
         >
-          <IconFilter size={14} />
+          <IconFilter size={13} />
           Lọc
           {activeFilterCount > 0 && (
-            <span
+            <span style={{
+              position: 'absolute', top: -6, right: -6,
+              background: 'var(--accent)', color: 'white',
+              width: 16, height: 16, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 9, fontWeight: 700,
+            }}>{activeFilterCount}</span>
+          )}
+        </button>
+        {/* Grid/List toggle */}
+        <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+          {(['grid', 'list'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
               style={{
-                position: 'absolute',
-                top: -6,
-                right: -6,
-                background: 'var(--accent)',
-                color: 'white',
-                width: 18,
-                height: 18,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                fontWeight: 600,
+                padding: '5px 8px', border: 'none', cursor: 'pointer',
+                background: view === v ? 'var(--bg-dark)' : 'transparent',
+                color: view === v ? 'var(--text-on-dark)' : 'var(--text-primary)',
+                display: 'flex', alignItems: 'center',
               }}
             >
-              {activeFilterCount}
-            </span>
-          )}
-        </Btn>
-        <Btn
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setSortSheetOpen(true)}
-          style={{
-            flexShrink: 0,
-            padding: '8px 12px',
-            fontSize: 14,
-          }}
-        >
-          ↕
-        </Btn>
+              {v === 'grid' ? <IconGrid size={14} /> : <IconList size={14} />}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div style={{ padding: '14px 16px 100px' }}>
+      <div style={{ paddingBottom: 100 }}>
         {isLoading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
             {[0, 1, 2, 3, 4, 5].map((i) => (
-              <ProductCardSkeleton key={i} />
+              <div key={i} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                <ProductCardSkeleton compact />
+              </div>
             ))}
           </div>
         ) : visibleProducts.length === 0 ? (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              padding: '22px 14px',
-              border: '1px dashed var(--border)',
-              borderRadius: 10,
-              background: 'var(--bg-card)',
-            }}
-          >
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 10, padding: '22px 14px', margin: 16,
+            border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
+          }}>
             <div style={{ width: 170 }}>
               <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
             </div>
             <Heading as="h3" size="sm" style={{ textAlign: 'center' }}>
               Không tìm thấy sản phẩm
             </Heading>
-            <Btn
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setQuery('')
-                setPriceRange('all')
-                setSort('featured')
-              }}
-            >
+            <Btn type="button" variant="outline" onClick={() => { setQuery(''); setPriceRange('all'); setSort('featured') }}>
               Xem tất cả
             </Btn>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            {visibleProducts.map((product) => (
-              <ProductCard
+        ) : view === 'grid' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+            {visibleProducts.map((product, idx) => (
+              <ProductCardV2
                 key={product.id}
                 product={product}
-                compact
-                onOpen={(bgTone) =>
-                  (window.location.href = `/products/${product.id}${bgTone ? `?bgTone=${bgTone}` : ''}`)
-                }
+                tall={idx % 2 === 0}
+                style={idx % 4 === 3 ? { background: 'var(--ivory-3, #e5d9c0)' } : undefined}
+                onOpen={() => { window.location.href = `/products/${product.id}` }}
+              />
+            ))}
+            {/* Fill empty cell if odd count */}
+            {visibleProducts.length % 2 !== 0 && (
+              <div style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'rgba(244,237,224,0.4)' }} />
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {visibleProducts.map((product) => (
+              <CatListRow
+                key={product.id}
+                product={product}
+                categories={categories}
+                onOpen={() => { window.location.href = `/products/${product.id}` }}
               />
             ))}
           </div>

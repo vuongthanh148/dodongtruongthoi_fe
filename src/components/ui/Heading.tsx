@@ -25,7 +25,7 @@ export function Heading({ children, size = 'md', as = 'div', color = 'var(--text
     <Comp
       className={cn(className)}
       style={{
-        fontFamily: 'var(--font-cormorant), serif',
+        fontFamily: 'var(--font-lora), serif',
         fontWeight: 600,
         lineHeight: 1.1,
         fontSize: sizeMap[size],

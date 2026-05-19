@@ -37,23 +37,16 @@ export function getSavedProductIds(): string[] {
   return getSavedProducts().map((p) => p.productId)
 }
 
-export function toggleSavedProduct(productId: string, bgTone?: string, frame?: string, sizeId?: string): SavedProductVariant[] {
+export function toggleSavedProduct(productId: string, attrs?: Record<string, string>, sizeId?: string): SavedProductVariant[] {
   const current = getSavedProducts()
-  // Normalize empty strings to undefined for consistent matching
-  const normalizedBgTone = bgTone && bgTone !== '' ? bgTone : undefined
-  const normalizedFrame = frame && frame !== '' ? frame : undefined
-  const normalizedSizeId = sizeId && sizeId !== '' ? sizeId : undefined
-
-  const index = current.findIndex(
-    (p) => p.productId === productId && p.bgTone === normalizedBgTone && p.frame === normalizedFrame && p.sizeId === normalizedSizeId
-  )
+  const index = current.findIndex((p) => p.productId === productId)
 
   if (index >= 0) {
     const next = current.filter((_, i) => i !== index)
     writeJson(SAVED_KEY, next)
     return next
   } else {
-    const next = [{ productId, bgTone: normalizedBgTone, frame: normalizedFrame, sizeId: normalizedSizeId }, ...current]
+    const next = [{ productId, attrs, sizeId: sizeId || undefined }, ...current]
     writeJson(SAVED_KEY, next)
     return next
   }
@@ -71,14 +64,20 @@ export function setCartItems(items: CartItem[]): void {
   writeJson(CART_KEY, items)
 }
 
+function attrsMatch(a?: Record<string, string>, b?: Record<string, string>): boolean {
+  const aKeys = Object.keys(a || {}).sort()
+  const bKeys = Object.keys(b || {}).sort()
+  if (aKeys.length !== bKeys.length) return false
+  return aKeys.every((k) => (a || {})[k] === (b || {})[k])
+}
+
 export function upsertCartItem(item: CartItem): CartItem[] {
   const items = getCartItems()
   const index = items.findIndex(
     (entry) =>
       entry.productId === item.productId &&
       entry.sizeId === item.sizeId &&
-      entry.bgTone === item.bgTone &&
-      entry.frame === item.frame
+      attrsMatch(entry.selectedAttrs, item.selectedAttrs)
   )
 
   if (index >= 0) {

@@ -7,7 +7,7 @@ export default function SWRProvider({ children }: { children: React.ReactNode })
     <SWRConfig
       value={{
         revalidateOnFocus: false,
-        dedupingInterval: 5 * 60 * 1000, // 5 min default cache
+        dedupingInterval: process.env.NODE_ENV === 'development' ? 0 : 5 * 60 * 1000,
       }}
     >
       {children}

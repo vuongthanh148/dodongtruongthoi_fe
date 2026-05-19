@@ -1,20 +1,19 @@
 'use client'
 
-import { DrumMark, IconHeart } from '@/components/icons'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { FooterMinimal } from '@/components/layout/Footer'
+import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
-import { Btn } from '@/components/ui/Btn'
-import { Card } from '@/components/ui/Card'
-import { Heading } from '@/components/ui/Heading'
-import { Price } from '@/components/ui/Price'
-import { PRODUCTS } from '@/lib/data'
 import { getSavedProducts, toggleSavedProduct } from '@/lib/storage'
 import { fetchProduct } from '@/lib/storefront-api'
 import type { Product, SavedProductVariant } from '@/lib/types'
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
 
 export default function SavedPage() {
+  const router = useRouter()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [savedVariants, setSavedVariants] = useState<SavedProductVariant[]>(() =>
     getSavedProducts()
   )
@@ -24,175 +23,192 @@ export default function SavedPage() {
 
   useEffect(() => {
     let cancelled = false
-
     queueMicrotask(async () => {
       const products = await Promise.all(
         savedVariants.map(async (variant) => {
           const prod = await fetchProduct(variant.productId)
-          if (prod) {
-            return { ...prod, variant }
-          }
-
-          const fallback = PRODUCTS.find((p) => p.id === variant.productId)
-          return fallback ? { ...fallback, variant } : null
+          return prod ? { ...prod, variant } : null
         })
       )
-
-      if (cancelled) {
-        return
-      }
-
+      if (cancelled) return
       setSavedProducts(
         products.filter((p): p is Product & { variant: SavedProductVariant } => p !== null)
       )
     })
-
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [savedVariants])
 
   function variantHref(productId: string, variant: SavedProductVariant) {
     const params = new URLSearchParams()
-    if (variant.bgTone) params.set('bgTone', variant.bgTone)
-    if (variant.frame) params.set('frame', variant.frame)
     if (variant.sizeId) params.set('sizeId', variant.sizeId)
     const query = params.toString()
     return query ? `/products/${productId}?${query}` : `/products/${productId}`
   }
 
-  return (
-    <div className="paper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
-      <TopBar title="Sản phẩm đã lưu" onBack={() => window.history.back()} />
-
-      <div style={{ padding: '10px 16px 6px' }}>
-        <Heading as="h1" size="xl">Đã lưu</Heading>
-        <div
-          style={{
-            fontFamily: 'var(--font-lora), serif',
-            fontStyle: 'italic',
-            fontSize: 12,
-            color: 'var(--bronze)',
-          }}
-        >
-          {savedProducts.length} tác phẩm được yêu thích
-        </div>
+  const emptyState = (
+    <div style={{ padding: '80px 30px', textAlign: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+        <svg width={72} height={72} viewBox="0 0 24 24" fill="none" stroke="var(--border)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
       </div>
+      <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+        Chưa có sản phẩm yêu thích
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
+        Bấm vào biểu tượng trái tim ở trang sản phẩm để lưu tác phẩm.
+      </div>
+      <button
+        type="button"
+        onClick={() => router.push('/')}
+        style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '13px 24px', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 14, cursor: 'pointer' }}
+      >
+        Khám phá sản phẩm
+      </button>
+    </div>
+  )
 
-      {savedProducts.length === 0 ? (
-        <>
-          <div style={{ padding: '60px 30px', textAlign: 'center' }}>
-            <DrumMark size={52} color="var(--bronze)" />
-            <Heading size="md" style={{ marginTop: 14 }}>
-              Chưa có sản phẩm nào
-            </Heading>
-            <div
-              style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.55 }}
-            >
-              Bấm nút yêu thích ở trang chi tiết để lưu tác phẩm.
-            </div>
-            <Link
-              href="/"
-              style={{
-                display: 'inline-block',
-                marginTop: 16,
-                color: 'var(--accent)',
-                textDecoration: 'none',
-                fontWeight: 600,
-              }}
-            >
-              Về trang chủ
-            </Link>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+      <TopBar
+        title="Đã Lưu"
+        onMenu={() => setIsMenuOpen(true)}
+       
+      />
+      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      {savedProducts.length === 0 ? emptyState : (
+        <div style={{ padding: '16px 16px 0' }}>
+          {/* Count eyebrow */}
+          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 12 }}>
+            {savedProducts.length} tác phẩm yêu thích
           </div>
-          <div style={{ flex: 1 }} />
-        </>
-      ) : (
-        <div
-          style={{ padding: '14px 16px 100px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}
-        >
-          {savedProducts.map((product) => {
-            if (!product) {
-              return null
-            }
 
-            const selectedSize =
-              product.sizes.find((size) => size.id === product.variant.sizeId) ?? product.sizes[0]
+          {/* Grid with border pattern */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+            {savedProducts.map((product, idx) => {
+              const bg = ((product.variant.attrs?.['bg_tone']) ?? product.defaultVariant?.['bg_tone'] ?? 'gold') as 'gold' | 'red' | 'bronze' | 'dark'
+              const frame = ((product.variant.attrs?.['frame']) ?? product.defaultVariant?.['frame'] ?? 'bronze') as 'bronze' | 'gold' | 'dark' | 'carved'
+              const selectedSize = product.sizes.find((s) => s.id === product.variant.sizeId) ?? product.sizes[0]
+              const price = selectedSize?.price ?? product.price
 
-            return (
-              <Card
-                key={`${product.id}-${product.variant.bgTone ?? 'default'}-${product.variant.frame ?? 'default'}-${product.variant.sizeId ?? 'default'}`}
-                noPadding
-                style={{ borderRadius: 8 }}
-              >
+              return (
                 <div
-                  style={{
-                    display: 'flex',
-                    gap: 10,
-                    padding: 10,
-                    alignItems: 'flex-start',
-                  }}
+                  key={`${product.id}-${idx}`}
+                  style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', position: 'relative', background: 'var(--bg-card)' }}
                 >
-                <div style={{ flexShrink: 0, width: 100 }}>
-                  <Link href={variantHref(product.id, product.variant)}>
-                    <ArtPiece
-                      bg={
-                        (product.variant.bgTone || product.defaultBg) as
-                          | 'gold'
-                          | 'red'
-                          | 'bronze'
-                          | 'dark'
-                      }
-                      frame={
-                        (product.variant.frame || product.defaultFrame) as
-                          | 'bronze'
-                          | 'gold'
-                          | 'dark'
-                          | 'carved'
-                      }
-                      label={product.title}
-                      pad={5}
-                      aspect="1/1"
-                    />
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSavedVariants(
+                        toggleSavedProduct(
+                          product.id,
+                          product.variant.attrs,
+                          product.variant.sizeId
+                        )
+                      )
+                    }
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 2,
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      background: 'var(--accent)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      color: 'white',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+
+                  <Link href={variantHref(product.id, product.variant)} style={{ textDecoration: 'none', display: 'block' }}>
+                    {/* Artwork */}
+                    <div style={{ padding: 10, paddingBottom: 6 }}>
+                      <ArtPiece
+                        bg={bg}
+                        frame={frame}
+                        label=""
+                        pad={6}
+                        aspect="1/1"
+                      />
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ padding: '0 10px 12px' }}>
+                      {/* Color swatches */}
+                      {product.variant.attrs?.['bg_tone'] && (
+                        <div style={{ display: 'flex', gap: 4, marginBottom: 5 }}>
+                          {(['gold', 'red', 'bronze', 'dark'] as const).map((tone) => {
+                            const swatchColors: Record<string, string> = {
+                              gold: '#c9a961',
+                              red: '#8b1e1e',
+                              bronze: '#6b4423',
+                              dark: '#2a1f1a',
+                            }
+                            const isActive = tone === product.variant.attrs?.['bg_tone']
+                            return (
+                              <div
+                                key={tone}
+                                style={{
+                                  width: isActive ? 12 : 8,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  background: swatchColors[tone],
+                                  opacity: isActive ? 1 : 0.35,
+                                  transition: 'width 200ms',
+                                }}
+                              />
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Title — 2 lines max */}
+                      <div style={{
+                        fontFamily: 'var(--font-lora), serif',
+                        fontWeight: 600,
+                        fontSize: 13,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.3,
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        marginBottom: 4,
+                      }}>
+                        {product.title}
+                      </div>
+                      {product.subtitle && (
+                        <div style={{ fontSize: 11, fontStyle: 'italic', color: 'var(--bronze)', marginTop: 2, lineHeight: 1.3 }}>
+                          {product.subtitle}
+                        </div>
+                      )}
+
+                      {/* Price */}
+                      <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 13, color: 'var(--accent)' }}>
+                        {price.toLocaleString('vi-VN')}đ
+                      </div>
+                    </div>
                   </Link>
                 </div>
-                <Link
-                  href={variantHref(product.id, product.variant)}
-                  style={{ textDecoration: 'none', minWidth: 0, flex: 1 }}
-                >
-                  <Heading as="div" size="sm" style={{ color: 'var(--text-primary)', fontSize: 13 }}>{product.title}</Heading>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                    {product.subtitle}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {selectedSize ? `Kích thước: ${selectedSize.name}` : 'Kích thước: mặc định'}
-                  </div>
-                  <div style={{ marginTop: 4 }}><Price amount={selectedSize?.price ?? product.discountPrice ?? product.price} size="sm" /></div>
-                </Link>
-                <Btn
-                  type="button"
-                  onClick={() =>
-                    setSavedVariants(
-                      toggleSavedProduct(
-                        product.id,
-                        product.variant.bgTone,
-                        product.variant.frame,
-                        product.variant.sizeId
-                      )
-                    )
-                  }
-                  variant="ghost"
-                  size="sm"
-                  style={{ color: 'var(--accent)', padding: 4, flexShrink: 0 }}
-                >
-                  <IconHeart size={18} color="var(--accent)" filled />
-                </Btn>
-                </div>
-              </Card>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
-      {savedProducts.length === 0 ? null : <div style={{ flex: 1 }} />}
+
+      <div style={{ flex: 1 }} />
+      <FooterMinimal />
     </div>
   )
 }

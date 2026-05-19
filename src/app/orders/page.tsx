@@ -10,21 +10,33 @@ import { getOrdersByPhone } from '@/lib/storefront-api'
 import type { Order } from '@/lib/types'
 
 const STATUS_LABELS: Record<string, string> = {
-  pending_confirm: 'Chờ Xác Nhận',
-  confirmed: 'Đã Xác Nhận',
-  processing: 'Đang Xử Lý',
-  shipped: 'Đang Giao',
-  completed: 'Đã Giao',
-  cancelled: 'Đã Hủy',
+  pending_confirm: 'Chờ xác nhận',
+  confirmed: 'Đã xác nhận',
+  processing: 'Đang xử lý',
+  shipped: 'Đang giao',
+  completed: 'Đã giao',
+  cancelled: 'Đã hủy',
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending_confirm: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  processing: 'bg-purple-100 text-purple-800',
-  shipped: 'bg-orange-100 text-orange-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+function statusBadgeStyle(status: string): React.CSSProperties {
+  const map: Record<string, { bg: string; color: string }> = {
+    pending_confirm: { bg: 'rgba(201,169,97,0.18)', color: '#b08a3e' },
+    confirmed: { bg: 'rgba(201,169,97,0.18)', color: '#b08a3e' },
+    shipped: { bg: 'rgba(0,150,80,0.12)', color: '#006640' },
+    completed: { bg: 'rgba(0,150,80,0.12)', color: '#006640' },
+    cancelled: { bg: 'rgba(139,30,30,0.10)', color: 'var(--accent)' },
+  }
+  const s = map[status] ?? { bg: 'rgba(0,0,0,0.06)', color: 'var(--text-secondary)' }
+  return {
+    background: s.bg,
+    color: s.color,
+    borderRadius: 100,
+    padding: '3px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: 'var(--font-be-vietnam), sans-serif',
+    whiteSpace: 'nowrap',
+  }
 }
 
 export default function OrdersPage() {
@@ -61,116 +73,166 @@ export default function OrdersPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
       <TopBar
-        title="Đơn hàng của tôi"
-        onBack={() => router.back()}
+        title="Tra Cứu Đơn Hàng"
+       
         onMenu={() => setIsMenuOpen(true)}
-        onOpenSaved={() => router.push('/saved')}
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-serif mb-8">Tra Cứu Đơn Hàng</h1>
-
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex gap-3">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Nhập số điện thoại"
-              className="flex-1 px-4 py-2 border border-[--text-secondary]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--accent]"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-[--accent] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {loading ? 'Đang tìm...' : 'Tìm'}
-            </button>
-          </div>
+      {/* Search input */}
+      <div style={{ padding: '18px 16px 0' }}>
+        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 12 }}>
+          Nhập số điện thoại đặt hàng
+        </div>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch(e as unknown as React.FormEvent)}
+            placeholder="0912 345 678"
+            style={{
+              flex: 1,
+              padding: '13px 16px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 100,
+              fontFamily: 'var(--font-be-vietnam), sans-serif',
+              fontSize: 14,
+              color: 'var(--text-primary)',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              background: 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 100,
+              padding: '12px 20px',
+              fontFamily: 'var(--font-be-vietnam), sans-serif',
+              fontSize: 13,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              flexShrink: 0,
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? '...' : 'Tìm →'}
+          </button>
         </form>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* No Results */}
-        {!loading && searched && orders.length === 0 && !error && (
-          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <p className="text-[--text-secondary] mb-4">Không tìm thấy đơn hàng nào.</p>
-            <Link
-              href="/cart"
-              className="inline-block px-6 py-3 bg-[--accent] text-white rounded hover:opacity-90 transition-opacity"
-            >
-              Tiếp Tục Mua Sắm
-            </Link>
-          </div>
-        )}
-
-        {/* Orders List */}
-        {orders.length > 0 && (
-          <div className="space-y-4">
-            {orders.map((order) => {
-              const total = order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
-
-              return (
-                <Link
-                  key={order.id}
-                  href={`/orders/${order.id}`}
-                  className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-serif text-lg mb-1">Mã Đơn: {order.id.slice(0, 8).toUpperCase()}</h3>
-                      <p className="text-sm text-[--text-secondary]">
-                        {new Date(order.createdAt).toLocaleDateString('vi-VN')}
-                      </p>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[order.status]}`}>
-                      {STATUS_LABELS[order.status]}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4 py-4 border-t border-b">
-                    {order.items.slice(0, 2).map((item, idx) => (
-                      <div key={idx} className="text-sm flex justify-between">
-                        <span>{item.productTitle} x{item.quantity}</span>
-                        <span>{(item.unitPrice * item.quantity).toLocaleString('vi-VN')}₫</span>
-                      </div>
-                    ))}
-                    {order.items.length > 2 && (
-                      <p className="text-sm text-[--text-secondary]">+{order.items.length - 2} sản phẩm khác</p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-[--text-secondary]">Tổng:</span>
-                    <span className="font-serif text-lg text-[--accent]">
-                      {total.toLocaleString('vi-VN')}₫
-                    </span>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Info Box */}
-        {!searched && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-            <p className="text-blue-900 mb-2">📱 Nhập số điện thoại mà bạn sử dụng khi đặt hàng</p>
-            <p className="text-blue-800 text-sm">
-              Chúng tôi sẽ hiển thị tất cả đơn hàng của bạn
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{ margin: '12px 16px 0', padding: '10px 14px', background: 'rgba(139,30,30,0.08)', border: '1px solid rgba(139,30,30,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--accent)' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Initial state — info alert */}
+      {!searched && (
+        <div style={{ padding: '24px 16px 0' }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: 16,
+            display: 'flex',
+            gap: 12,
+            alignItems: 'flex-start',
+          }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(107,68,35,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="var(--bronze)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)', marginBottom: 5 }}>
+                Tra cứu bằng số điện thoại
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                Nhập số điện thoại bạn đã dùng khi đặt hàng để xem trạng thái đơn.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No results */}
+      {!loading && searched && orders.length === 0 && !error && (
+        <div style={{ padding: '60px 30px', textAlign: 'center' }}>
+          <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+            Không tìm thấy đơn hàng
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            Vui lòng kiểm tra lại số điện thoại, hoặc liên hệ hotline để được hỗ trợ.
+          </div>
+          <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 20, color: 'var(--accent)', marginTop: 20 }}>
+            0899 · 012 · 288
+          </div>
+        </div>
+      )}
+
+      {/* Order cards */}
+      {orders.length > 0 && (
+        <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 4 }}>
+            {orders.length} đơn hàng
+          </div>
+          {orders.map((order) => {
+            const total = order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+            const firstItem = order.items[0]
+            return (
+              <Link
+                key={order.id}
+                href={`/orders/${order.id}`}
+                style={{ textDecoration: 'none', display: 'block', background: '#fffdf7', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 12, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                      #{order.id.slice(0, 8).toUpperCase()}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                    </div>
+                  </div>
+                  <span style={statusBadgeStyle(order.status)}>{STATUS_LABELS[order.status] ?? order.status}</span>
+                </div>
+
+                {firstItem && (
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ width: 50, height: 50, flexShrink: 0, background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 4 }}>
+                      <div style={{ width: '100%', height: '100%', background: 'var(--bg-surface-alt)', borderRadius: 4 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {firstItem.productTitle}
+                      </div>
+                      {order.items.length > 1 && (
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>+{order.items.length - 1} sản phẩm khác</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
+                  <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 16, color: 'var(--text-primary)' }}>
+                    {total.toLocaleString('vi-VN')}đ
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', fontSize: 12, color: 'var(--accent)' }}>
+                    Xem chi tiết →
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
 
       <div style={{ flex: 1 }} />
       <FooterMinimal />

@@ -1,9 +1,9 @@
 'use client'
 
 import { DrumMark } from '@/components/icons'
-import { Btn } from '@/components/ui/Btn'
 import { formatVnd } from '@/lib/format'
 import type { Campaign } from '@/lib/storefront-api'
+import Link from 'next/link'
 
 interface CampaignsSectionProps {
   campaigns: Campaign[]
@@ -58,7 +58,7 @@ export function CampaignsSection({ campaigns }: CampaignsSectionProps) {
                   pointerEvents: 'none',
                 }}
               >
-                <DrumMark size={160} color="var(--gold)" />
+                <DrumMark size={220} color="var(--text-on-dark)" />
               </div>
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div
@@ -75,7 +75,7 @@ export function CampaignsSection({ campaigns }: CampaignsSectionProps) {
                 </div>
                 <div
                   style={{
-                    fontFamily: 'var(--font-cormorant), serif',
+                    fontFamily: 'var(--font-lora), serif',
                     fontSize: singleCampaign ? 32 : 24,
                     fontWeight: 500,
                     lineHeight: 1.02,
@@ -96,20 +96,23 @@ export function CampaignsSection({ campaigns }: CampaignsSectionProps) {
                     {campaign.description}
                   </div>
                 ) : null}
-                <Btn
-                  type="button"
-                  variant="ghost"
-                  size="sm"
+                <Link
+                  href={`/products?campaign=${campaign.id}`}
                   style={{
+                    display: 'inline-block',
                     color: 'var(--text-on-dark)',
                     border: '1px solid rgba(255,255,255,0.55)',
                     borderRadius: 2,
                     background: 'transparent',
                     paddingInline: 14,
+                    paddingBlock: 7,
+                    fontFamily: 'var(--font-be-vietnam), sans-serif',
+                    fontSize: 13,
+                    textDecoration: 'none',
                   }}
                 >
                   Xem sản phẩm khuyến mãi →
-                </Btn>
+                </Link>
               </div>
             </div>
           )

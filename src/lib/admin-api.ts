@@ -113,8 +113,9 @@ async function unwrap<T>(response: Response): Promise<T | null> {
     return null
   }
 
-  const json = (await response.json()) as { data?: T }
-  return (json.data ?? json) as T
+  const json = (await response.json()) as { data?: T; success?: boolean }
+  if ('data' in json) return (json.data ?? null) as T | null
+  return json as T
 }
 
 export async function adminGet<T>(path: string): Promise<T | null> {
@@ -148,6 +149,32 @@ export async function adminDelete(path: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+// Image Library API
+export const imageApi = {
+  list: () => adminGet<import('@/lib/types').LibraryImage[]>('/images'),
+  rename: (id: string, name: string) => adminPut<import('@/lib/types').LibraryImage>(`/images/${id}`, { name }),
+  upload: (formData: FormData) => adminUpload<import('@/lib/types').LibraryImage>('/images', formData),
+  delete: (id: string) => adminDelete(`/images/${id}`),
+}
+
+// Product Image API (join table)
+export const productImageApi = {
+  list: (productId: string) => adminGet<import('@/lib/types').AdminProductImage[]>(`/products/${productId}/images`),
+  attach: (productId: string, imageId: string, attrs: import('@/lib/types').VariantAttr[]) =>
+    adminPost<import('@/lib/types').AdminProductImage>(`/products/${productId}/images/attach`, { image_id: imageId, attrs }),
+  setAttrs: (productId: string, productImageId: string, attrs: import('@/lib/types').VariantAttr[]) =>
+    adminPut(`/products/${productId}/images/${productImageId}/attrs`, { attrs }),
+  detach: (productId: string, productImageId: string) =>
+    adminDelete(`/products/${productId}/images/${productImageId}`),
+}
+
+// Product SKU API
+export const skuApi = {
+  list: (productId: string) => adminGet<import('@/lib/types').AdminProductSKU[]>(`/products/${productId}/skus`),
+  set: (productId: string, skus: Omit<import('@/lib/types').AdminProductSKU, 'id' | 'product_id'>[]) =>
+    adminPut(`/products/${productId}/skus`, { skus }),
 }
 
 export async function adminUpload<T>(path: string, formData: FormData): Promise<T | null> {

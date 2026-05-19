@@ -185,7 +185,7 @@ export default function AdminOrdersPage() {
                   {(row.items ?? []).map((item, index) => {
                     const quantity = Number(item.quantity) || 0
                     const unitPrice = Number(item.unit_price) || 0
-                    const variantParts = [item.size_label, item.bg_tone_label, item.frame_label].filter(
+                    const variantParts = [item.size_label, ...(item.selected_attrs ? Object.values(item.selected_attrs) : [])].filter(
                       Boolean
                     ) as string[]
                     const variantLine =

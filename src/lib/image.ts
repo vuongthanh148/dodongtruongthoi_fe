@@ -18,13 +18,19 @@ export function imgUrl(
 
 export function pickVariantImage(
   images: ProductImage[],
-  bgTone: string,
-  frame: string
+  selectedAttrs: Record<string, string>
 ): ProductImage | null {
-  return (
-    images.find((image) => image.bgTone === bgTone && image.frame === frame) ??
-    images.find((image) => image.bgTone === bgTone && image.frame === null) ??
-    images.find((image) => image.bgTone === null && image.frame === null) ??
-    null
+  const entries = Object.entries(selectedAttrs)
+  if (entries.length === 0) return images[0] ?? null
+
+  // Find image where all selectedAttrs match image attrs
+  const full = images.find((img) =>
+    entries.every(([k, v]) => img.attrs.some((a) => a.key === k && a.value === v))
   )
+  if (full) return full
+
+  // Partial match: at least one attr matches
+  return images.find((img) =>
+    entries.some(([k, v]) => img.attrs.some((a) => a.key === k && a.value === v))
+  ) ?? images[0] ?? null
 }

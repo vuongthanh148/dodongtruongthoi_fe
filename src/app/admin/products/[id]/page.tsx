@@ -3,9 +3,9 @@
 import { AdminFrame } from '@/components/admin/AdminFrame'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 import { Field } from '@/components/admin/Field'
-import { adminDelete, adminGet, adminPost, adminPut, adminUpload } from '@/lib/admin-api'
-import { DEFAULT_BG_TONES, DEFAULT_FRAME_STYLES, DEFAULT_PLACE_LABELS } from '@/lib/data'
-import type { AdminCategory, AdminProduct, AdminProductImage } from '@/lib/types'
+import { adminDelete, adminGet, adminPost, adminPut, adminUpload, imageApi, productImageApi, skuApi } from '@/lib/admin-api'
+import { DEFAULT_PLACE_LABELS, ZODIAC } from '@/lib/data'
+import type { AdminCategory, AdminProduct, AdminProductImage, AdminProductSKU, LibraryImage, VariantAttr, VariantOption } from '@/lib/types'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import Select, { type StylesConfig } from 'react-select'
@@ -19,17 +19,11 @@ interface ProductFormState {
   base_price: string
   description: string
   meaning: string
-  default_bg: string
-  default_frame: string
-  bg_tones: string[]
-  frames: string[]
-  zodiac_ids: string
+  zodiac_ids: string[]
   purpose_place: string[]
   purpose_use: string
   purpose_avoid: string
   specs: string
-  requires_bg_tone: boolean
-  requires_frame: boolean
   requires_size: boolean
   is_active: boolean
   sort_order: string
@@ -39,8 +33,19 @@ interface SizeFormRow {
   id: string
   size_label: string
   size_code: string
-  price: string
   sort_order: string
+}
+
+interface SKUFormRow {
+  size_code: string | null
+  attrs: Record<string, string>
+  price: string
+}
+
+interface VariantOptionRow {
+  key: string
+  label: string
+  values: string  // comma-separated
 }
 
 const emptyForm: ProductFormState = {
@@ -52,17 +57,11 @@ const emptyForm: ProductFormState = {
   base_price: '0',
   description: '',
   meaning: '',
-  default_bg: 'gold',
-  default_frame: 'bronze',
-  bg_tones: [],
-  frames: [],
-  zodiac_ids: '',
+  zodiac_ids: [],
   purpose_place: [],
   purpose_use: '',
   purpose_avoid: '',
   specs: '',
-  requires_bg_tone: false,
-  requires_frame: false,
   requires_size: false,
   is_active: true,
   sort_order: '0',
@@ -72,16 +71,6 @@ type SelectOption = {
   value: string
   label: string
 }
-
-const bgToneOptions: SelectOption[] = DEFAULT_BG_TONES.map((tone) => ({
-  value: tone.id,
-  label: tone.name,
-}))
-
-const frameOptions: SelectOption[] = DEFAULT_FRAME_STYLES.map((frame) => ({
-  value: frame.id,
-  label: frame.name,
-}))
 
 const placeOptions: SelectOption[] = Object.entries(DEFAULT_PLACE_LABELS).map(([id, name]) => ({
   value: id,
@@ -94,26 +83,12 @@ const selectStyles: StylesConfig<SelectOption, boolean> = {
     borderColor: state.isFocused ? '#7f1d1d' : '#d1d5db',
     boxShadow: 'none',
     minHeight: 42,
-    '&:hover': {
-      borderColor: '#7f1d1d',
-    },
+    '&:hover': { borderColor: '#7f1d1d' },
   }),
-  valueContainer: (base) => ({
-    ...base,
-    padding: '3px 10px',
-  }),
-  multiValue: (base) => ({
-    ...base,
-    backgroundColor: '#fef2f2',
-  }),
-  multiValueLabel: (base) => ({
-    ...base,
-    color: '#7f1d1d',
-  }),
-  menu: (base) => ({
-    ...base,
-    zIndex: 50,
-  }),
+  valueContainer: (base) => ({ ...base, padding: '3px 10px' }),
+  multiValue: (base) => ({ ...base, backgroundColor: '#fef2f2' }),
+  multiValueLabel: (base) => ({ ...base, color: '#7f1d1d' }),
+  menu: (base) => ({ ...base, zIndex: 50 }),
 }
 
 export default function AdminProductEditPage() {
@@ -124,16 +99,30 @@ export default function AdminProductEditPage() {
 
   const [categories, setCategories] = useState<AdminCategory[]>([])
   const [form, setForm] = useState<ProductFormState>(emptyForm)
+  const [variantOptions, setVariantOptions] = useState<VariantOptionRow[]>([])
+  const [defaultVariant, setDefaultVariant] = useState<Record<string, string>>({})
   const [sizes, setSizes] = useState<SizeFormRow[]>([])
+  const [skus, setSkus] = useState<SKUFormRow[]>([])
   const [images, setImages] = useState<AdminProductImage[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savedProductId, setSavedProductId] = useState<string>('')
+
+  // Image library + attach state
+  const [libraryImages, setLibraryImages] = useState<LibraryImage[]>([])
+  const [imageTab, setImageTab] = useState<'attached' | 'library' | 'upload'>('attached')
+  const [attachAttrs, setAttachAttrs] = useState<Record<string, string>>({})
   const [uploadFile, setUploadFile] = useState<File | null>(null)
-  const [uploadBgTone, setUploadBgTone] = useState('')
-  const [uploadFrame, setUploadFrame] = useState('')
+  const [uploadName, setUploadName] = useState('')
+  const [uploadAttrs, setUploadAttrs] = useState<Record<string, string>>({})
 
   const effectiveProductId = savedProductId || (isNew ? '' : productId)
+
+  const parsedVariantOptions: VariantOption[] = variantOptions.map((row) => ({
+    key: row.key.trim(),
+    label: row.label.trim(),
+    values: row.values.split(',').map((v) => v.trim()).filter(Boolean),
+  }))
 
   const loadPage = useCallback(async () => {
     setLoading(true)
@@ -141,9 +130,15 @@ export default function AdminProductEditPage() {
     const categoryData = await adminGet<AdminCategory[]>('/categories')
     setCategories(categoryData ?? [])
 
+    const libData = await imageApi.list()
+    setLibraryImages(libData ?? [])
+
     if (isNew) {
       setForm((prev) => ({ ...emptyForm, category_id: categoryData?.[0]?.id ?? '', id: prev.id }))
+      setVariantOptions([])
+      setDefaultVariant({})
       setSizes([])
+      setSkus([])
       setImages([])
       setSavedProductId('')
       setLoading(false)
@@ -166,62 +161,72 @@ export default function AdminProductEditPage() {
       base_price: String(product.base_price ?? product.price ?? 0),
       description: product.description ?? '',
       meaning: product.meaning ?? '',
-      default_bg: product.default_bg,
-      default_frame: product.default_frame,
-      bg_tones: product.bg_tones ?? [],
-      frames: product.frames ?? [],
-      zodiac_ids: joinList(product.zodiac_ids),
+      zodiac_ids: product.zodiac_ids ?? [],
       purpose_place: product.purpose_place ?? [],
       purpose_use: joinList(product.purpose_use),
       purpose_avoid: joinList(product.purpose_avoid),
       specs: stringifySpecs(product.specs),
-      requires_bg_tone: product.requires_bg_tone,
-      requires_frame: product.requires_frame,
       requires_size: product.requires_size,
       is_active: product.is_active,
       sort_order: String(product.sort_order),
     })
+
+    setVariantOptions(
+      (product.variant_options ?? []).map((opt) => ({
+        key: opt.key,
+        label: opt.label,
+        values: opt.values.join(', '),
+      }))
+    )
+    setDefaultVariant(product.default_variant ?? {})
 
     setSizes(
       (product.sizes ?? []).map((size) => ({
         id: size.id,
         size_label: size.size_label,
         size_code: size.size_code,
-        price: String(size.price),
         sort_order: String(size.sort_order),
       }))
     )
-    setImages(product.images ?? [])
+
+    const skuData = await skuApi.list(product.id)
+    setSkus((skuData ?? []).map((s: AdminProductSKU) => ({
+      size_code: s.size_code,
+      attrs: s.attrs || {},
+      price: String(s.price),
+    })))
+
+    const imgData = await productImageApi.list(product.id)
+    setImages(imgData ?? [])
     setLoading(false)
   }, [productId, isNew])
 
   useEffect(() => {
-    (async () => {
-      await loadPage()
-    })()
+    (async () => { await loadPage() })()
   }, [loadPage])
 
+  function addVariantOptionRow() {
+    setVariantOptions((prev) => [...prev, { key: '', label: '', values: '' }])
+  }
+
+  function updateVariantOptionRow(index: number, patch: Partial<VariantOptionRow>) {
+    setVariantOptions((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)))
+  }
+
+  function removeVariantOptionRow(index: number) {
+    setVariantOptions((prev) => prev.filter((_, i) => i !== index))
+  }
+
   function addSizeRow() {
-    setSizes((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        size_label: '',
-        size_code: '',
-        price: '0',
-        sort_order: String(prev.length),
-      },
-    ])
+    setSizes((prev) => [...prev, { id: crypto.randomUUID(), size_label: '', size_code: '', price: '0', sort_order: String(prev.length) }])
   }
 
   function updateSizeRow(index: number, patch: Partial<SizeFormRow>) {
-    setSizes((prev) =>
-      prev.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row))
-    )
+    setSizes((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)))
   }
 
   function removeSizeRow(index: number) {
-    setSizes((prev) => prev.filter((_, rowIndex) => rowIndex !== index))
+    setSizes((prev) => prev.filter((_, i) => i !== index))
   }
 
   async function saveProduct() {
@@ -234,35 +239,26 @@ export default function AdminProductEditPage() {
       base_price: Number(form.base_price) || 0,
       description: form.description.trim(),
       meaning: form.meaning.trim(),
-      default_bg: form.default_bg.trim(),
-      default_frame: form.default_frame.trim(),
-      bg_tones: form.bg_tones,
-      frames: form.frames,
-      zodiac_ids: splitList(form.zodiac_ids),
+      variant_options: parsedVariantOptions,
+      default_variant: defaultVariant,
+      zodiac_ids: form.zodiac_ids,
       purpose_place: form.purpose_place,
       purpose_use: splitList(form.purpose_use),
       purpose_avoid: splitList(form.purpose_avoid),
       specs: parseSpecs(form.specs),
-      requires_bg_tone: form.requires_bg_tone,
-      requires_frame: form.requires_frame,
       requires_size: form.requires_size,
       is_active: form.is_active,
       sort_order: Number(form.sort_order) || 0,
     }
 
-    if (!payload.id || !payload.title || !payload.category_id) {
-      return
-    }
+    if (!payload.id || !payload.title || !payload.category_id) return
 
     setSaving(true)
     const saved = isNew
       ? await adminPost<AdminProduct>('/products', payload)
       : await adminPut<AdminProduct>(`/products/${effectiveProductId}`, payload)
 
-    if (!saved) {
-      setSaving(false)
-      return
-    }
+    if (!saved) { setSaving(false); return }
 
     setSavedProductId(saved.id)
     await adminPut(`/products/${saved.id}/sizes`, {
@@ -271,10 +267,17 @@ export default function AdminProductEditPage() {
         product_id: saved.id,
         size_label: row.size_label,
         size_code: row.size_code,
-        price: Number(row.price) || 0,
+        price: 0,
         sort_order: Number(row.sort_order) || index,
       })),
     })
+
+    await skuApi.set(saved.id, skus.map((row) => ({
+      size_code: row.size_code,
+      attrs: row.attrs,
+      price: Number(row.price) || 0,
+      sort_order: 0,
+    })))
 
     if (isNew) {
       router.replace(`/admin/products/${saved.id}`)
@@ -285,41 +288,45 @@ export default function AdminProductEditPage() {
     setSaving(false)
   }
 
-  async function uploadImage() {
-    if (!effectiveProductId || !uploadFile) {
-      return
-    }
-
-    const formData = new FormData()
-    formData.append('file', uploadFile)
-    if (uploadBgTone) {
-      formData.append('bgTone', uploadBgTone)
-    }
-    if (uploadFrame) {
-      formData.append('frame', uploadFrame)
-    }
-
-    const uploaded = await adminUpload<AdminProductImage>(
-      `/products/${effectiveProductId}/images`,
-      formData
-    )
-    if (uploaded) {
-      setUploadFile(null)
-      setUploadBgTone('')
-      setUploadFrame('')
-      await loadPage()
-    }
+  async function handleAttachImage(imageId: string) {
+    if (!effectiveProductId) return
+    const attrs: VariantAttr[] = Object.entries(attachAttrs)
+      .filter(([, v]) => v)
+      .map(([key, value]) => ({ key, value }))
+    await productImageApi.attach(effectiveProductId, imageId, attrs)
+    setAttachAttrs({})
+    const imgData = await productImageApi.list(effectiveProductId)
+    setImages(imgData ?? [])
+    setImageTab('attached')
   }
 
-  async function deleteImage(imageId: string) {
-    if (!effectiveProductId) {
-      return
-    }
+  async function handleUploadImage() {
+    if (!effectiveProductId || !uploadFile) return
+    const fd = new FormData()
+    fd.append('file', uploadFile)
+    fd.append('name', uploadName || uploadFile.name)
+    const attrs: VariantAttr[] = Object.entries(uploadAttrs)
+      .filter(([, v]) => v)
+      .map(([key, value]) => ({ key, value }))
+    fd.append('attrs_json', JSON.stringify(attrs))
+    await adminUpload<AdminProductImage>(`/products/${effectiveProductId}/images`, fd)
+    setUploadFile(null)
+    setUploadName('')
+    setUploadAttrs({})
+    const [imgData, libData] = await Promise.all([
+      productImageApi.list(effectiveProductId),
+      imageApi.list(),
+    ])
+    setImages(imgData ?? [])
+    setLibraryImages(libData ?? [])
+    setImageTab('attached')
+  }
 
-    const ok = await adminDelete(`/products/${effectiveProductId}/images/${imageId}`)
-    if (ok) {
-      await loadPage()
-    }
+  async function handleDetachImage(productImageId: string) {
+    if (!effectiveProductId) return
+    await productImageApi.detach(effectiveProductId, productImageId)
+    const imgData = await productImageApi.list(effectiveProductId)
+    setImages(imgData ?? [])
   }
 
   if (loading) {
@@ -334,373 +341,273 @@ export default function AdminProductEditPage() {
 
   return (
     <AdminGuard>
-      <AdminFrame title={isNew ? 'Add' : 'Edit'} subtitle="Update content and variant options">
+      <AdminFrame title={isNew ? 'Add Product' : 'Edit Product'} subtitle="Update content and variant options">
+        <div style={{ marginBottom: 12 }}>
+          <button type="button" onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+            ← Back
+          </button>
+        </div>
         <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            saveProduct()
-          }}
-          style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: 8,
-            padding: 14,
-            display: 'grid',
-            gap: 12,
-          }}
+          onSubmit={(event) => { event.preventDefault(); saveProduct() }}
+          style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, display: 'grid', gap: 12 }}
         >
-          <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
             <Field label="ID (create only)">
-              <input
-                value={form.id}
-                onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
-                style={inputStyle}
-                disabled={!isNew}
-              />
+              <input value={form.id} onChange={(e) => setForm((p) => ({ ...p, id: e.target.value }))} style={inputStyle} disabled={!isNew} />
             </Field>
             <Field label="Category">
-              <select
-                value={form.category_id}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, category_id: event.target.value }))
-                }
-                style={inputStyle}
-              >
+              <select value={form.category_id} onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))} style={inputStyle}>
                 <option value="">Select category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
             <Field label="Title">
-              <input
-                value={form.title}
-                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-                style={inputStyle}
-              />
+              <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} style={inputStyle} />
             </Field>
             <Field label="Subtitle">
-              <input
-                value={form.subtitle}
-                onChange={(event) => setForm((prev) => ({ ...prev, subtitle: event.target.value }))}
-                style={inputStyle}
-              />
+              <input value={form.subtitle} onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))} style={inputStyle} />
             </Field>
             <Field label="Badge">
-              <input
-                value={form.badge}
-                onChange={(event) => setForm((prev) => ({ ...prev, badge: event.target.value }))}
-                style={inputStyle}
-              />
+              <input value={form.badge} onChange={(e) => setForm((p) => ({ ...p, badge: e.target.value }))} style={inputStyle} />
             </Field>
             <Field label="Base price">
-              <input
-                type="number"
-                value={form.base_price}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, base_price: event.target.value }))
-                }
-                style={inputStyle}
-              />
-            </Field>
-            <Field label="Default background">
-              <Select<SelectOption, false>
-                options={bgToneOptions}
-                value={bgToneOptions.find((option) => option.value === form.default_bg) ?? null}
-                onChange={(selected) =>
-                  setForm((prev) => ({ ...prev, default_bg: selected?.value ?? '' }))
-                }
-                styles={selectStyles}
-              />
-            </Field>
-            <Field label="Default frame">
-              <Select<SelectOption, false>
-                options={frameOptions}
-                value={frameOptions.find((option) => option.value === form.default_frame) ?? null}
-                onChange={(selected) =>
-                  setForm((prev) => ({ ...prev, default_frame: selected?.value ?? '' }))
-                }
-                styles={selectStyles}
-              />
+              <input type="number" value={form.base_price} onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))} style={inputStyle} />
             </Field>
           </div>
 
           <Field label="Description">
-            <textarea
-              value={form.description}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, description: event.target.value }))
-              }
-              rows={4}
-              style={{ ...inputStyle, resize: 'vertical' }}
-            />
+            <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
           </Field>
           <Field label="Meaning">
-            <textarea
-              value={form.meaning}
-              onChange={(event) => setForm((prev) => ({ ...prev, meaning: event.target.value }))}
-              rows={3}
-              style={{ ...inputStyle, resize: 'vertical' }}
-            />
+            <textarea value={form.meaning} onChange={(e) => setForm((p) => ({ ...p, meaning: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
           </Field>
 
-          <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}
-          >
-            <Field label="Background tones">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+            <Field label="Zodiac">
               <Select<SelectOption, true>
                 isMulti
-                options={bgToneOptions}
-                value={bgToneOptions.filter((option) => form.bg_tones.includes(option.value))}
-                onChange={(selected) =>
-                  setForm((prev) => ({ ...prev, bg_tones: selected.map((option) => option.value) }))
-                }
+                options={ZODIAC.map((z) => ({ value: z.id, label: `${z.name} (${z.years})` }))}
+                value={ZODIAC.filter((z) => form.zodiac_ids.includes(z.id)).map((z) => ({ value: z.id, label: `${z.name} (${z.years})` }))}
+                onChange={(sel) => setForm((p) => ({ ...p, zodiac_ids: sel.map((o) => o.value) }))}
                 styles={selectStyles}
-              />
-            </Field>
-            <Field label="Frames">
-              <Select<SelectOption, true>
-                isMulti
-                options={frameOptions}
-                value={frameOptions.filter((option) => form.frames.includes(option.value))}
-                onChange={(selected) =>
-                  setForm((prev) => ({ ...prev, frames: selected.map((option) => option.value) }))
-                }
-                styles={selectStyles}
-              />
-            </Field>
-            <Field label="Zodiac IDs (comma separated)">
-              <input
-                value={form.zodiac_ids}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, zodiac_ids: event.target.value }))
-                }
-                style={inputStyle}
               />
             </Field>
             <Field label="Purpose place">
-              <Select<SelectOption, true>
-                isMulti
-                options={placeOptions}
-                value={placeOptions.filter((option) => form.purpose_place.includes(option.value))}
-                onChange={(selected) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    purpose_place: selected.map((option) => option.value),
-                  }))
-                }
-                styles={selectStyles}
-              />
+              <Select<SelectOption, true> isMulti options={placeOptions} value={placeOptions.filter((o) => form.purpose_place.includes(o.value))} onChange={(sel) => setForm((p) => ({ ...p, purpose_place: sel.map((o) => o.value) }))} styles={selectStyles} />
             </Field>
             <Field label="Purpose use (comma separated)">
-              <input
-                value={form.purpose_use}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, purpose_use: event.target.value }))
-                }
-                style={inputStyle}
-              />
+              <input value={form.purpose_use} onChange={(e) => setForm((p) => ({ ...p, purpose_use: e.target.value }))} style={inputStyle} />
             </Field>
             <Field label="Purpose avoid (comma separated)">
-              <input
-                value={form.purpose_avoid}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, purpose_avoid: event.target.value }))
-                }
-                style={inputStyle}
-              />
+              <input value={form.purpose_avoid} onChange={(e) => setForm((p) => ({ ...p, purpose_avoid: e.target.value }))} style={inputStyle} />
             </Field>
           </div>
 
           <Field label="Specs (one key: value per line)">
-            <textarea
-              value={form.specs}
-              onChange={(event) => setForm((prev) => ({ ...prev, specs: event.target.value }))}
-              rows={4}
-              style={{ ...inputStyle, resize: 'vertical' }}
-            />
+            <textarea value={form.specs} onChange={(e) => setForm((p) => ({ ...p, specs: e.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
           </Field>
 
-          <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
             <label style={checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={form.requires_bg_tone}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, requires_bg_tone: event.target.checked }))
-                }
-              />
-              Requires bg tone
-            </label>
-            <label style={checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={form.requires_frame}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, requires_frame: event.target.checked }))
-                }
-              />
-              Requires frame
-            </label>
-            <label style={checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={form.requires_size}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, requires_size: event.target.checked }))
-                }
-              />
+              <input type="checkbox" checked={form.requires_size} onChange={(e) => setForm((p) => ({ ...p, requires_size: e.target.checked }))} />
               Requires size
             </label>
             <label style={checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, is_active: event.target.checked }))
-                }
-              />
+              <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
               Active
             </label>
+            <Field label="Sort order">
+              <input type="number" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))} style={inputStyle} />
+            </Field>
           </div>
 
-          <Field label="Sort order">
-            <input
-              type="number"
-              value={form.sort_order}
-              onChange={(event) => setForm((prev) => ({ ...prev, sort_order: event.target.value }))}
-              style={inputStyle}
-            />
-          </Field>
+          {/* Variant Options */}
+          <section style={sectionStyle}>
+            <div style={sectionHeader}>
+              <h2 style={sectionTitle}>Variant Options</h2>
+              <button type="button" onClick={addVariantOptionRow} style={secondaryBtn}>Add option</button>
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {variantOptions.map((row, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 8, alignItems: 'start' }}>
+                  <input placeholder="key (e.g. bg_tone)" value={row.key} onChange={(e) => updateVariantOptionRow(i, { key: e.target.value })} style={inputStyle} />
+                  <input placeholder="label (e.g. Màu nền)" value={row.label} onChange={(e) => updateVariantOptionRow(i, { label: e.target.value })} style={inputStyle} />
+                  <input placeholder="values (comma sep, e.g. gold,red,bronze)" value={row.values} onChange={(e) => updateVariantOptionRow(i, { values: e.target.value })} style={inputStyle} />
+                  <button type="button" onClick={() => removeVariantOptionRow(i)} style={secondaryBtn}>Remove</button>
+                </div>
+              ))}
+            </div>
+            {parsedVariantOptions.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Default variant (shown by default)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+                  {parsedVariantOptions.map((opt) => (
+                    <Field key={opt.key} label={`Default ${opt.label || opt.key}`}>
+                      <select
+                        value={defaultVariant[opt.key] ?? ''}
+                        onChange={(e) => setDefaultVariant((prev) => ({ ...prev, [opt.key]: e.target.value }))}
+                        style={inputStyle}
+                      >
+                        <option value="">—</option>
+                        {opt.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </Field>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
 
+          {/* Sizes */}
           <section style={sectionStyle}>
             <div style={sectionHeader}>
               <h2 style={sectionTitle}>Sizes</h2>
-              <button type="button" onClick={addSizeRow} style={secondaryBtn}>
-                Add size row
-              </button>
+              <button type="button" onClick={addSizeRow} style={secondaryBtn}>Add size row</button>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {sizes.map((row, index) => (
                 <div key={row.id} style={gridRow}>
-                  <input
-                    placeholder="Size label"
-                    value={row.size_label}
-                    onChange={(event) => updateSizeRow(index, { size_label: event.target.value })}
-                    style={inputStyle}
-                  />
-                  <input
-                    placeholder="Size code"
-                    value={row.size_code}
-                    onChange={(event) => updateSizeRow(index, { size_code: event.target.value })}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={row.price}
-                    onChange={(event) => updateSizeRow(index, { price: event.target.value })}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Sort"
-                    value={row.sort_order}
-                    onChange={(event) => updateSizeRow(index, { sort_order: event.target.value })}
-                    style={inputStyle}
-                  />
-                  <button type="button" onClick={() => removeSizeRow(index)} style={secondaryBtn}>
-                    Remove
-                  </button>
+                  <input placeholder="Size label" value={row.size_label} onChange={(e) => updateSizeRow(index, { size_label: e.target.value })} style={inputStyle} />
+                  <input placeholder="Size code" value={row.size_code} onChange={(e) => updateSizeRow(index, { size_code: e.target.value })} style={inputStyle} />
+                  <input type="number" placeholder="Sort" value={row.sort_order} onChange={(e) => updateSizeRow(index, { sort_order: e.target.value })} style={inputStyle} />
+                  <button type="button" onClick={() => removeSizeRow(index)} style={secondaryBtn}>Remove</button>
                 </div>
               ))}
             </div>
           </section>
 
+          {/* SKU Pricing Matrix */}
+          <SKUMatrix
+            sizes={sizes}
+            variantOptions={parsedVariantOptions}
+            skus={skus}
+            onSkusChange={setSkus}
+          />
+
+          {/* Images */}
           <section style={sectionStyle}>
             <div style={sectionHeader}>
               <h2 style={sectionTitle}>Images</h2>
-              <span style={{ color: '#6b7280', fontSize: 13 }}>
-                {effectiveProductId
-                  ? effectiveProductId
-                  : 'Save the product first to upload images'}
-              </span>
+              {!effectiveProductId && <span style={{ color: '#6b7280', fontSize: 13 }}>Save product first</span>}
             </div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {images.map((image) => (
-                <div
-                  key={image.id}
-                  style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={image.url}
-                    alt=""
-                    style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }}
-                  />
-                  <div style={{ display: 'grid', gap: 4, flex: 1 }}>
-                    <strong style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{image.url}</strong>
-                    <span style={{ color: '#6b7280', fontSize: 12 }}>
-                      bg tone: {image.bg_tone ?? '-'} | frame: {image.frame ?? '-'}
-                    </span>
-                  </div>
-                  <button type="button" onClick={() => deleteImage(image.id)} style={secondaryBtn}>
-                    Delete
-                  </button>
+
+            {effectiveProductId && (
+              <>
+                {/* Tab bar */}
+                <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e5e7eb', marginBottom: 12 }}>
+                  {(['attached', 'library', 'upload'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setImageTab(tab)}
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: 13,
+                        border: 'none',
+                        borderBottom: imageTab === tab ? '2px solid #7f1d1d' : '2px solid transparent',
+                        background: 'none',
+                        color: imageTab === tab ? '#7f1d1d' : '#6b7280',
+                        cursor: 'pointer',
+                        fontWeight: imageTab === tab ? 600 : 400,
+                      }}
+                    >
+                      {tab === 'attached' ? `Attached (${images.length})` : tab === 'library' ? 'From library' : 'Upload new'}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-              <input
-                type="file"
-                onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
-              />
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                  gap: 10,
-                }}
-              >
-                <input
-                  placeholder="bgTone"
-                  value={uploadBgTone}
-                  onChange={(event) => setUploadBgTone(event.target.value)}
-                  style={inputStyle}
-                />
-                <input
-                  placeholder="frame"
-                  value={uploadFrame}
-                  onChange={(event) => setUploadFrame(event.target.value)}
-                  style={inputStyle}
-                />
-                <button
-                  type="button"
-                  onClick={uploadImage}
-                  disabled={!effectiveProductId || !uploadFile}
-                  style={primaryBtn}
-                >
-                  Upload image
-                </button>
-              </div>
-            </div>
+
+                {/* Attached tab */}
+                {imageTab === 'attached' && (
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {images.length === 0 && <p style={{ color: '#6b7280', fontSize: 13 }}>No images attached.</p>}
+                    {images.map((image) => (
+                      <div key={image.id} style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={image.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                        <div style={{ display: 'grid', gap: 4, flex: 1 }}>
+                          <strong style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{image.name || image.url}</strong>
+                          <span style={{ color: '#6b7280', fontSize: 12 }}>
+                            {(image.attrs ?? []).length > 0
+                              ? (image.attrs ?? []).map((a) => `${a.key}=${a.value}`).join(' · ')
+                              : 'no attrs'}
+                          </span>
+                        </div>
+                        <button type="button" onClick={() => handleDetachImage(image.id)} style={secondaryBtn}>Detach</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Library tab */}
+                {imageTab === 'library' && (
+                  <div>
+                    {parsedVariantOptions.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8, marginBottom: 12 }}>
+                        {parsedVariantOptions.map((opt) => (
+                          <Field key={opt.key} label={opt.label || opt.key}>
+                            <select
+                              value={attachAttrs[opt.key] ?? ''}
+                              onChange={(e) => setAttachAttrs((prev) => ({ ...prev, [opt.key]: e.target.value }))}
+                              style={inputStyle}
+                            >
+                              <option value="">—</option>
+                              {opt.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          </Field>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
+                      {libraryImages.map((img) => (
+                        <div key={img.id} style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', cursor: 'pointer' }} onClick={() => handleAttachImage(img.id)}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={img.url} alt={img.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                          <div style={{ padding: '4px 6px', fontSize: 11, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload tab */}
+                {imageTab === 'upload' && (
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    <Field label="File">
+                      <input type="file" onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)} />
+                    </Field>
+                    <Field label="Name">
+                      <input placeholder="Image name" value={uploadName} onChange={(e) => setUploadName(e.target.value)} style={inputStyle} />
+                    </Field>
+                    {parsedVariantOptions.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+                        {parsedVariantOptions.map((opt) => (
+                          <Field key={opt.key} label={opt.label || opt.key}>
+                            <select
+                              value={uploadAttrs[opt.key] ?? ''}
+                              onChange={(e) => setUploadAttrs((prev) => ({ ...prev, [opt.key]: e.target.value }))}
+                              style={inputStyle}
+                            >
+                              <option value="">—</option>
+                              {opt.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          </Field>
+                        ))}
+                      </div>
+                    )}
+                    <button type="button" onClick={handleUploadImage} disabled={!uploadFile} style={primaryBtn}>
+                      Upload & attach
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="submit" disabled={saving} style={primaryBtn}>
               {saving ? 'Saving...' : 'Save Product'}
             </button>
-            <button
-              type="button"
-              onClick={() => router.push('/admin/products')}
-              style={secondaryBtn}
-            >
+            <button type="button" onClick={() => router.push('/admin/products')} style={secondaryBtn}>
               Cancel
             </button>
           </div>
@@ -711,10 +618,7 @@ export default function AdminProductEditPage() {
 }
 
 function splitList(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+  return value.split(',').map((item) => item.trim()).filter(Boolean)
 }
 
 function joinList(items: string[] | null | undefined): string {
@@ -729,79 +633,206 @@ function parseSpecs(value: string): Record<string, string> | null {
     .map((line) => line.split(':'))
     .map(([key, ...rest]) => [key?.trim(), rest.join(':').trim()])
     .filter(([key, specValue]) => Boolean(key) && Boolean(specValue)) as Array<[string, string]>
-
-  if (entries.length === 0) {
-    return null
-  }
-
+  if (entries.length === 0) return null
   return Object.fromEntries(entries)
 }
 
 function stringifySpecs(specs: Record<string, string> | null | undefined): string {
-  if (!specs) {
-    return ''
-  }
-
-  return Object.entries(specs)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('\n')
+  if (!specs) return ''
+  return Object.entries(specs).map(([key, value]) => `${key}: ${value}`).join('\n')
 }
 
 const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '9px 12px',
   border: '1px solid #d1d5db',
   borderRadius: 6,
-  padding: '10px 12px',
   fontSize: 14,
-  width: '100%',
+  outline: 'none',
+  boxSizing: 'border-box',
 }
+
 const primaryBtn: React.CSSProperties = {
-  border: 'none',
+  padding: '10px 20px',
   background: '#7f1d1d',
   color: 'white',
+  border: 'none',
   borderRadius: 6,
-  padding: '9px 12px',
+  fontSize: 14,
   cursor: 'pointer',
+  fontWeight: 500,
 }
+
 const secondaryBtn: React.CSSProperties = {
-  border: '1px solid #d1d5db',
+  padding: '8px 14px',
   background: 'white',
   color: '#374151',
+  border: '1px solid #d1d5db',
   borderRadius: 6,
-  padding: '9px 12px',
+  fontSize: 13,
   cursor: 'pointer',
 }
-const sectionStyle: React.CSSProperties = {
-  border: '1px solid #e5e7eb',
-  borderRadius: 8,
-  padding: 12,
-  display: 'grid',
-  gap: 12,
-}
-const sectionHeader: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 12,
-}
-const sectionTitle: React.CSSProperties = { margin: 0, fontSize: 18, fontWeight: 700 }
-const gridRow: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '1.5fr 1fr 1fr 0.8fr auto',
-  gap: 8,
-  alignItems: 'center',
-}
-const imageRow: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 12,
-  border: '1px solid #f3f4f6',
-  borderRadius: 8,
-  padding: 10,
-}
+
 const checkboxLabel: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 8,
   fontSize: 14,
+  color: '#374151',
+  cursor: 'pointer',
+}
+
+const sectionStyle: React.CSSProperties = {
+  border: '1px solid #e5e7eb',
+  borderRadius: 8,
+  padding: 14,
+}
+
+const sectionHeader: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 12,
+}
+
+const sectionTitle: React.CSSProperties = {
+  fontSize: 15,
+  fontWeight: 600,
+  color: '#111827',
+  margin: 0,
+}
+
+const gridRow: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr 1fr auto',
+  gap: 8,
+  alignItems: 'start',
+}
+
+const imageRow: React.CSSProperties = {
+  border: '1px solid #e5e7eb',
+  borderRadius: 8,
+  padding: 10,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+}
+
+// ─── SKU Matrix Component ──────────────────────────────────────────────────
+
+function cartesian(arrays: string[][]): string[][] {
+  if (arrays.length === 0) return [[]]
+  return arrays.reduce<string[][]>((acc, arr) => {
+    return acc.flatMap((prev) => arr.map((v) => [...prev, v]))
+  }, [[]])
+}
+
+interface SKUMatrixProps {
+  sizes: SizeFormRow[]
+  variantOptions: VariantOption[]
+  skus: SKUFormRow[]
+  onSkusChange: (skus: SKUFormRow[]) => void
+}
+
+function SKUMatrix({ sizes, variantOptions, skus, onSkusChange }: SKUMatrixProps) {
+  const attrKeys = variantOptions.map((o) => o.key)
+  const attrValueArrays = variantOptions.map((o) => o.values)
+  const attrCombos = cartesian(attrValueArrays) // e.g. [["gold","bronze"],["gold","gold"],...]
+  const sizeEntries = sizes.length > 0 ? sizes : [{ size_code: null as unknown as string, size_label: '(no size)' }]
+
+  // Build expected rows: one per (size × attrCombo)
+  const expectedRows: SKUFormRow[] = sizeEntries.flatMap((size) =>
+    attrCombos.map((combo) => {
+      const attrs: Record<string, string> = {}
+      attrKeys.forEach((k, i) => { attrs[k] = combo[i] ?? '' })
+      const sizeCode = size.size_code || null
+      // Try to find existing sku to preserve price
+      const existing = skus.find(
+        (s) =>
+          s.size_code === sizeCode &&
+          attrKeys.every((k) => s.attrs[k] === attrs[k])
+      )
+      return { size_code: sizeCode, attrs, price: existing?.price ?? '0' }
+    })
+  )
+
+  // If no sizes and no variants: single row
+  const rows = expectedRows.length > 0 ? expectedRows : [{ size_code: null, attrs: {}, price: skus[0]?.price ?? '0' }]
+
+  // Sync rows → skus whenever they change (avoid infinite loop by comparing lengths/keys)
+  const rowsKey = JSON.stringify(rows.map((r) => ({ ...r, price: undefined })))
+  const skusKey = JSON.stringify(skus.map((s) => ({ ...s, price: undefined })))
+  if (rowsKey !== skusKey) {
+    // schedule update outside render
+    setTimeout(() => onSkusChange(rows), 0)
+  }
+
+  function updatePrice(idx: number, price: string) {
+    const next = [...rows]
+    next[idx] = { ...next[idx], price }
+    onSkusChange(next)
+  }
+
+  const colLabel = (attrs: Record<string, string>) =>
+    Object.entries(attrs).map(([k, v]) => `${v}`).join(' · ') || '—'
+
+  return (
+    <section style={sectionStyle}>
+      <div style={sectionHeader}>
+        <h2 style={sectionTitle}>Pricing (SKUs)</h2>
+        <span style={{ fontSize: 12, color: '#6b7280' }}>Price per size × variant combo</span>
+      </div>
+      {rows.length === 0 ? (
+        <p style={{ color: '#6b7280', fontSize: 13 }}>Add sizes or variant options above to configure pricing.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                {sizes.length > 0 && <th style={thStyle}>Size</th>}
+                {attrKeys.map((k) => <th key={k} style={thStyle}>{k}</th>)}
+                <th style={thStyle}>Price (VND)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  {sizes.length > 0 && (
+                    <td style={tdStyle}>
+                      {sizeEntries.find((s) => (s.size_code || null) === row.size_code)?.size_label ?? row.size_code ?? '—'}
+                    </td>
+                  )}
+                  {attrKeys.map((k) => (
+                    <td key={k} style={tdStyle}>{row.attrs[k] || '—'}</td>
+                  ))}
+                  <td style={tdStyle}>
+                    <input
+                      type="number"
+                      value={row.price}
+                      onChange={(e) => updatePrice(idx, e.target.value)}
+                      style={{ ...inputStyle, width: 140 }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+const thStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  textAlign: 'left',
+  fontWeight: 600,
+  color: '#374151',
+  whiteSpace: 'nowrap',
+}
+
+const tdStyle: React.CSSProperties = {
+  padding: '6px 12px',
+  color: '#374151',
+  whiteSpace: 'nowrap',
 }
