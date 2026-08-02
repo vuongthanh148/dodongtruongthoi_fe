@@ -1,5 +1,5 @@
-import type { Category, Product } from '@/lib/types'
 import { API_BASE } from '@/lib/api-config'
+import type { Category, Product } from '@/lib/types'
 
 const apiFetch: typeof fetch = (input, init) =>
   fetch(input, { ...init, headers: { 'ngrok-skip-browser-warning': '1', ...init?.headers } })
@@ -254,7 +254,7 @@ function normalizeProduct(raw: AdminProduct): Product {
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    const res = await apiFetch(`${API_BASE}/categories`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/categories`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminCategory[] } | AdminCategory[]
     const categories = Array.isArray(data) ? data : data.data || []
@@ -266,7 +266,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchCategory(id: string): Promise<Category | null> {
   try {
-    const res = await apiFetch(`${API_BASE}/categories/${id}`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/categories/${id}`)
     if (!res.ok) return null
     const data = (await res.json()) as ApiDataEnvelope<AdminCategory>
     const raw = unwrapData(data)
@@ -286,13 +286,14 @@ export async function fetchProducts(params?: {
   offset?: number
 }): Promise<Product[]> {
   try {
-    const url = new URL(`${API_BASE}/products`)
-    if (params?.category) url.searchParams.set('category', params.category)
-    if (params?.sort) url.searchParams.set('sort', params.sort)
-    if (params?.limit) url.searchParams.set('limit', params.limit.toString())
-    if (params?.offset) url.searchParams.set('offset', params.offset.toString())
+    const qs = new URLSearchParams()
+    if (params?.category) qs.set('category', params.category)
+    if (params?.sort) qs.set('sort', params.sort)
+    if (params?.limit) qs.set('limit', params.limit.toString())
+    if (params?.offset) qs.set('offset', params.offset.toString())
+    const suffix = qs.toString() ? `?${qs.toString()}` : ''
 
-    const res = await apiFetch(url.toString(), { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/products${suffix}`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminProduct[] } | AdminProduct[]
     const products = Array.isArray(data) ? data : data.data || []
@@ -304,7 +305,7 @@ export async function fetchProducts(params?: {
 
 export async function fetchProduct(id: string): Promise<Product | null> {
   try {
-    const res = await apiFetch(`${API_BASE}/products/${id}`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/products/${id}`)
     if (!res.ok) return null
     const data = (await res.json()) as ApiDataEnvelope<AdminProduct>
     const raw = unwrapData(data)
@@ -327,7 +328,7 @@ export type Review = {
 
 export async function fetchProductReviews(productId: string): Promise<Review[]> {
   try {
-    const res = await apiFetch(`${API_BASE}/products/${productId}/reviews`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/products/${productId}/reviews`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminReviewItem[] }
     return (data.data || []).map((r) => ({
@@ -344,7 +345,7 @@ export async function fetchProductReviews(productId: string): Promise<Review[]> 
 
 export async function fetchBanners(): Promise<Banner[]> {
   try {
-    const res = await apiFetch(`${API_BASE}/banners`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/banners`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminBannerItem[] }
     const banners = data.data || []
@@ -365,7 +366,7 @@ export async function fetchBanners(): Promise<Banner[]> {
 
 export async function fetchCampaigns(): Promise<Campaign[]> {
   try {
-    const res = await apiFetch(`${API_BASE}/campaigns`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/campaigns`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminCampaignItem[] }
     const campaigns = data.data || []
@@ -386,7 +387,7 @@ export async function fetchCampaigns(): Promise<Campaign[]> {
 
 export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
   try {
-    const res = await apiFetch(`${API_BASE}/customer-photos`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/customer-photos`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: AdminCustomerPhotoItem[] }
     const photos = data.data || []
@@ -405,7 +406,7 @@ export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
 
 export async function fetchSettings(): Promise<Record<string, string>> {
   try {
-    const res = await apiFetch(`${API_BASE}/settings`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/settings`)
     if (!res.ok) return {}
     const data = (await res.json()) as ApiDataEnvelope<Record<string, string>>
     const settings = unwrapData(data)
@@ -502,9 +503,7 @@ export async function createOrder(
 
 export async function getOrdersByPhone(phone: string): Promise<import('@/lib/types').Order[]> {
   try {
-    const url = new URL(`${API_BASE}/orders`)
-    url.searchParams.set('phone', phone)
-    const res = await apiFetch(url.toString(), { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/orders?phone=${encodeURIComponent(phone)}`)
     if (!res.ok) return []
     const data = (await res.json()) as { data?: RawOrder[] }
     const orders = data.data || []
@@ -516,7 +515,7 @@ export async function getOrdersByPhone(phone: string): Promise<import('@/lib/typ
 
 export async function getOrderById(id: string): Promise<import('@/lib/types').Order | null> {
   try {
-    const res = await apiFetch(`${API_BASE}/orders/${id}`, { cache: 'no-store' })
+    const res = await apiFetch(`${API_BASE}/orders/${id}`)
     if (!res.ok) return null
     const data = (await res.json()) as { data?: RawOrder }
     if (!data.data) return null

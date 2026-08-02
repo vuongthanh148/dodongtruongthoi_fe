@@ -339,7 +339,7 @@ export default function CategoryPage() {
             </Btn>
           </div>
         ) : view === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
             {visibleProducts.map((product, idx) => (
               <ProductCardV2
                 key={product.id}

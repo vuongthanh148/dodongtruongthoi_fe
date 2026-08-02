@@ -91,7 +91,10 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
         <div
           style={{
             background: 'var(--bg-dark)',
-            padding: '52px 20px 22px',
+            paddingTop: 'max(20px, env(safe-area-inset-top, 20px))',
+            paddingBottom: 22,
+            paddingLeft: 20,
+            paddingRight: 20,
             position: 'relative',
             flexShrink: 0,
           }}
@@ -101,7 +104,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
             onClick={onClose}
             style={{
               position: 'absolute',
-              top: 50,
+              top: 'max(18px, calc(env(safe-area-inset-top, 20px) - 2px))',
               right: 16,
               width: 34,
               height: 34,

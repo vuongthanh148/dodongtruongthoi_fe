@@ -74,7 +74,7 @@ export function FeaturedProductsSection({
       </div>
 
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
         {loading ? (
           Array(FEATURED_PRODUCTS_COUNT)
             .fill(null)

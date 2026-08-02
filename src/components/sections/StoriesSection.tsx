@@ -14,11 +14,19 @@ interface StoriesSectionProps {
   coverImageUrl?: string
 }
 
-export function StoriesSection({ banners = [], customerPhotos = [], coverImageUrl }: StoriesSectionProps) {
+export function StoriesSection({
+  banners = [],
+  customerPhotos = [],
+  coverImageUrl,
+}: StoriesSectionProps) {
   const router = useRouter()
   const story = STORY_CARDS[0]
   const resolvedCoverImageUrl =
-    coverImageUrl ?? customerPhotos[0]?.imageUrl ?? banners[0]?.imageUrl ?? customerPhotos[1]?.imageUrl ?? banners[1]?.imageUrl
+    coverImageUrl ??
+    customerPhotos[0]?.imageUrl ??
+    banners[0]?.imageUrl ??
+    customerPhotos[1]?.imageUrl ??
+    banners[1]?.imageUrl
 
   return (
     <section
@@ -32,11 +40,30 @@ export function StoriesSection({ banners = [], customerPhotos = [], coverImageUr
       }}
     >
       {/* DrumMark watermark bottom-left */}
-      <div style={{ position: 'absolute', left: -40, bottom: -40, opacity: 0.04, pointerEvents: 'none', zIndex: 0 }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: -40,
+          bottom: -40,
+          opacity: 0.04,
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      >
         <DrumMark size={200} color="var(--gold)" />
       </div>
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 9.5, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--gold)' }}>Câu chuyện làng nghề</div>
+        <div
+          style={{
+            fontFamily: 'var(--font-jetbrains), monospace',
+            fontSize: 9.5,
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            color: 'var(--gold)',
+          }}
+        >
+          Câu chuyện làng nghề
+        </div>
       </div>
 
       <div
@@ -54,7 +81,14 @@ export function StoriesSection({ banners = [], customerPhotos = [], coverImageUr
             background: 'rgba(255,255,255,0.02)',
           }}
         >
-          <div style={{ aspectRatio: '16 / 9', position: 'relative', borderRadius: 6 }}>
+          <div
+            style={{
+              aspectRatio: '16 / 9',
+              position: 'relative',
+              borderRadius: 6,
+              overflow: 'hidden',
+            }}
+          >
             {resolvedCoverImageUrl ? (
               <div
                 style={{
@@ -86,7 +120,7 @@ export function StoriesSection({ banners = [], customerPhotos = [], coverImageUr
                 position: 'absolute',
                 inset: 0,
                 background:
-                  'linear-gradient(180deg, rgba(20,14,9,0.14) 0%, rgba(20,14,9,0.2) 50%, rgba(20,14,9,0.88) 100%)',
+                  'linear-gradient(180deg, rgba(20,14,9,0.14) 0%, rgba(20,14,9,0.2) 50%, rgba(20,14,9,0.55) 100%)',
               }}
             />
           </div>

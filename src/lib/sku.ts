@@ -7,13 +7,13 @@ export function resolveSKUPrice(
   fallback: number
 ): number {
   const code = sizeCode ?? null
-  const attrEntries = Object.entries(selectedAttrs)
 
-  // Exact match: size + all attrs
+  // Exact match: size + all SKU attrs present in selected attrs
+  // SKU only stores price-affecting attrs — extra selected attrs (display-only) are ignored
   const exact = skus.find(
     (s) =>
       s.size_code === code &&
-      attrEntries.every(([k, v]) => s.attrs[k] === v)
+      Object.entries(s.attrs).every(([k, v]) => selectedAttrs[k] === v)
   )
   if (exact) return exact.price
 

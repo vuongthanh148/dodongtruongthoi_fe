@@ -31,23 +31,29 @@ export function Carousel<T>({
   const dragStartXRef = useRef<number | null>(null)
   const isDraggingRef = useRef(false)
   const currentIndexRef = useRef(currentIndex)
+  const touchStartXRef = useRef<number | null>(null)
 
-  const navigate = useCallback((index: number, wrap = false) => {
-    const length = items.length
-    if (length <= 0) {
-      onIndexChange(0)
-      return
-    }
+  const navigate = useCallback(
+    (index: number, wrap = false) => {
+      const length = items.length
+      if (length <= 0) {
+        onIndexChange(0)
+        return
+      }
 
-    const maxIndex = length - 1
-    const nextIndex = wrap ? ((index % length) + length) % length : Math.max(0, Math.min(index, maxIndex))
+      const maxIndex = length - 1
+      const nextIndex = wrap
+        ? ((index % length) + length) % length
+        : Math.max(0, Math.min(index, maxIndex))
 
-    const container = containerRef.current
-    if (container) {
-      container.scrollTo({ left: container.clientWidth * nextIndex, behavior: 'smooth' })
-    }
-    onIndexChange(nextIndex)
-  }, [items.length, onIndexChange])
+      const container = containerRef.current
+      if (container) {
+        container.scrollTo({ left: container.clientWidth * nextIndex, behavior: 'smooth' })
+      }
+      onIndexChange(nextIndex)
+    },
+    [items.length, onIndexChange]
+  )
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -72,6 +78,19 @@ export function Carousel<T>({
     } else if (deltaX < -swipeThreshold) {
       navigate(currentIndex - 1, true)
     }
+  }
+
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    touchStartXRef.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
+    const startX = touchStartXRef.current
+    if (startX === null) return
+    touchStartXRef.current = null
+    const deltaX = startX - e.changedTouches[0].clientX
+    if (deltaX > 35) navigate(currentIndex + 1, true)
+    else if (deltaX < -35) navigate(currentIndex - 1, true)
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -100,7 +119,8 @@ export function Carousel<T>({
     }
 
     const timer = window.setInterval(() => {
-      const nextIndex = currentIndexRef.current >= items.length - 1 ? 0 : currentIndexRef.current + 1
+      const nextIndex =
+        currentIndexRef.current >= items.length - 1 ? 0 : currentIndexRef.current + 1
       onIndexChange(nextIndex)
     }, autoScrollMs)
 
@@ -109,27 +129,30 @@ export function Carousel<T>({
     }
   }, [autoScrollMs, items.length, onIndexChange])
 
-  const navStyles = navColor === 'light' ? {
-    button: {
-      border: '1px solid rgba(244,237,224,0.35)',
-      background: 'rgba(20,14,9,0.45)',
-      color: '#f4ede0',
-    },
-    dot: {
-      active: 'var(--gold)',
-      inactive: 'rgba(244,237,224,0.3)',
-    },
-  } : {
-    button: {
-      border: '1px solid rgba(255, 238, 218, 0.38)',
-      background: 'rgba(43, 24, 12, 0.46)',
-      color: '#fff8ef',
-    },
-    dot: {
-      active: '#c9a961',
-      inactive: 'rgba(255, 238, 218, 0.3)',
-    },
-  }
+  const navStyles =
+    navColor === 'light'
+      ? {
+          button: {
+            border: '1px solid rgba(244,237,224,0.35)',
+            background: 'rgba(20,14,9,0.45)',
+            color: '#f4ede0',
+          },
+          dot: {
+            active: 'var(--gold)',
+            inactive: 'rgba(244,237,224,0.3)',
+          },
+        }
+      : {
+          button: {
+            border: '1px solid rgba(255, 238, 218, 0.38)',
+            background: 'rgba(43, 24, 12, 0.46)',
+            color: '#fff8ef',
+          },
+          dot: {
+            active: '#c9a961',
+            inactive: 'rgba(255, 238, 218, 0.3)',
+          },
+        }
 
   return (
     <div style={containerStyle}>
@@ -150,6 +173,8 @@ export function Carousel<T>({
         role="region"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onKeyDown={handleKeyDown}
       >
         {items.map((item, idx) => (

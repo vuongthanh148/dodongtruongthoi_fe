@@ -250,7 +250,7 @@ export function ProductCardV2({ product, onOpen, tall = false, style: styleProp 
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginTop: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
           <Price amount={displayPrice} size="md" />
           {product.rating > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-muted)' }}>

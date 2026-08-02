@@ -2,25 +2,24 @@
 
 import { IconClose, IconCompare, IconHeart, IconStar } from '@/components/icons'
 import { TopBar } from '@/components/layout/TopBar'
-import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
 import { Label } from '@/components/ui/Label'
 import { Price } from '@/components/ui/Price'
-import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
-import { SectionHeading } from '@/components/ui/SectionHeading'
+import { ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
-import {
-  DEFAULT_PLACE_LABELS,
-  DEFAULT_SPEC_LABELS,
-  PRODUCTS,
-  ZODIAC,
-} from '@/lib/data'
-import { addRecentlyViewed, getSavedProducts, getRecentlyViewedIds, toggleSavedProduct, upsertCartItem } from '@/lib/storage'
+import { DEFAULT_PLACE_LABELS, DEFAULT_SPEC_LABELS, PRODUCTS, ZODIAC } from '@/lib/data'
 import { pickVariantImage } from '@/lib/image'
 import { resolveSKUPrice, resolveSizeDisplayPrice } from '@/lib/sku'
+import {
+  addRecentlyViewed,
+  getRecentlyViewedIds,
+  getSavedProducts,
+  toggleSavedProduct,
+  upsertCartItem,
+} from '@/lib/storage'
 import {
   fetchProduct,
   fetchProductReviews,
@@ -28,13 +27,13 @@ import {
   fetchSettings,
   parseLabelOverrides,
 } from '@/lib/storefront-api'
+import { SWR_KEYS } from '@/lib/swr-keys'
 import type { Product, SavedProductVariant } from '@/lib/types'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import useSWR from 'swr'
-import { SWR_KEYS } from '@/lib/swr-keys'
 
 type TabId = 'description' | 'guide' | 'specs' | 'reviews'
 type ArtBg = 'gold' | 'red' | 'bronze' | 'dark'
@@ -51,7 +50,8 @@ function CompareModal({
 }) {
   const bgToneOpt = product.variantOptions.find((o) => o.key === 'bg_tone')
   const bgValues = bgToneOpt?.values ?? []
-  const activeBg = activeAttrs['bg_tone'] ?? product.defaultVariant['bg_tone'] ?? bgValues[0] ?? 'gold'
+  const activeBg =
+    activeAttrs['bg_tone'] ?? product.defaultVariant['bg_tone'] ?? bgValues[0] ?? 'gold'
   const activeFrame = activeAttrs['frame'] ?? product.defaultVariant['frame'] ?? 'bronze'
 
   const [combos, setCombos] = useState(() => [
@@ -117,10 +117,23 @@ function CompareModal({
         {combos.map((combo, i) => (
           <div
             key={i}
-            style={{ background: 'var(--bg-card)', borderRadius: 8, padding: 10, border: '1px solid var(--border)' }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 8,
+              padding: 10,
+              border: '1px solid var(--border)',
+            }}
           >
             <ArtPiece bg={combo.bg} frame={combo.frame} label="" pad={10} aspect="4/3" />
-            <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                justifyContent: 'space-between',
+              }}
+            >
               <span>{combo.bg}</span>
               <span style={{ color: 'var(--text-muted)' }}>·</span>
               <span>{combo.frame}</span>
@@ -130,8 +143,22 @@ function CompareModal({
                 <button
                   key={tone}
                   type="button"
-                  onClick={() => setCombos((cs) => cs.map((cc, j) => (j === i ? { ...cc, bg: tone as ArtBg } : cc)))}
-                  style={{ border: 'none', background: 'transparent', padding: 3, cursor: 'pointer', borderRadius: 999, display: 'grid', placeItems: 'center', minWidth: 34, minHeight: 34 }}
+                  onClick={() =>
+                    setCombos((cs) =>
+                      cs.map((cc, j) => (j === i ? { ...cc, bg: tone as ArtBg } : cc))
+                    )
+                  }
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    padding: 3,
+                    cursor: 'pointer',
+                    borderRadius: 999,
+                    display: 'grid',
+                    placeItems: 'center',
+                    minWidth: 34,
+                    minHeight: 34,
+                  }}
                   aria-label={`Chọn nền ${tone}`}
                 >
                   <VariantSwatch tone={tone} size={22} active={tone === combo.bg} />
@@ -145,11 +172,10 @@ function CompareModal({
   )
 }
 
-export default function ProductDetailPage() {
+function ProductDetailPageInner() {
   const params = useParams<{ id: string }>()
   const searchParams = useSearchParams()
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({})
   const [sizeId, setSizeId] = useState('')
   const [activeTab, setActiveTab] = useState<TabId>('description')
@@ -166,7 +192,10 @@ export default function ProductDetailPage() {
 
   const { data: product = null, isLoading } = useSWR(
     params.id ? SWR_KEYS.product(params.id) : null,
-    params.id ? () => fetchProduct(params.id).then(p => p || PRODUCTS.find(e => e.id === params.id) || null) : null
+    params.id
+      ? () =>
+          fetchProduct(params.id).then((p) => p || PRODUCTS.find((e) => e.id === params.id) || null)
+      : null
   )
 
   const { data: reviews = [] } = useSWR(
@@ -176,7 +205,12 @@ export default function ProductDetailPage() {
 
   const { data: relatedProducts = [], isLoading: relatedLoading } = useSWR(
     product?.categoryId ? SWR_KEYS.productsByCategory(product.categoryId) : null,
-    product?.categoryId ? () => fetchProducts({ category: product.categoryId, limit: 8 }).then(ps => ps.filter(p => p.id !== product.id).slice(0, 6)) : null
+    product?.categoryId
+      ? () =>
+          fetchProducts({ category: product.categoryId, limit: 8 }).then((ps) =>
+            ps.filter((p) => p.id !== product.id).slice(0, 6)
+          )
+      : null
   )
 
   const { data: settings = {} } = useSWR(SWR_KEYS.settings, fetchSettings)
@@ -192,13 +226,16 @@ export default function ProductDetailPage() {
   )
 
   // Merge: explicit user selection wins, then product default
-  const resolvedAttrs = useMemo(() => ({ ...(product?.defaultVariant ?? {}), ...selectedAttrs }), [product, selectedAttrs])
+  const resolvedAttrs = useMemo(
+    () => ({ ...(product?.defaultVariant ?? {}), ...selectedAttrs }),
+    [product, selectedAttrs]
+  )
   // For ArtPiece backward compat: derive bg/frame from attrs if present
   const resolvedBgTone = resolvedAttrs['bg_tone'] ?? 'gold'
   const resolvedFrame = resolvedAttrs['frame'] ?? 'bronze'
   // Pick image by matching variant attrs; fall back to activeImageIndex
   const attrMatchedImage = useMemo(
-    () => product ? pickVariantImage(product.images, resolvedAttrs) : null,
+    () => (product ? pickVariantImage(product.images, resolvedAttrs) : null),
     [product, resolvedAttrs]
   )
   const activeImage = attrMatchedImage ?? product?.images[activeImageIndex] ?? null
@@ -207,13 +244,23 @@ export default function ProductDetailPage() {
   const { data: recentIds = [] } = useSWR(
     product ? ['recent-ids', product.id] : null,
     product
-      ? async () => getRecentlyViewedIds().filter((id) => id !== product.id).slice(0, 6)
+      ? async () =>
+          getRecentlyViewedIds()
+            .filter((id) => id !== product.id)
+            .slice(0, 6)
       : null
   )
 
   const { data: recentlyViewedProducts = [] } = useSWR(
     recentIds.length > 0 ? ['recently-viewed-products', recentIds.join(',')] : null,
-    recentIds.length > 0 ? () => fetchProducts().then(ps => recentIds.map(id => ps.find(p => p.id === id)).filter((p): p is Product => p !== undefined)) : null
+    recentIds.length > 0
+      ? () =>
+          fetchProducts().then((ps) =>
+            recentIds
+              .map((id) => ps.find((p) => p.id === id))
+              .filter((p): p is Product => p !== undefined)
+          )
+      : null
   )
 
   useEffect(() => {
@@ -224,9 +271,15 @@ export default function ProductDetailPage() {
 
   const category = product?.categoryId ?? ''
 
-  const selectedSize = product?.sizes.find((size) => size.id === resolvedSizeId) ?? product?.sizes[0]
+  const selectedSize =
+    product?.sizes.find((size) => size.id === resolvedSizeId) ?? product?.sizes[0]
   const currentPrice = product
-    ? resolveSKUPrice(product.skus, selectedSize?.code, resolvedAttrs, product.discountPrice ?? product.price)
+    ? resolveSKUPrice(
+        product.skus,
+        selectedSize?.code,
+        resolvedAttrs,
+        product.discountPrice ?? product.price
+      )
     : 0
   const isSaved = product ? savedVariants.some((v) => v.productId === product.id) : false
   const imageCount = (product?.images.length ?? 0) > 0 ? (product?.images.length ?? 0) : 1
@@ -283,8 +336,7 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
-        <TopBar title="Chi tiết sản phẩm" onMenu={() => setIsMenuOpen(true)} />
-        <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+        <TopBar title="Chi tiết sản phẩm" onBack={() => window.history.back()} />
         <div style={{ padding: '12px 16px 0' }}>
           <div
             style={{
@@ -325,21 +377,48 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh', paddingBottom: 100 }}>
+    <div
+      className="paper"
+      style={{ background: 'var(--bg-page)', minHeight: '100vh', paddingBottom: 100 }}
+    >
       {/* Zoom overlay */}
       {zoomOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.95)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           onClick={() => setZoomOpen(false)}
         >
           <button
             type="button"
             onClick={() => setZoomOpen(false)}
-            style={{ position: 'absolute', top: 16, right: 16, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             <IconClose size={20} color="white" />
           </button>
-          <div style={{ maxWidth: '90vw', maxHeight: '90vh', width: '100%' }} onClick={e => e.stopPropagation()}>
+          <div
+            style={{ maxWidth: '90vw', maxHeight: '90vh', width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <ArtPiece
               bg={resolvedBgTone as ArtBg}
               frame={resolvedFrame as ArtFrame}
@@ -354,13 +433,10 @@ export default function ProductDetailPage() {
 
       <TopBar
         title="Chi tiết sản phẩm"
-       
-        onMenu={() => setIsMenuOpen(true)}
+        onBack={() => window.history.back()}
         onOpenSaved={() => (window.location.href = '/saved')}
         savedCount={savedVariants.length}
       />
-      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-
       <div style={{ padding: '12px 16px 0' }}>
         <div
           style={{
@@ -371,30 +447,6 @@ export default function ProductDetailPage() {
             position: 'relative',
           }}
         >
-          {/* Overlaid back + save buttons */}
-          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 10 }}>
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              aria-label="Quay lại"
-            >
-              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-          </div>
-          <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
-            <button
-              type="button"
-              onClick={() => {
-                setSavedVariants(toggleSavedProduct(product.id, resolvedAttrs, selectedSize?.id))
-              }}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              aria-label="Lưu sản phẩm"
-            >
-              <IconHeart size={18} color={isSaved ? 'var(--accent)' : 'white'} />
-            </button>
-          </div>
-
           <div
             ref={carouselRef}
             style={{
@@ -451,7 +503,14 @@ export default function ProductDetailPage() {
                 </div>
               ))
             ) : (
-              <div style={{ minWidth: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                style={{
+                  minWidth: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <ArtPiece
                   bg={resolvedBgTone as 'gold' | 'red' | 'bronze' | 'dark'}
                   frame={resolvedFrame as 'bronze' | 'gold' | 'dark' | 'carved'}
@@ -464,18 +523,56 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Zoom hint */}
-          <div style={{ position: 'absolute', bottom: 44, right: 12, fontSize: 10, color: 'rgba(255,255,255,0.6)', pointerEvents: 'none', background: 'rgba(0,0,0,0.3)', borderRadius: 4, padding: '3px 7px' }}>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 44,
+              right: 12,
+              fontSize: 10,
+              color: 'rgba(255,255,255,0.6)',
+              pointerEvents: 'none',
+              background: 'rgba(0,0,0,0.3)',
+              borderRadius: 4,
+              padding: '3px 7px',
+            }}
+          >
             Nhấn để phóng to
           </div>
 
           {/* Carousel dots */}
-          <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center', gap: 6, background: 'rgba(20, 14, 9, 0.6)', backdropFilter: 'blur(6px)', padding: '8px 14px', borderRadius: 20 }}>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 12,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 6,
+              background: 'rgba(20, 14, 9, 0.6)',
+              backdropFilter: 'blur(6px)',
+              padding: '8px 14px',
+              borderRadius: 20,
+            }}
+          >
             {(product.images.length > 0 ? product.images : [{}]).map((_, index) => (
               <button
                 key={index}
                 type="button"
-                onClick={(e) => { e.stopPropagation(); scrollToImage(index) }}
-                style={{ width: 6, height: 6, borderRadius: '50%', background: index === activeImageIndex ? 'white' : 'rgba(255,255,255,0.4)', border: 'none', cursor: 'pointer', padding: 0, transition: 'background 150ms ease' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  scrollToImage(index)
+                }}
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: index === activeImageIndex ? 'white' : 'rgba(255,255,255,0.4)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'background 150ms ease',
+                }}
               />
             ))}
           </div>
@@ -541,8 +638,22 @@ export default function ProductDetailPage() {
       </div>
 
       <div style={{ padding: '18px 16px 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 10,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-be-vietnam), sans-serif',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+            }}
+          >
             Tùy chọn
           </div>
           <Btn
@@ -550,7 +661,16 @@ export default function ProductDetailPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowCompare(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 100, padding: '6px 10px', fontSize: 13, color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              borderRadius: 100,
+              padding: '6px 10px',
+              fontSize: 13,
+              color: 'var(--text-primary)',
+              borderColor: 'var(--border)',
+            }}
           >
             <IconCompare size={12} /> So sánh
           </Btn>
@@ -559,24 +679,64 @@ export default function ProductDetailPage() {
         {/* Dynamic variant selectors from product.variantOptions */}
         {product.variantOptions.map((opt) => (
           <div key={opt.key} style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
-              {opt.label} · <span style={{ color: 'var(--text-secondary)' }}>{resolvedAttrs[opt.key] ?? '—'}</span>
+            <div
+              style={{
+                fontFamily: 'var(--font-be-vietnam), sans-serif',
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                marginBottom: 8,
+              }}
+            >
+              {opt.label} ·{' '}
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {resolvedAttrs[opt.key] ?? '—'}
+              </span>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {opt.values.map((val) => {
                 const active = resolvedAttrs[opt.key] === val
                 if (opt.key === 'bg_tone') {
                   return (
-                    <button key={val} type="button" onClick={() => setSelectedAttrs(a => ({ ...a, [opt.key]: val }))}
-                      style={{ flexShrink: 0, padding: '6px 10px 6px 6px', borderRadius: 100, display: 'flex', alignItems: 'center', gap: 7, border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)', background: active ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)', cursor: 'pointer' }}>
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setSelectedAttrs((a) => ({ ...a, [opt.key]: val }))}
+                      style={{
+                        flexShrink: 0,
+                        padding: '6px 10px 6px 6px',
+                        borderRadius: 100,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                        border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                        background: active ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
+                        cursor: 'pointer',
+                      }}
+                    >
                       <VariantSwatch tone={val} size={18} active={active} />
-                      <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{val}</span>
+                      <span
+                        style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}
+                      >
+                        {val}
+                      </span>
                     </button>
                   )
                 }
                 return (
-                  <button key={val} type="button" onClick={() => setSelectedAttrs(a => ({ ...a, [opt.key]: val }))}
-                    style={{ padding: '6px 14px', borderRadius: 100, border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)', background: active ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)', cursor: 'pointer', fontSize: 13, color: active ? 'var(--accent)' : 'var(--text-primary)' }}>
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setSelectedAttrs((a) => ({ ...a, [opt.key]: val }))}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 100,
+                      border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                      background: active ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      color: active ? 'var(--accent)' : 'var(--text-primary)',
+                    }}
+                  >
                     {val}
                   </button>
                 )
@@ -588,8 +748,33 @@ export default function ProductDetailPage() {
 
       <div style={{ padding: '20px 16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <div style={{ width: 22, height: 22, borderRadius: 11, background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{product.variantOptions.length + 1}</div>
-          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Kích thước</div>
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              background: 'var(--accent)',
+              color: 'white',
+              fontSize: 12,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {product.variantOptions.length + 1}
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-be-vietnam), sans-serif',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+            }}
+          >
+            Kích thước
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {product.sizes.map((size) => {
@@ -613,12 +798,30 @@ export default function ProductDetailPage() {
                 }}
               >
                 <div>
-                  <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 14, fontWeight: 600, color: on ? 'var(--accent)' : 'var(--text-primary)' }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-be-vietnam), sans-serif',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: on ? 'var(--accent)' : 'var(--text-primary)',
+                    }}
+                  >
                     {size.name}
                   </div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 16, color: on ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                  {resolveSizeDisplayPrice(product.skus, size.code, size.price).toLocaleString('vi-VN')}đ
+                <div
+                  style={{
+                    fontFamily: 'var(--font-lora), serif',
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: 16,
+                    color: on ? 'var(--accent)' : 'var(--text-secondary)',
+                  }}
+                >
+                  {resolveSizeDisplayPrice(product.skus, size.code, size.price).toLocaleString(
+                    'vi-VN'
+                  )}
+                  đ
                 </div>
               </button>
             )
@@ -743,12 +946,23 @@ export default function ProductDetailPage() {
                 </div>
               </div>
               <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 20 }}>
-                <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 12 }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-be-vietnam), sans-serif',
+                    fontSize: 10,
+                    letterSpacing: '0.2em',
+                    color: 'var(--bronze)',
+                    textTransform: 'uppercase',
+                    marginBottom: 12,
+                  }}
+                >
                   Tuổi Phong Thủy
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(product.zodiacIds?.length > 0
-                    ? product.zodiacIds.map((id) => ZODIAC.find((z) => z.id === id)).filter((z): z is typeof ZODIAC[0] => z !== undefined)
+                    ? product.zodiacIds
+                        .map((id) => ZODIAC.find((z) => z.id === id))
+                        .filter((z): z is (typeof ZODIAC)[0] => z !== undefined)
                     : ZODIAC
                   ).map((z) => (
                     <div
@@ -764,15 +978,44 @@ export default function ProductDetailPage() {
                       }}
                     >
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: 'white', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontFamily: 'var(--font-lora), serif' }}>
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            background: 'var(--accent)',
+                            color: 'white',
+                            fontSize: 14,
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto',
+                            fontFamily: 'var(--font-lora), serif',
+                          }}
+                        >
                           {z.name}
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-be-vietnam), sans-serif',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            color: 'var(--text-primary)',
+                          }}
+                        >
                           Tuổi {z.name}
                         </div>
-                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+                        <div
+                          style={{
+                            fontSize: 11.5,
+                            color: 'var(--text-muted)',
+                            marginTop: 2,
+                            lineHeight: 1.4,
+                          }}
+                        >
                           {z.years}
                         </div>
                       </div>
@@ -820,9 +1063,27 @@ export default function ProductDetailPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* Rating summary */}
               {product.rating > 0 && (
-                <div style={{ display: 'flex', gap: 14, paddingBottom: 18, borderBottom: '1px solid var(--border-soft)', marginBottom: 6, alignItems: 'center' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 14,
+                    paddingBottom: 18,
+                    borderBottom: '1px solid var(--border-soft)',
+                    marginBottom: 6,
+                    alignItems: 'center',
+                  }}
+                >
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 36, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)', lineHeight: 1 }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-lora), serif',
+                        fontSize: 36,
+                        fontWeight: 700,
+                        fontVariantNumeric: 'tabular-nums',
+                        color: 'var(--accent)',
+                        lineHeight: 1,
+                      }}
+                    >
                       {product.rating.toFixed(1)}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
@@ -832,9 +1093,33 @@ export default function ProductDetailPage() {
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {[5, 4, 3, 2, 1].map((star) => (
                       <div key={star} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)', width: 8, textAlign: 'right' }}>{star}</div>
-                        <div style={{ flex: 1, height: 5, background: 'var(--border-soft)', borderRadius: 3, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', background: 'var(--gold)', width: star === 5 ? '80%' : star === 4 ? '15%' : '5%', borderRadius: 3 }} />
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: 'var(--text-muted)',
+                            width: 8,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {star}
+                        </div>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 5,
+                            background: 'var(--border-soft)',
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: '100%',
+                              background: 'var(--gold)',
+                              width: star === 5 ? '80%' : star === 4 ? '15%' : '5%',
+                              borderRadius: 3,
+                            }}
+                          />
                         </div>
                       </div>
                     ))}
@@ -862,7 +1147,14 @@ export default function ProductDetailPage() {
                         <IconStar key={index} size={10} color="#c9a961" />
                       ))}
                     </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', margin: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: 'var(--text-secondary)',
+                        margin: 0,
+                      }}
+                    >
                       {review.body}
                     </p>
                   </article>
@@ -877,13 +1169,50 @@ export default function ProductDetailPage() {
       {relatedProducts.length > 0 && (
         <section style={{ padding: '28px 0 0' }}>
           <div style={{ padding: '0 16px', marginBottom: 14 }}>
-            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 3 }}>Cùng danh mục</div>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)' }}>Sản phẩm liên quan</div>
+            <div
+              style={{
+                fontFamily: 'var(--font-jetbrains), monospace',
+                fontSize: 10,
+                letterSpacing: '0.2em',
+                color: 'var(--bronze)',
+                textTransform: 'uppercase',
+                marginBottom: 3,
+              }}
+            >
+              Cùng danh mục
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-lora), serif',
+                fontSize: 20,
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+              }}
+            >
+              Sản phẩm liên quan
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }} className="noscroll">
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              borderTop: '1px solid var(--border)',
+              borderLeft: '1px solid var(--border)',
+            }}
+            className="noscroll"
+          >
             {relatedLoading
               ? [0, 1, 2].map((i) => (
-                  <div key={i} style={{ flexShrink: 0, width: 148, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                  <div
+                    key={i}
+                    style={{
+                      flexShrink: 0,
+                      width: 148,
+                      borderRight: '1px solid var(--border)',
+                      borderBottom: '1px solid var(--border)',
+                    }}
+                  >
                     <ProductCardSkeleton compact />
                   </div>
                 ))
@@ -894,16 +1223,73 @@ export default function ProductDetailPage() {
                       key={prod.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => { window.location.href = `/products/${prod.id}` }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = `/products/${prod.id}` }}
-                      style={{ flexShrink: 0, width: 148, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-page)', cursor: 'pointer' }}
+                      onClick={() => {
+                        window.location.href = `/products/${prod.id}`
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') window.location.href = `/products/${prod.id}`
+                      }}
+                      style={{
+                        flexShrink: 0,
+                        width: 148,
+                        borderRight: '1px solid var(--border)',
+                        borderBottom: '1px solid var(--border)',
+                        background: 'var(--bg-page)',
+                        cursor: 'pointer',
+                      }}
                     >
                       <div style={{ background: 'var(--bg-surface)', padding: 8 }}>
-                        <ArtPiece bg={(prod.defaultVariant['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'} frame={(prod.defaultVariant['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'} label="" pad={6} aspect="4/3" imgSrc={imgUrl} />
+                        <ArtPiece
+                          bg={
+                            (prod.defaultVariant['bg_tone'] as
+                              | 'gold'
+                              | 'red'
+                              | 'bronze'
+                              | 'dark'
+                              | undefined) ?? 'gold'
+                          }
+                          frame={
+                            (prod.defaultVariant['frame'] as
+                              | 'bronze'
+                              | 'gold'
+                              | 'dark'
+                              | 'carved'
+                              | undefined) ?? 'bronze'
+                          }
+                          label=""
+                          pad={6}
+                          aspect="4/3"
+                          imgSrc={imgUrl}
+                        />
                       </div>
                       <div style={{ padding: '8px 10px 12px' }}>
-                        <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{prod.title}</div>
-                        <div style={{ fontFamily: 'var(--font-lora), serif', color: 'var(--accent)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 13, marginTop: 4 }}>{(prod.discountPrice ?? prod.price).toLocaleString('vi-VN')}đ</div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-lora), serif',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: 'var(--text-primary)',
+                            lineHeight: 1.2,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {prod.title}
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-lora), serif',
+                            color: 'var(--accent)',
+                            fontWeight: 700,
+                            fontVariantNumeric: 'tabular-nums',
+                            fontSize: 13,
+                            marginTop: 4,
+                          }}
+                        >
+                          {(prod.discountPrice ?? prod.price).toLocaleString('vi-VN')}đ
+                        </div>
                       </div>
                     </div>
                   )
@@ -916,10 +1302,39 @@ export default function ProductDetailPage() {
       {recentlyViewedProducts.length > 0 && (
         <section style={{ padding: '24px 0 0' }}>
           <div style={{ padding: '0 16px', marginBottom: 14 }}>
-            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 3 }}>Gợi nhớ</div>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)' }}>Đã xem gần đây</div>
+            <div
+              style={{
+                fontFamily: 'var(--font-jetbrains), monospace',
+                fontSize: 10,
+                letterSpacing: '0.2em',
+                color: 'var(--bronze)',
+                textTransform: 'uppercase',
+                marginBottom: 3,
+              }}
+            >
+              Gợi nhớ
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-lora), serif',
+                fontSize: 20,
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+              }}
+            >
+              Đã xem gần đây
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }} className="noscroll">
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              borderTop: '1px solid var(--border)',
+              borderLeft: '1px solid var(--border)',
+            }}
+            className="noscroll"
+          >
             {recentlyViewedProducts.map((prod) => {
               const imgUrl = prod.images[0]?.url ?? null
               return (
@@ -927,16 +1342,73 @@ export default function ProductDetailPage() {
                   key={prod.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => { window.location.href = `/products/${prod.id}` }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = `/products/${prod.id}` }}
-                  style={{ flexShrink: 0, width: 136, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-page)', cursor: 'pointer' }}
+                  onClick={() => {
+                    window.location.href = `/products/${prod.id}`
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') window.location.href = `/products/${prod.id}`
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    width: 136,
+                    borderRight: '1px solid var(--border)',
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--bg-page)',
+                    cursor: 'pointer',
+                  }}
                 >
                   <div style={{ background: 'var(--bg-surface)', padding: 8 }}>
-                    <ArtPiece bg={(prod.defaultVariant['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'} frame={(prod.defaultVariant['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'} label="" pad={5} aspect="4/3" imgSrc={imgUrl} />
+                    <ArtPiece
+                      bg={
+                        (prod.defaultVariant['bg_tone'] as
+                          | 'gold'
+                          | 'red'
+                          | 'bronze'
+                          | 'dark'
+                          | undefined) ?? 'gold'
+                      }
+                      frame={
+                        (prod.defaultVariant['frame'] as
+                          | 'bronze'
+                          | 'gold'
+                          | 'dark'
+                          | 'carved'
+                          | undefined) ?? 'bronze'
+                      }
+                      label=""
+                      pad={5}
+                      aspect="4/3"
+                      imgSrc={imgUrl}
+                    />
                   </div>
                   <div style={{ padding: '7px 10px 10px' }}>
-                    <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{prod.title}</div>
-                    <div style={{ fontFamily: 'var(--font-lora), serif', color: 'var(--accent)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 13, marginTop: 3 }}>{(prod.discountPrice ?? prod.price).toLocaleString('vi-VN')}đ</div>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-lora), serif',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.2,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {prod.title}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-lora), serif',
+                        color: 'var(--accent)',
+                        fontWeight: 700,
+                        fontVariantNumeric: 'tabular-nums',
+                        fontSize: 13,
+                        marginTop: 3,
+                      }}
+                    >
+                      {(prod.discountPrice ?? prod.price).toLocaleString('vi-VN')}đ
+                    </div>
                   </div>
                 </div>
               )
@@ -1048,5 +1520,13 @@ export default function ProductDetailPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function ProductDetailPage() {
+  return (
+    <Suspense>
+      <ProductDetailPageInner />
+    </Suspense>
   )
 }

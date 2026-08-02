@@ -3,9 +3,25 @@
 import { AdminFrame } from '@/components/admin/AdminFrame'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 import { Field } from '@/components/admin/Field'
-import { adminDelete, adminGet, adminPost, adminPut, adminUpload, imageApi, productImageApi, skuApi } from '@/lib/admin-api'
+import {
+  adminGet,
+  adminPost,
+  adminPut,
+  adminUpload,
+  imageApi,
+  productImageApi,
+  skuApi,
+} from '@/lib/admin-api'
 import { DEFAULT_PLACE_LABELS, ZODIAC } from '@/lib/data'
-import type { AdminCategory, AdminProduct, AdminProductImage, AdminProductSKU, LibraryImage, VariantAttr, VariantOption } from '@/lib/types'
+import type {
+  AdminCategory,
+  AdminProduct,
+  AdminProductImage,
+  AdminProductSKU,
+  LibraryImage,
+  VariantAttr,
+  VariantOption,
+} from '@/lib/types'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import Select, { type StylesConfig } from 'react-select'
@@ -45,7 +61,7 @@ interface SKUFormRow {
 interface VariantOptionRow {
   key: string
   label: string
-  values: string  // comma-separated
+  values: string // comma-separated
 }
 
 const emptyForm: ProductFormState = {
@@ -121,7 +137,10 @@ export default function AdminProductEditPage() {
   const parsedVariantOptions: VariantOption[] = variantOptions.map((row) => ({
     key: row.key.trim(),
     label: row.label.trim(),
-    values: row.values.split(',').map((v) => v.trim()).filter(Boolean),
+    values: row.values
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean),
   }))
 
   const loadPage = useCallback(async () => {
@@ -190,11 +209,13 @@ export default function AdminProductEditPage() {
     )
 
     const skuData = await skuApi.list(product.id)
-    setSkus((skuData ?? []).map((s: AdminProductSKU) => ({
-      size_code: s.size_code,
-      attrs: s.attrs || {},
-      price: String(s.price),
-    })))
+    setSkus(
+      (skuData ?? []).map((s: AdminProductSKU) => ({
+        size_code: s.size_code,
+        attrs: s.attrs || {},
+        price: String(s.price),
+      }))
+    )
 
     const imgData = await productImageApi.list(product.id)
     setImages(imgData ?? [])
@@ -202,7 +223,9 @@ export default function AdminProductEditPage() {
   }, [productId, isNew])
 
   useEffect(() => {
-    (async () => { await loadPage() })()
+    ;(async () => {
+      await loadPage()
+    })()
   }, [loadPage])
 
   function addVariantOptionRow() {
@@ -218,7 +241,16 @@ export default function AdminProductEditPage() {
   }
 
   function addSizeRow() {
-    setSizes((prev) => [...prev, { id: crypto.randomUUID(), size_label: '', size_code: '', price: '0', sort_order: String(prev.length) }])
+    setSizes((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        size_label: '',
+        size_code: '',
+        price: '0',
+        sort_order: String(prev.length),
+      },
+    ])
   }
 
   function updateSizeRow(index: number, patch: Partial<SizeFormRow>) {
@@ -258,7 +290,10 @@ export default function AdminProductEditPage() {
       ? await adminPost<AdminProduct>('/products', payload)
       : await adminPut<AdminProduct>(`/products/${effectiveProductId}`, payload)
 
-    if (!saved) { setSaving(false); return }
+    if (!saved) {
+      setSaving(false)
+      return
+    }
 
     setSavedProductId(saved.id)
     await adminPut(`/products/${saved.id}/sizes`, {
@@ -272,12 +307,15 @@ export default function AdminProductEditPage() {
       })),
     })
 
-    await skuApi.set(saved.id, skus.map((row) => ({
-      size_code: row.size_code,
-      attrs: row.attrs,
-      price: Number(row.price) || 0,
-      sort_order: 0,
-    })))
+    await skuApi.set(
+      saved.id,
+      skus.map((row) => ({
+        size_code: row.size_code,
+        attrs: row.attrs,
+        price: Number(row.price) || 0,
+        sort_order: 0,
+      }))
+    )
 
     if (isNew) {
       router.replace(`/admin/products/${saved.id}`)
@@ -341,83 +379,193 @@ export default function AdminProductEditPage() {
 
   return (
     <AdminGuard>
-      <AdminFrame title={isNew ? 'Add Product' : 'Edit Product'} subtitle="Update content and variant options">
+      <AdminFrame
+        title={isNew ? 'Add Product' : 'Edit Product'}
+        subtitle="Update content and variant options"
+      >
         <div style={{ marginBottom: 12 }}>
-          <button type="button" onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6b7280',
+              cursor: 'pointer',
+              fontSize: 13,
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
             ← Back
           </button>
         </div>
         <form
-          onSubmit={(event) => { event.preventDefault(); saveProduct() }}
-          style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, display: 'grid', gap: 12 }}
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveProduct()
+          }}
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 14,
+            display: 'grid',
+            gap: 12,
+          }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}
+          >
             <Field label="ID (create only)">
-              <input value={form.id} onChange={(e) => setForm((p) => ({ ...p, id: e.target.value }))} style={inputStyle} disabled={!isNew} />
+              <input
+                value={form.id}
+                onChange={(e) => setForm((p) => ({ ...p, id: e.target.value }))}
+                style={inputStyle}
+                disabled={!isNew}
+              />
             </Field>
             <Field label="Category">
-              <select value={form.category_id} onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))} style={inputStyle}>
+              <select
+                value={form.category_id}
+                onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+                style={inputStyle}
+              >
                 <option value="">Select category</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label="Title">
-              <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} style={inputStyle} />
+              <input
+                value={form.title}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Subtitle">
-              <input value={form.subtitle} onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))} style={inputStyle} />
+              <input
+                value={form.subtitle}
+                onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Badge">
-              <input value={form.badge} onChange={(e) => setForm((p) => ({ ...p, badge: e.target.value }))} style={inputStyle} />
+              <input
+                value={form.badge}
+                onChange={(e) => setForm((p) => ({ ...p, badge: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Base price">
-              <input type="number" value={form.base_price} onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))} style={inputStyle} />
+              <input
+                type="number"
+                value={form.base_price}
+                onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
           </div>
 
           <Field label="Description">
-            <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
           <Field label="Meaning">
-            <textarea value={form.meaning} onChange={(e) => setForm((p) => ({ ...p, meaning: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.meaning}
+              onChange={(e) => setForm((p) => ({ ...p, meaning: e.target.value }))}
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}
+          >
             <Field label="Zodiac">
               <Select<SelectOption, true>
                 isMulti
                 options={ZODIAC.map((z) => ({ value: z.id, label: `${z.name} (${z.years})` }))}
-                value={ZODIAC.filter((z) => form.zodiac_ids.includes(z.id)).map((z) => ({ value: z.id, label: `${z.name} (${z.years})` }))}
+                value={ZODIAC.filter((z) => form.zodiac_ids.includes(z.id)).map((z) => ({
+                  value: z.id,
+                  label: `${z.name} (${z.years})`,
+                }))}
                 onChange={(sel) => setForm((p) => ({ ...p, zodiac_ids: sel.map((o) => o.value) }))}
                 styles={selectStyles}
               />
             </Field>
             <Field label="Purpose place">
-              <Select<SelectOption, true> isMulti options={placeOptions} value={placeOptions.filter((o) => form.purpose_place.includes(o.value))} onChange={(sel) => setForm((p) => ({ ...p, purpose_place: sel.map((o) => o.value) }))} styles={selectStyles} />
+              <Select<SelectOption, true>
+                isMulti
+                options={placeOptions}
+                value={placeOptions.filter((o) => form.purpose_place.includes(o.value))}
+                onChange={(sel) =>
+                  setForm((p) => ({ ...p, purpose_place: sel.map((o) => o.value) }))
+                }
+                styles={selectStyles}
+              />
             </Field>
             <Field label="Purpose use (comma separated)">
-              <input value={form.purpose_use} onChange={(e) => setForm((p) => ({ ...p, purpose_use: e.target.value }))} style={inputStyle} />
+              <input
+                value={form.purpose_use}
+                onChange={(e) => setForm((p) => ({ ...p, purpose_use: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Purpose avoid (comma separated)">
-              <input value={form.purpose_avoid} onChange={(e) => setForm((p) => ({ ...p, purpose_avoid: e.target.value }))} style={inputStyle} />
+              <input
+                value={form.purpose_avoid}
+                onChange={(e) => setForm((p) => ({ ...p, purpose_avoid: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
           </div>
 
           <Field label="Specs (one key: value per line)">
-            <textarea value={form.specs} onChange={(e) => setForm((p) => ({ ...p, specs: e.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+            <textarea
+              value={form.specs}
+              onChange={(e) => setForm((p) => ({ ...p, specs: e.target.value }))}
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}
+          >
             <label style={checkboxLabel}>
-              <input type="checkbox" checked={form.requires_size} onChange={(e) => setForm((p) => ({ ...p, requires_size: e.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={form.requires_size}
+                onChange={(e) => setForm((p) => ({ ...p, requires_size: e.target.checked }))}
+              />
               Requires size
             </label>
             <label style={checkboxLabel}>
-              <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+              />
               Active
             </label>
             <Field label="Sort order">
-              <input type="number" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))} style={inputStyle} />
+              <input
+                type="number"
+                value={form.sort_order}
+                onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))}
+                style={inputStyle}
+              />
             </Field>
           </div>
 
@@ -425,31 +573,76 @@ export default function AdminProductEditPage() {
           <section style={sectionStyle}>
             <div style={sectionHeader}>
               <h2 style={sectionTitle}>Variant Options</h2>
-              <button type="button" onClick={addVariantOptionRow} style={secondaryBtn}>Add option</button>
+              <button type="button" onClick={addVariantOptionRow} style={secondaryBtn}>
+                Add option
+              </button>
             </div>
             <div style={{ display: 'grid', gap: 8 }}>
               {variantOptions.map((row, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 8, alignItems: 'start' }}>
-                  <input placeholder="key (e.g. bg_tone)" value={row.key} onChange={(e) => updateVariantOptionRow(i, { key: e.target.value })} style={inputStyle} />
-                  <input placeholder="label (e.g. Màu nền)" value={row.label} onChange={(e) => updateVariantOptionRow(i, { label: e.target.value })} style={inputStyle} />
-                  <input placeholder="values (comma sep, e.g. gold,red,bronze)" value={row.values} onChange={(e) => updateVariantOptionRow(i, { values: e.target.value })} style={inputStyle} />
-                  <button type="button" onClick={() => removeVariantOptionRow(i)} style={secondaryBtn}>Remove</button>
+                <div
+                  key={i}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 2fr auto',
+                    gap: 8,
+                    alignItems: 'start',
+                  }}
+                >
+                  <input
+                    placeholder="key (e.g. bg_tone)"
+                    value={row.key}
+                    onChange={(e) => updateVariantOptionRow(i, { key: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    placeholder="label (e.g. Màu nền)"
+                    value={row.label}
+                    onChange={(e) => updateVariantOptionRow(i, { label: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    placeholder="values (comma sep, e.g. gold,red,bronze)"
+                    value={row.values}
+                    onChange={(e) => updateVariantOptionRow(i, { values: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeVariantOptionRow(i)}
+                    style={secondaryBtn}
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
             </div>
             {parsedVariantOptions.length > 0 && (
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Default variant (shown by default)</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                  Default variant (shown by default)
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: 8,
+                  }}
+                >
                   {parsedVariantOptions.map((opt) => (
                     <Field key={opt.key} label={`Default ${opt.label || opt.key}`}>
                       <select
                         value={defaultVariant[opt.key] ?? ''}
-                        onChange={(e) => setDefaultVariant((prev) => ({ ...prev, [opt.key]: e.target.value }))}
+                        onChange={(e) =>
+                          setDefaultVariant((prev) => ({ ...prev, [opt.key]: e.target.value }))
+                        }
                         style={inputStyle}
                       >
                         <option value="">—</option>
-                        {opt.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                        {opt.values.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                   ))}
@@ -462,15 +655,35 @@ export default function AdminProductEditPage() {
           <section style={sectionStyle}>
             <div style={sectionHeader}>
               <h2 style={sectionTitle}>Sizes</h2>
-              <button type="button" onClick={addSizeRow} style={secondaryBtn}>Add size row</button>
+              <button type="button" onClick={addSizeRow} style={secondaryBtn}>
+                Add size row
+              </button>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {sizes.map((row, index) => (
                 <div key={row.id} style={gridRow}>
-                  <input placeholder="Size label" value={row.size_label} onChange={(e) => updateSizeRow(index, { size_label: e.target.value })} style={inputStyle} />
-                  <input placeholder="Size code" value={row.size_code} onChange={(e) => updateSizeRow(index, { size_code: e.target.value })} style={inputStyle} />
-                  <input type="number" placeholder="Sort" value={row.sort_order} onChange={(e) => updateSizeRow(index, { sort_order: e.target.value })} style={inputStyle} />
-                  <button type="button" onClick={() => removeSizeRow(index)} style={secondaryBtn}>Remove</button>
+                  <input
+                    placeholder="Size label"
+                    value={row.size_label}
+                    onChange={(e) => updateSizeRow(index, { size_label: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    placeholder="Size code"
+                    value={row.size_code}
+                    onChange={(e) => updateSizeRow(index, { size_code: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Sort"
+                    value={row.sort_order}
+                    onChange={(e) => updateSizeRow(index, { sort_order: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <button type="button" onClick={() => removeSizeRow(index)} style={secondaryBtn}>
+                    Remove
+                  </button>
                 </div>
               ))}
             </div>
@@ -488,13 +701,22 @@ export default function AdminProductEditPage() {
           <section style={sectionStyle}>
             <div style={sectionHeader}>
               <h2 style={sectionTitle}>Images</h2>
-              {!effectiveProductId && <span style={{ color: '#6b7280', fontSize: 13 }}>Save product first</span>}
+              {!effectiveProductId && (
+                <span style={{ color: '#6b7280', fontSize: 13 }}>Save product first</span>
+              )}
             </div>
 
             {effectiveProductId && (
               <>
                 {/* Tab bar */}
-                <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e5e7eb', marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 0,
+                    borderBottom: '1px solid #e5e7eb',
+                    marginBottom: 12,
+                  }}
+                >
                   {(['attached', 'library', 'upload'] as const).map((tab) => (
                     <button
                       key={tab}
@@ -504,14 +726,19 @@ export default function AdminProductEditPage() {
                         padding: '8px 16px',
                         fontSize: 13,
                         border: 'none',
-                        borderBottom: imageTab === tab ? '2px solid #7f1d1d' : '2px solid transparent',
+                        borderBottom:
+                          imageTab === tab ? '2px solid #7f1d1d' : '2px solid transparent',
                         background: 'none',
                         color: imageTab === tab ? '#7f1d1d' : '#6b7280',
                         cursor: 'pointer',
                         fontWeight: imageTab === tab ? 600 : 400,
                       }}
                     >
-                      {tab === 'attached' ? `Attached (${images.length})` : tab === 'library' ? 'From library' : 'Upload new'}
+                      {tab === 'attached'
+                        ? `Attached (${images.length})`
+                        : tab === 'library'
+                          ? 'From library'
+                          : 'Upload new'}
                     </button>
                   ))}
                 </div>
@@ -519,20 +746,37 @@ export default function AdminProductEditPage() {
                 {/* Attached tab */}
                 {imageTab === 'attached' && (
                   <div style={{ display: 'grid', gap: 10 }}>
-                    {images.length === 0 && <p style={{ color: '#6b7280', fontSize: 13 }}>No images attached.</p>}
+                    {images.length === 0 && (
+                      <p style={{ color: '#6b7280', fontSize: 13 }}>No images attached.</p>
+                    )}
                     {images.map((image) => (
-                      <div key={image.id} style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <div
+                        key={image.id}
+                        style={{ ...imageRow, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={image.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                        <img
+                          src={image.url}
+                          alt=""
+                          style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6 }}
+                        />
                         <div style={{ display: 'grid', gap: 4, flex: 1 }}>
-                          <strong style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{image.name || image.url}</strong>
+                          <strong style={{ overflowWrap: 'anywhere', fontSize: 13 }}>
+                            {image.name || image.url}
+                          </strong>
                           <span style={{ color: '#6b7280', fontSize: 12 }}>
                             {(image.attrs ?? []).length > 0
                               ? (image.attrs ?? []).map((a) => `${a.key}=${a.value}`).join(' · ')
                               : 'no attrs'}
                           </span>
                         </div>
-                        <button type="button" onClick={() => handleDetachImage(image.id)} style={secondaryBtn}>Detach</button>
+                        <button
+                          type="button"
+                          onClick={() => handleDetachImage(image.id)}
+                          style={secondaryBtn}
+                        >
+                          Detach
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -542,27 +786,75 @@ export default function AdminProductEditPage() {
                 {imageTab === 'library' && (
                   <div>
                     {parsedVariantOptions.length > 0 && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8, marginBottom: 12 }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                          gap: 8,
+                          marginBottom: 12,
+                        }}
+                      >
                         {parsedVariantOptions.map((opt) => (
                           <Field key={opt.key} label={opt.label || opt.key}>
                             <select
                               value={attachAttrs[opt.key] ?? ''}
-                              onChange={(e) => setAttachAttrs((prev) => ({ ...prev, [opt.key]: e.target.value }))}
+                              onChange={(e) =>
+                                setAttachAttrs((prev) => ({ ...prev, [opt.key]: e.target.value }))
+                              }
                               style={inputStyle}
                             >
                               <option value="">—</option>
-                              {opt.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                              {opt.values.map((v) => (
+                                <option key={v} value={v}>
+                                  {v}
+                                </option>
+                              ))}
                             </select>
                           </Field>
                         ))}
                       </div>
                     )}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                        gap: 8,
+                      }}
+                    >
                       {libraryImages.map((img) => (
-                        <div key={img.id} style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', cursor: 'pointer' }} onClick={() => handleAttachImage(img.id)}>
+                        <div
+                          key={img.id}
+                          style={{
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 6,
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleAttachImage(img.id)}
+                        >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={img.url} alt={img.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
-                          <div style={{ padding: '4px 6px', fontSize: 11, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.name}</div>
+                          <img
+                            src={img.url}
+                            alt={img.name}
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              objectFit: 'cover',
+                              display: 'block',
+                            }}
+                          />
+                          <div
+                            style={{
+                              padding: '4px 6px',
+                              fontSize: 11,
+                              color: '#374151',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {img.name}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -573,28 +865,53 @@ export default function AdminProductEditPage() {
                 {imageTab === 'upload' && (
                   <div style={{ display: 'grid', gap: 10 }}>
                     <Field label="File">
-                      <input type="file" onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)} />
+                      <input
+                        type="file"
+                        onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                      />
                     </Field>
                     <Field label="Name">
-                      <input placeholder="Image name" value={uploadName} onChange={(e) => setUploadName(e.target.value)} style={inputStyle} />
+                      <input
+                        placeholder="Image name"
+                        value={uploadName}
+                        onChange={(e) => setUploadName(e.target.value)}
+                        style={inputStyle}
+                      />
                     </Field>
                     {parsedVariantOptions.length > 0 && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                          gap: 8,
+                        }}
+                      >
                         {parsedVariantOptions.map((opt) => (
                           <Field key={opt.key} label={opt.label || opt.key}>
                             <select
                               value={uploadAttrs[opt.key] ?? ''}
-                              onChange={(e) => setUploadAttrs((prev) => ({ ...prev, [opt.key]: e.target.value }))}
+                              onChange={(e) =>
+                                setUploadAttrs((prev) => ({ ...prev, [opt.key]: e.target.value }))
+                              }
                               style={inputStyle}
                             >
                               <option value="">—</option>
-                              {opt.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                              {opt.values.map((v) => (
+                                <option key={v} value={v}>
+                                  {v}
+                                </option>
+                              ))}
                             </select>
                           </Field>
                         ))}
                       </div>
                     )}
-                    <button type="button" onClick={handleUploadImage} disabled={!uploadFile} style={primaryBtn}>
+                    <button
+                      type="button"
+                      onClick={handleUploadImage}
+                      disabled={!uploadFile}
+                      style={primaryBtn}
+                    >
                       Upload & attach
                     </button>
                   </div>
@@ -607,7 +924,11 @@ export default function AdminProductEditPage() {
             <button type="submit" disabled={saving} style={primaryBtn}>
               {saving ? 'Saving...' : 'Save Product'}
             </button>
-            <button type="button" onClick={() => router.push('/admin/products')} style={secondaryBtn}>
+            <button
+              type="button"
+              onClick={() => router.push('/admin/products')}
+              style={secondaryBtn}
+            >
               Cancel
             </button>
           </div>
@@ -618,7 +939,10 @@ export default function AdminProductEditPage() {
 }
 
 function splitList(value: string): string[] {
-  return value.split(',').map((item) => item.trim()).filter(Boolean)
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
 }
 
 function joinList(items: string[] | null | undefined): string {
@@ -639,7 +963,9 @@ function parseSpecs(value: string): Record<string, string> | null {
 
 function stringifySpecs(specs: Record<string, string> | null | undefined): string {
   if (!specs) return ''
-  return Object.entries(specs).map(([key, value]) => `${key}: ${value}`).join('\n')
+  return Object.entries(specs)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n')
 }
 
 const inputStyle: React.CSSProperties = {
@@ -722,9 +1048,12 @@ const imageRow: React.CSSProperties = {
 
 function cartesian(arrays: string[][]): string[][] {
   if (arrays.length === 0) return [[]]
-  return arrays.reduce<string[][]>((acc, arr) => {
-    return acc.flatMap((prev) => arr.map((v) => [...prev, v]))
-  }, [[]])
+  return arrays.reduce<string[][]>(
+    (acc, arr) => {
+      return acc.flatMap((prev) => arr.map((v) => [...prev, v]))
+    },
+    [[]]
+  )
 }
 
 interface SKUMatrixProps {
@@ -738,26 +1067,30 @@ function SKUMatrix({ sizes, variantOptions, skus, onSkusChange }: SKUMatrixProps
   const attrKeys = variantOptions.map((o) => o.key)
   const attrValueArrays = variantOptions.map((o) => o.values)
   const attrCombos = cartesian(attrValueArrays) // e.g. [["gold","bronze"],["gold","gold"],...]
-  const sizeEntries = sizes.length > 0 ? sizes : [{ size_code: null as unknown as string, size_label: '(no size)' }]
+  const sizeEntries =
+    sizes.length > 0 ? sizes : [{ size_code: null as unknown as string, size_label: '(no size)' }]
 
   // Build expected rows: one per (size × attrCombo)
   const expectedRows: SKUFormRow[] = sizeEntries.flatMap((size) =>
     attrCombos.map((combo) => {
       const attrs: Record<string, string> = {}
-      attrKeys.forEach((k, i) => { attrs[k] = combo[i] ?? '' })
+      attrKeys.forEach((k, i) => {
+        attrs[k] = combo[i] ?? ''
+      })
       const sizeCode = size.size_code || null
       // Try to find existing sku to preserve price
       const existing = skus.find(
-        (s) =>
-          s.size_code === sizeCode &&
-          attrKeys.every((k) => s.attrs[k] === attrs[k])
+        (s) => s.size_code === sizeCode && attrKeys.every((k) => s.attrs[k] === attrs[k])
       )
       return { size_code: sizeCode, attrs, price: existing?.price ?? '0' }
     })
   )
 
   // If no sizes and no variants: single row
-  const rows = expectedRows.length > 0 ? expectedRows : [{ size_code: null, attrs: {}, price: skus[0]?.price ?? '0' }]
+  const rows =
+    expectedRows.length > 0
+      ? expectedRows
+      : [{ size_code: null, attrs: {}, price: skus[0]?.price ?? '0' }]
 
   // Sync rows → skus whenever they change (avoid infinite loop by comparing lengths/keys)
   const rowsKey = JSON.stringify(rows.map((r) => ({ ...r, price: undefined })))
@@ -773,9 +1106,6 @@ function SKUMatrix({ sizes, variantOptions, skus, onSkusChange }: SKUMatrixProps
     onSkusChange(next)
   }
 
-  const colLabel = (attrs: Record<string, string>) =>
-    Object.entries(attrs).map(([k, v]) => `${v}`).join(' · ') || '—'
-
   return (
     <section style={sectionStyle}>
       <div style={sectionHeader}>
@@ -783,14 +1113,20 @@ function SKUMatrix({ sizes, variantOptions, skus, onSkusChange }: SKUMatrixProps
         <span style={{ fontSize: 12, color: '#6b7280' }}>Price per size × variant combo</span>
       </div>
       {rows.length === 0 ? (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Add sizes or variant options above to configure pricing.</p>
+        <p style={{ color: '#6b7280', fontSize: 13 }}>
+          Add sizes or variant options above to configure pricing.
+        </p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                 {sizes.length > 0 && <th style={thStyle}>Size</th>}
-                {attrKeys.map((k) => <th key={k} style={thStyle}>{k}</th>)}
+                {attrKeys.map((k) => (
+                  <th key={k} style={thStyle}>
+                    {k}
+                  </th>
+                ))}
                 <th style={thStyle}>Price (VND)</th>
               </tr>
             </thead>
@@ -799,11 +1135,16 @@ function SKUMatrix({ sizes, variantOptions, skus, onSkusChange }: SKUMatrixProps
                 <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   {sizes.length > 0 && (
                     <td style={tdStyle}>
-                      {sizeEntries.find((s) => (s.size_code || null) === row.size_code)?.size_label ?? row.size_code ?? '—'}
+                      {sizeEntries.find((s) => (s.size_code || null) === row.size_code)
+                        ?.size_label ??
+                        row.size_code ??
+                        '—'}
                     </td>
                   )}
                   {attrKeys.map((k) => (
-                    <td key={k} style={tdStyle}>{row.attrs[k] || '—'}</td>
+                    <td key={k} style={tdStyle}>
+                      {row.attrs[k] || '—'}
+                    </td>
                   ))}
                   <td style={tdStyle}>
                     <input

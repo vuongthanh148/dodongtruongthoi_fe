@@ -23,7 +23,22 @@ export default function AdminImagesPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let active = true
+
+    void (async () => {
+      if (!active) return
+      setLoading(true)
+      const data = await imageApi.list()
+      if (!active) return
+      setImages(data ?? [])
+      setLoading(false)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function handleUpload() {
     if (!uploadFile) return
@@ -57,11 +72,30 @@ export default function AdminImagesPage() {
     <AdminGuard>
       <AdminFrame title="Image Library" subtitle="Upload once, attach to any product">
         {/* Upload section */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 20, display: 'grid', gap: 10 }}>
+        <div
+          style={{
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            padding: 16,
+            marginBottom: 20,
+            display: 'grid',
+            gap: 10,
+          }}
+        >
           <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Upload new image</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: 10, alignItems: 'end' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 2fr auto',
+              gap: 10,
+              alignItems: 'end',
+            }}
+          >
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>File</label>
+              <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                File
+              </label>
               <input
                 ref={fileRef}
                 type="file"
@@ -70,7 +104,9 @@ export default function AdminImagesPage() {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Name</label>
+              <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                Name
+              </label>
               <input
                 placeholder="Descriptive name"
                 value={uploadName}
@@ -95,29 +131,71 @@ export default function AdminImagesPage() {
         ) : images.length === 0 ? (
           <p style={{ color: '#6b7280' }}>No images yet. Upload one above.</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: 12,
+            }}
+          >
             {images.map((img) => (
-              <div key={img.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+              <div
+                key={img.id}
+                style={{
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                }}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.url} alt={img.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                <img
+                  src={img.url}
+                  alt={img.name}
+                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }}
+                />
                 <div style={{ padding: '8px 10px' }}>
                   {editingId === img.id ? (
                     <div style={{ display: 'flex', gap: 6 }}>
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleRename(img.id) }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename(img.id)
+                        }}
                         style={{ ...inputStyle, fontSize: 12, padding: '4px 8px' }}
                         autoFocus
                       />
-                      <button type="button" onClick={() => handleRename(img.id)} style={{ ...primaryBtn, padding: '4px 10px', fontSize: 12 }}>✓</button>
-                      <button type="button" onClick={() => setEditingId(null)} style={{ ...secondaryBtn, padding: '4px 8px', fontSize: 12 }}>✗</button>
+                      <button
+                        type="button"
+                        onClick={() => handleRename(img.id)}
+                        style={{ ...primaryBtn, padding: '4px 10px', fontSize: 12 }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        style={{ ...secondaryBtn, padding: '4px 8px', fontSize: 12 }}
+                      >
+                        ✗
+                      </button>
                     </div>
                   ) : (
                     <div
-                      style={{ fontSize: 12, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                      style={{
+                        fontSize: 12,
+                        color: '#374151',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        cursor: 'pointer',
+                      }}
                       title={`Click to rename: ${img.name}`}
-                      onClick={() => { setEditingId(img.id); setEditName(img.name) }}
+                      onClick={() => {
+                        setEditingId(img.id)
+                        setEditName(img.name)
+                      }}
                     >
                       {img.name || '(unnamed)'}
                     </div>
@@ -128,7 +206,15 @@ export default function AdminImagesPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(img.id)}
-                    style={{ ...secondaryBtn, marginTop: 6, width: '100%', fontSize: 12, padding: '4px 0', color: '#991b1b', borderColor: '#fca5a5' }}
+                    style={{
+                      ...secondaryBtn,
+                      marginTop: 6,
+                      width: '100%',
+                      fontSize: 12,
+                      padding: '4px 0',
+                      color: '#991b1b',
+                      borderColor: '#fca5a5',
+                    }}
                   >
                     Delete
                   </button>
