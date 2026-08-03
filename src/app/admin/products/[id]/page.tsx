@@ -1064,8 +1064,17 @@ interface SKUMatrixProps {
 }
 
 function SKUMatrix({ sizes, variantOptions, skus, onSkusChange }: SKUMatrixProps) {
-  const attrKeys = variantOptions.map((o) => o.key)
-  const attrValueArrays = variantOptions.map((o) => o.values)
+  // SKUs only store price-affecting attrs (e.g. khung) — display-only options
+  // like chất liệu are intentionally excluded. If SKUs already exist, restrict
+  // the grid to the attr keys actually present on them, otherwise every combo
+  // fails to match its existing price and silently resets to 0.
+  const existingAttrKeys = new Set(skus.flatMap((s) => Object.keys(s.attrs)))
+  const priceAffectingOptions =
+    skus.length > 0
+      ? variantOptions.filter((o) => existingAttrKeys.has(o.key))
+      : variantOptions
+  const attrKeys = priceAffectingOptions.map((o) => o.key)
+  const attrValueArrays = priceAffectingOptions.map((o) => o.values)
   const attrCombos = cartesian(attrValueArrays) // e.g. [["gold","bronze"],["gold","gold"],...]
   const sizeEntries =
     sizes.length > 0 ? sizes : [{ size_code: null as unknown as string, size_label: '(no size)' }]
