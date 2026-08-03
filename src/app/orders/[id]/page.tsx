@@ -6,6 +6,7 @@ import { TopBar } from '@/components/layout/TopBar'
 import { getOrderById } from '@/lib/storefront-api'
 import type { Order } from '@/lib/types'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -86,7 +87,8 @@ function statusBannerText(status: string): { headline: string; sub: string } | n
   return null
 }
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
+export default function OrderDetailPage() {
+  const params = useParams<{ id: string }>()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
