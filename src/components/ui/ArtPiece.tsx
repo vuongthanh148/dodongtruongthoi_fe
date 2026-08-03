@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { imgUrl } from '@/lib/image'
 
 interface ArtPieceProps {
   bg?: 'gold' | 'red' | 'bronze' | 'dark'
@@ -52,8 +53,10 @@ export const ArtPiece = memo(function ArtPiece({
         <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.2)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={imgSrc}
+            src={imgUrl(imgSrc, { w: 800 })}
             alt={label}
+            loading="lazy"
+            decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
           />
           {/* Tint overlay */}
