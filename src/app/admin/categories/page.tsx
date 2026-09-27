@@ -7,10 +7,22 @@ import { AdminGuard } from '@/components/admin/AdminGuard'
 import { adminDelete, adminGet, adminPost, adminPut } from '@/lib/admin-api'
 import type { AdminCategory } from '@/lib/types'
 
+// Client-side preview only — the server (CategoryUsecase.CreateCategory)
+// re-normalizes and de-duplicates the slug regardless of what's sent.
+function previewSlug(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 const emptyForm = {
   id: '',
   name: '',
-  slug: '',
   description: '',
   tone: 'gold',
   image_url: '',
@@ -23,6 +35,7 @@ export default function AdminCategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(true)
+  const [slugTouched, setSlugTouched] = useState(false)
 
   useEffect(() => {
     loadCategories()
@@ -37,15 +50,16 @@ export default function AdminCategoriesPage() {
 
   function startCreate() {
     setEditingId(null)
+    setSlugTouched(false)
     setForm(emptyForm)
   }
 
   function startEdit(category: AdminCategory) {
     setEditingId(category.id)
+    setSlugTouched(true) // editing an existing category never auto-regenerates its slug
     setForm({
       id: category.id,
       name: category.name,
-      slug: category.slug,
       description: category.description ?? '',
       tone: category.tone,
       image_url: category.image_url ?? '',
@@ -57,7 +71,6 @@ export default function AdminCategoriesPage() {
   async function saveCategory() {
     const payload = {
       name: form.name.trim(),
-      slug: form.slug.trim(),
       description: form.description.trim(),
       tone: form.tone,
       image_url: form.image_url.trim(),
@@ -97,14 +110,30 @@ export default function AdminCategoriesPage() {
       <AdminLayout title="Categories" subtitle="Manage storefront category taxonomy">
         <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 16, display: 'grid', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
-            <Field label="ID (create only)">
-              <input value={form.id} onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))} style={inputStyle} disabled={Boolean(editingId)} />
-            </Field>
             <Field label="Name">
-              <input value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.name}
+                onChange={(event) => {
+                  const name = event.target.value
+                  setForm((prev) => ({
+                    ...prev,
+                    name,
+                    id: slugTouched || editingId ? prev.id : previewSlug(name),
+                  }))
+                }}
+                style={inputStyle}
+              />
             </Field>
             <Field label="Slug">
-              <input value={form.slug} onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))} style={inputStyle} />
+              <input
+                value={form.id}
+                onChange={(event) => {
+                  setSlugTouched(true)
+                  setForm((prev) => ({ ...prev, id: event.target.value }))
+                }}
+                style={inputStyle}
+                disabled={Boolean(editingId)}
+              />
             </Field>
             <Field label="Tone">
               <select value={form.tone} onChange={(event) => setForm((prev) => ({ ...prev, tone: event.target.value }))} style={inputStyle}>
