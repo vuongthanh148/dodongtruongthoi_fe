@@ -12,7 +12,7 @@ import type { AdminCategory } from '@/lib/types'
 function previewSlug(name: string): string {
   return name
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'D')
     .toLowerCase()
@@ -128,7 +128,7 @@ export default function AdminCategoriesPage() {
               <input
                 value={form.id}
                 onChange={(event) => {
-                  setSlugTouched(true)
+                  setSlugTouched(event.target.value !== '')
                   setForm((prev) => ({ ...prev, id: event.target.value }))
                 }}
                 style={inputStyle}
@@ -172,7 +172,7 @@ export default function AdminCategoriesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f9fafb' }}>
-                <th style={th}>ID</th>
+                <th style={th}>Slug</th>
                 <th style={th}>Name</th>
                 <th style={th}>Tone</th>
                 <th style={th}>Status</th>
