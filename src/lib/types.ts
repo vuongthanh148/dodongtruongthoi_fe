@@ -151,7 +151,6 @@ export interface OrderItem {
 export interface AdminCategory {
   id: string
   name: string
-  slug: string
   description: string | null
   tone: string
   image_url: string | null
