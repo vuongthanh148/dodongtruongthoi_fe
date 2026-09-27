@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 }
 
 const FALLBACK_THEME: ThemeId = 'default'
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 async function getActiveTheme(): Promise<ThemeId> {
   try {
