@@ -257,3 +257,100 @@ body {
 .noscroll {
   scrollbar-width: none;
 }
+
+.label-mono {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.price-num {
+  font-family: var(--font-lora), serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.desk-nav-link {
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.desk-nav-link:hover {
+  color: var(--accent) !important;
+}
+
+.mm-link {
+  transition: color 140ms, transform 180ms;
+}
+.mm-link:hover {
+  color: var(--accent) !important;
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes lkIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .lk-in {
+    animation: lkIn 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  @keyframes lkShake {
+    0%,
+    100% {
+      transform: none;
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+  .lk-shake {
+    animation: lkShake 260ms ease;
+  }
+}
+
+.mm-img {
+  transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mm-tile:hover .mm-img {
+  transform: scale(1.05);
+}
+
+.brand-focus:focus-visible {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(139, 30, 30, 0.1);
+}
+
+.mm-panel {
+  transition: clip-path 340ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+}
+.mm-panel[data-open='false'] {
+  transition: clip-path 200ms ease, visibility 0s 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-panel,
+  .mm-panel[data-open='false'] {
+    transition: visibility 0s;
+  }
+}
+
+.mm-col {
+  transition: opacity 260ms ease, transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-col {
+    transition: none !important;
+    transform: none !important;
+  }
+}

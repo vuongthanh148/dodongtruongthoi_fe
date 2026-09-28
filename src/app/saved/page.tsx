@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { FooterMinimal } from '@/components/layout/Footer'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
-import { getSavedProducts, toggleSavedProduct } from '@/lib/storage'
+import { getSavedProducts, toggleSavedProduct, upsertCartItem } from '@/lib/storage'
 import { fetchProduct } from '@/lib/storefront-api'
 import type { Product, SavedProductVariant } from '@/lib/types'
 
@@ -70,22 +72,48 @@ export default function SavedPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+      <DeskHeader />
       <TopBar
         title="Đã Lưu"
         onMenu={() => setIsMenuOpen(true)}
-       
+
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Sản phẩm đã lưu' }]} />
 
       {savedProducts.length === 0 ? emptyState : (
         <div style={{ padding: '16px 16px 0' }}>
           {/* Count eyebrow */}
-          <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 12 }}>
-            {savedProducts.length} tác phẩm yêu thích
+          <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+            <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase' }}>
+              {savedProducts.length} tác phẩm yêu thích
+            </div>
+            <button
+              type="button"
+              className="hidden md:inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white"
+              style={{ background: 'var(--accent)', fontFamily: 'var(--font-be-vietnam), sans-serif' }}
+              onClick={() => {
+                savedProducts.forEach((product) => {
+                  const selectedSize = product.sizes.find((s) => s.id === product.variant.sizeId) ?? product.sizes[0]
+                  const price = selectedSize?.price ?? product.price
+                  upsertCartItem({
+                    productId: product.id,
+                    productTitle: product.title,
+                    sizeId: product.variant.sizeId,
+                    sizeLabel: selectedSize?.name,
+                    selectedAttrs: product.variant.attrs ?? {},
+                    quantity: 1,
+                    unitPrice: price,
+                  })
+                })
+              }}
+            >
+              Thêm tất cả vào giỏ
+            </button>
           </div>
 
           {/* Grid with border pattern */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+          <div style={{ display: 'grid', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
             {savedProducts.map((product, idx) => {
               const bg = ((product.variant.attrs?.['bg_tone']) ?? product.defaultVariant?.['bg_tone'] ?? 'gold') as 'gold' | 'red' | 'bronze' | 'dark'
               const frame = ((product.variant.attrs?.['frame']) ?? product.defaultVariant?.['frame'] ?? 'bronze') as 'bronze' | 'gold' | 'dark' | 'carved'
@@ -208,7 +236,7 @@ export default function SavedPage() {
       )}
 
       <div style={{ flex: 1 }} />
-      <FooterMinimal />
+      <Footer />
     </div>
   )
 }

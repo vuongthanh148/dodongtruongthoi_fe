@@ -1,6 +1,9 @@
 'use client'
 
-import { FooterMinimal } from '@/components/layout/Footer'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Container } from '@/components/layout/Container'
+import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
@@ -42,8 +45,10 @@ export default function CraftVillagePage() {
         background: 'var(--bg-page)',
       }}
     >
+      <DeskHeader />
       <TopBar title="Làng Nghề" onMenu={() => setIsMenuOpen(true)} />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Làng nghề' }]} />
 
       {/* Full-bleed hero image area */}
       <div
@@ -100,63 +105,65 @@ export default function CraftVillagePage() {
         </div>
       </div>
 
-      <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Story cards */}
-        {stories.map((story) => (
-          <div
-            key={story.label}
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
-          >
-            {/* Mini artwork */}
-            <div style={{ background: 'var(--bg-surface)', padding: 12 }}>
-              <ArtPiece bg={story.bg} frame={story.frame} label="" pad={8} aspect="16/9" />
+      <Container>
+        <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Story cards */}
+          {stories.map((story, index) => (
+            <div
+              key={story.label}
+              className={index % 2 === 1 ? 'md:grid md:grid-cols-2 md:items-stretch md:[direction:rtl]' : 'md:grid md:grid-cols-2 md:items-stretch'}
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Mini artwork */}
+              <div className={index % 2 === 1 ? 'md:[direction:ltr]' : ''} style={{ background: 'var(--bg-surface)', padding: 12 }}>
+                <ArtPiece bg={story.bg} frame={story.frame} label="" pad={8} aspect="16/9" />
+              </div>
+              <div className={`${index % 2 === 1 ? 'md:[direction:ltr]' : ''} md:flex md:flex-col md:justify-center`} style={{ padding: '12px 14px 16px' }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-be-vietnam), sans-serif',
+                    fontSize: 10,
+                    letterSpacing: '0.18em',
+                    color: 'var(--bronze)',
+                    textTransform: 'uppercase',
+                    marginBottom: 5,
+                  }}
+                >
+                  {story.label}
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-lora), serif',
+                    fontWeight: 700,
+                    fontSize: 15,
+                    color: 'var(--text-primary)',
+                    marginBottom: 8,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {story.title}
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-be-vietnam), sans-serif',
+                    fontSize: 13,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.65,
+                  }}
+                >
+                  {story.body}
+                </div>
+              </div>
             </div>
-            <div style={{ padding: '12px 14px 16px' }}>
-              <div
-                style={{
-                  fontFamily: 'var(--font-be-vietnam), sans-serif',
-                  fontSize: 10,
-                  letterSpacing: '0.18em',
-                  color: 'var(--bronze)',
-                  textTransform: 'uppercase',
-                  marginBottom: 5,
-                }}
-              >
-                {story.label}
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-lora), serif',
-                  fontWeight: 700,
-                  fontSize: 15,
-                  color: 'var(--text-primary)',
-                  marginBottom: 8,
-                  lineHeight: 1.3,
-                }}
-              >
-                {story.title}
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-be-vietnam), sans-serif',
-                  fontSize: 13,
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.65,
-                }}
-              >
-                {story.body}
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
 
-        {/* Artisan highlight card */}
-        <div
+          {/* Artisan highlight card */}
+          <div
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
@@ -240,11 +247,12 @@ export default function CraftVillagePage() {
           >
             Liên hệ ngay 0899 012 288
           </a>
+          </div>
         </div>
-      </div>
+      </Container>
 
       <div style={{ flex: 1 }} />
-      <FooterMinimal />
+      <Footer />
     </div>
   )
 }

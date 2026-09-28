@@ -1,5 +1,7 @@
 export { DrumMark } from './DrumMark'
 export { DongSonTile } from './DongSonTile'
+export { IconBox } from './IconBox'
+export { IconCart } from './IconCart'
 export { IconChevron } from './IconChevron'
 export { IconClose } from './IconClose'
 export { IconCompare } from './IconCompare'

@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FooterMinimal } from '@/components/layout/Footer'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Container } from '@/components/layout/Container'
+import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
@@ -104,18 +107,23 @@ export default function CartPage() {
 
   return (
     <div suppressHydrationWarning style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+      <DeskHeader />
       <TopBar
         title="Giỏ Hàng"
         onMenu={() => setIsMenuOpen(true)}
         onOpenSaved={() => router.push('/saved')}
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Container>
+        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giỏ hàng' }]} />
 
-      {items.length === 0 ? emptyState : (
-        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {items.length === 0 ? emptyState : (
+          <div className="flex flex-col gap-px lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-10" style={{ padding: '0 16px 16px' }}>
 
-          {/* Items */}
-          {items.map((item, index) => (
+          {/* Left column: items list */}
+          <div className="lg:min-w-0">
+            {/* Items */}
+            {items.map((item, index) => (
             <div
               key={index}
               style={{
@@ -180,71 +188,76 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
-          ))}
-
-          {/* Summary box — dark ink */}
-          <div style={{ marginTop: 16, background: 'var(--bg-dark)', borderRadius: 14, padding: 16, color: 'var(--text-on-dark)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
-                <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
-                <span>Phí vận chuyển</span><span style={{ fontStyle: 'italic', fontSize: 12 }}>Xác nhận sau</span>
-              </div>
-            </div>
-            <div style={{ height: 1, background: 'rgba(201,169,97,0.2)', marginBottom: 12 }} />
-            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 4 }}>Tổng cộng</div>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)' }}>
-              {fmtVND(subtotal)}
-            </div>
-
-            <Link
-              href="/checkout"
-              style={{
-                display: 'block', width: '100%', marginTop: 16,
-                background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6,
-                padding: '13px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center',
-                textDecoration: 'none', boxSizing: 'border-box',
-              }}
-            >
-              Tiến hành đặt hàng →
-            </Link>
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              style={{
-                display: 'block', width: '100%', marginTop: 8,
-                background: 'transparent', color: 'var(--text-on-dark)',
-                border: '1px solid rgba(244,237,224,0.35)', borderRadius: 6,
-                padding: '12px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 13.5, cursor: 'pointer', textAlign: 'center', boxSizing: 'border-box',
-              }}
-            >
-              Tiếp tục mua sắm
-            </button>
+            ))}
           </div>
 
-          {/* Trust row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', marginTop: 16, gap: 8 }}>
-            {[
-              { Icon: IconShield, label: 'Bảo hành 10 năm' },
-              { Icon: IconTruck, label: 'Giao lắp toàn quốc' },
-              { Icon: IconReturn, label: 'Đổi trả 7 ngày' },
-            ].map(({ Icon, label }) => (
-              <div key={label} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                  <Icon size={24} color="var(--bronze)" />
+          {/* Right column: summary + trust row */}
+          <div className="lg:sticky lg:top-[92px]">
+            {/* Summary box — dark ink */}
+            <div style={{ marginTop: 16, background: 'var(--bg-dark)', borderRadius: 14, padding: 16, color: 'var(--text-on-dark)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
+                  <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
                 </div>
-                {label}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
+                  <span>Phí vận chuyển</span><span style={{ fontStyle: 'italic', fontSize: 12 }}>Xác nhận sau</span>
+                </div>
               </div>
-            ))}
+              <div style={{ height: 1, background: 'rgba(201,169,97,0.2)', marginBottom: 12 }} />
+              <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 4 }}>Tổng cộng</div>
+              <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)' }}>
+                {fmtVND(subtotal)}
+              </div>
+
+              <Link
+                href="/checkout"
+                style={{
+                  display: 'block', width: '100%', marginTop: 16,
+                  background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6,
+                  padding: '13px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
+                  fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center',
+                  textDecoration: 'none', boxSizing: 'border-box',
+                }}
+              >
+                Tiến hành đặt hàng →
+              </Link>
+              <button
+                type="button"
+                onClick={() => router.push('/')}
+                style={{
+                  display: 'block', width: '100%', marginTop: 8,
+                  background: 'transparent', color: 'var(--text-on-dark)',
+                  border: '1px solid rgba(244,237,224,0.35)', borderRadius: 6,
+                  padding: '12px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
+                  fontSize: 13.5, cursor: 'pointer', textAlign: 'center', boxSizing: 'border-box',
+                }}
+              >
+                Tiếp tục mua sắm
+              </button>
+            </div>
+
+            {/* Trust row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', marginTop: 16, gap: 8 }}>
+              {[
+                { Icon: IconShield, label: 'Bảo hành 10 năm' },
+                { Icon: IconTruck, label: 'Giao lắp toàn quốc' },
+                { Icon: IconReturn, label: 'Đổi trả 7 ngày' },
+              ].map(({ Icon, label }) => (
+                <div key={label} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                    <Icon size={24} color="var(--bronze)" />
+                  </div>
+                  {label}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
+      </Container>
 
       <div style={{ flex: 1 }} />
-      <FooterMinimal />
+      <Footer />
     </div>
   )
 }

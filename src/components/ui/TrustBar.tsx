@@ -7,6 +7,7 @@ export function TrustBar() {
 
   return (
     <section
+      className="mx-auto w-full lg:max-w-[1344px]"
       style={{
         background: 'var(--bg-dark)',
         color: 'var(--text-on-dark)',

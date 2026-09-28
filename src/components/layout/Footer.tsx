@@ -11,312 +11,125 @@ import {
   IconTiktok,
   IconZalo,
 } from '@/components/icons'
-import { Btn } from '@/components/ui/Btn'
-import { HOTLINE, SHOP_ADDRESS, SITE_NAME, SHOP_EMAIL, COMPANY_NAME, GOOGLE_MAPS_URL, SOCIAL_LINKS } from '@/lib/constants'
+import { Container } from '@/components/layout/Container'
+import {
+  COMPANY_NAME,
+  GOOGLE_MAPS_URL,
+  HOTLINE,
+  SHOP_ADDRESS,
+  SHOP_EMAIL,
+  SITE_NAME,
+  SOCIAL_LINKS,
+} from '@/lib/constants'
+import { MEGA_MENU_GROUPS } from '@/lib/desktop-nav'
+
+const SUPPORT_LINKS = [
+  { label: 'Tra cứu đơn hàng', href: '/orders' },
+  { label: 'Hướng dẫn mua hàng', href: '/huong-dan-mua-hang' },
+  { label: 'Câu hỏi thường gặp', href: '/faq' },
+  { label: 'Cẩm nang', href: '/cam-nang' },
+]
+
+const POLICY_LABELS = ['Đổi trả', 'Vận chuyển & lắp đặt', 'Bảo hành', 'Thanh toán']
+
+const SOCIALS = [
+  { Icon: IconZalo, href: SOCIAL_LINKS.zalo, label: 'Zalo' },
+  { Icon: IconMessenger, href: SOCIAL_LINKS.messenger, label: 'Messenger' },
+  { Icon: IconFacebook, href: SOCIAL_LINKS.facebook, label: 'Facebook' },
+  { Icon: IconTiktok, href: SOCIAL_LINKS.tiktok, label: 'Tiktok' },
+]
+
+function ColHeading({ children }: { children: React.ReactNode }) {
+  return <div className="label-mono mb-1 text-[10.5px] text-[var(--gold)]">{children}</div>
+}
 
 export function Footer() {
   return (
-    <footer style={{ margin: '28px 0 0 0' }}>
-      <div
-        style={{
-          background: 'var(--bg-dark)',
-          color: 'var(--text-on-dark)',
-          padding: '28px 20px 24px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            marginBottom: 14,
-          }}
-        >
-          <DrumMark size={36} color="var(--gold)" />
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontSize: 18,
-                fontWeight: 600,
-                color: 'var(--gold)',
-                letterSpacing: '0.02em',
-                lineHeight: 1.1,
-              }}
-            >
-              {SITE_NAME}
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontStyle: 'italic',
-                fontSize: 10.5,
-                color: 'rgba(244, 237, 224, 0.7)',
-                letterSpacing: '0.08em',
-                marginTop: 2,
-              }}
-            >
-              tinh hoa làng nghề Việt
+    <footer className="mt-auto bg-[var(--bg-dark)] text-[rgba(244,237,224,0.78)]">
+      <Container className="py-8 lg:grid lg:grid-cols-[1.5fr_1fr_1fr_1fr_1.3fr] lg:items-start lg:gap-6 lg:py-13 xl:gap-10">
+        {/* Brand block */}
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5 lg:flex-col lg:items-start lg:gap-4 lg:border-b-0 lg:pb-0">
+          <div className="flex items-center gap-3">
+            <DrumMark size={36} color="var(--gold)" />
+            <div>
+              <div className="font-[family-name:var(--font-lora)] text-[17px] leading-none font-semibold text-[var(--gold)] lg:text-xl">
+                {SITE_NAME}
+              </div>
+              <div className="mt-1 font-[family-name:var(--font-lora)] text-xs italic">tinh hoa làng nghề Việt</div>
             </div>
           </div>
+          <p className="hidden max-w-[320px] text-[13.5px] leading-relaxed lg:block">
+            Tranh đồng, trống đồng và đồ thờ chế tác thủ công bởi nghệ nhân làng Đại Bái.
+          </p>
+          <div className="flex gap-2">
+            {SOCIALS.map(({ Icon, href, label }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={label}
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/[0.18] bg-white/[0.03] text-[var(--gold)]"
+              >
+                <Icon size={20} />
+              </a>
+            ))}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {[
-            { Icon: IconZalo, href: SOCIAL_LINKS.zalo },
-            { Icon: IconMessenger, href: SOCIAL_LINKS.messenger },
-            { Icon: IconFacebook, href: SOCIAL_LINKS.facebook },
-            { Icon: IconTiktok, href: SOCIAL_LINKS.tiktok },
-          ].map(({ Icon, href }, idx) => (
-            <Btn
-              key={idx}
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(href, '_blank')}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: '50%',
-                padding: 0,
-                color: 'var(--gold)',
-                border: '1px solid rgba(244, 237, 224, 0.18)',
-                background: 'rgba(255,255,255,0.03)',
-              }}
+        {/* Link columns */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-7 pt-7 md:grid-cols-4 md:gap-6 md:pt-7 lg:contents">
+          <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
+            <ColHeading>Sản phẩm</ColHeading>
+            {MEGA_MENU_GROUPS.map((g) => (
+              <Link key={g.title} href={g.allHref} className="hover:text-[var(--gold)]">
+                {g.title}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
+            <ColHeading>Hỗ trợ</ColHeading>
+            {SUPPORT_LINKS.map((l) => (
+              <Link key={l.href} href={l.href} className="hover:text-[var(--gold)]">
+                {l.label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
+            <ColHeading>Chính sách</ColHeading>
+            {POLICY_LABELS.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
+            <ColHeading>Liên hệ</ColHeading>
+            <a
+              href={`tel:${HOTLINE}`}
+              className="flex items-center gap-2 font-[family-name:var(--font-lora)] text-[17px] font-bold tabular-nums text-[var(--gold)] lg:text-[19px]"
             >
-              <Icon size={20} />
-            </Btn>
-          ))}
-        </div>
-      </div>
-
-      <div
-        style={{
-          background: 'var(--bg-page)',
-          padding: '22px 20px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '20px',
-          borderBottom: '1px solid var(--border-soft)',
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: 'var(--bronze)',
-              marginBottom: 12,
-            }}
-          >
-            Khám phá
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'var(--font-lora), serif' }}>
-            <Link href="/" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
-              Trang chủ
-            </Link>
-            <Link href="/saved" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
-              Sản phẩm đã lưu
-            </Link>
+              <IconPhone size={15} color="var(--gold)" /> {HOTLINE}
+            </a>
+            <a href={`mailto:${SHOP_EMAIL}`} className="flex min-w-0 items-center gap-2 hover:text-[var(--gold)]">
+              <IconMail size={14} color="var(--gold)" />
+              <span className="min-w-0 break-words">{SHOP_EMAIL}</span>
+            </a>
+            <span className="flex items-center gap-2">
+              <IconMapPin size={14} color="var(--gold)" /> {SHOP_ADDRESS}
+            </span>
+            <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="text-[var(--gold)]">
+              Xem bản đồ →
+            </a>
           </div>
         </div>
+      </Container>
 
-        <div>
-          <div
-            style={{
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: 'var(--bronze)',
-              marginBottom: 12,
-            }}
-          >
-            Thông tin
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'var(--font-lora), serif' }}>
-            <Link href="/lang-nghe" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
-              Câu chuyện làng nghề →
-            </Link>
-            <Link href="/huong-dan-mua-hang" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
-              Hướng dẫn mua hàng →
-            </Link>
-            <Link href="/faq" style={{ fontSize: 15, color: 'var(--text-primary)', textDecoration: 'none' }}>
-              Câu hỏi thường gặp →
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          background: 'var(--bg-surface)',
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--border-soft)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10,
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 600,
-              color: 'var(--accent)',
-              fontSize: 15,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <IconPhone size={14} color="var(--accent)" />
-            {HOTLINE}
-          </div>
-          <Btn
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(GOOGLE_MAPS_URL, '_blank')}
-            style={{
-              fontSize: 13,
-              padding: '6px 12px',
-            }}
-          >
-            Bản đồ →
-          </Btn>
-        </div>
-
-        <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconMail size={14} color="var(--text-muted)" />
-          {SHOP_EMAIL}
-        </div>
-        <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconMapPin size={14} color="var(--text-muted)" />
-          {SHOP_ADDRESS}
-        </div>
-
-        {/* Report issue link */}
-        <button
-          type="button"
-          onClick={() => window.open(`https://zalo.me/${HOTLINE.replace(/\D/g, '')}?text=Tôi muốn báo cáo sự cố`, '_blank')}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: 13,
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            padding: 0,
-            textDecoration: 'underline',
-          }}
-        >
-          Báo cáo sự cố
-        </button>
-      </div>
-
-      <div
-        style={{
-          background: 'var(--bg-dark)',
-          color: 'var(--text-on-dark)',
-          padding: '14px 20px',
-          textAlign: 'center',
-          fontSize: 12,
-        }}
-      >
-        <div style={{ marginBottom: 4, opacity: 0.75 }}>
-          {COMPANY_NAME} · MST: Chưa cập nhật
-        </div>
-        <div style={{ opacity: 0.75 }}>
-          © 2025 {SITE_NAME}. All rights reserved.
-        </div>
-      </div>
-    </footer>
-  )
-}
-
-export function FooterMinimal() {
-  return (
-    <footer style={{ marginTop: 'auto' }}>
-      <div
-        style={{
-          background: 'var(--bg-dark)',
-          color: 'var(--text-on-dark)',
-          padding: '24px 20px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            marginBottom: 12,
-          }}
-        >
-          <DrumMark size={36} color="var(--gold)" />
-          <div style={{ textAlign: 'left' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontSize: 18,
-                fontWeight: 600,
-                color: 'var(--gold)',
-                letterSpacing: '0.02em',
-                lineHeight: 1.1,
-              }}
-            >
-              {SITE_NAME}
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontStyle: 'italic',
-                fontSize: 10.5,
-                color: 'rgba(244, 237, 224, 0.7)',
-                letterSpacing: '0.08em',
-                marginTop: 2,
-              }}
-            >
-              tinh hoa làng nghề Việt
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {[
-            { Icon: IconZalo, href: SOCIAL_LINKS.zalo },
-            { Icon: IconMessenger, href: SOCIAL_LINKS.messenger },
-            { Icon: IconFacebook, href: SOCIAL_LINKS.facebook },
-            { Icon: IconTiktok, href: SOCIAL_LINKS.tiktok },
-          ].map(({ Icon, href }, idx) => (
-            <Btn
-              key={idx}
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(href, '_blank')}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: '50%',
-                color: 'var(--gold)',
-                border: '1px solid rgba(244, 237, 224, 0.18)',
-                background: 'rgba(255,255,255,0.03)',
-                padding: 0,
-              }}
-            >
-              <Icon size={20} color="var(--gold)" />
-            </Btn>
-          ))}
-        </div>
+      <div className="border-t border-white/10">
+        <Container className="flex flex-col gap-1.5 py-3.5 text-xs text-[rgba(244,237,224,0.6)] md:flex-row md:justify-between">
+          <span>
+            {COMPANY_NAME} · MST: Chưa cập nhật
+          </span>
+          <span>© 2026 {SITE_NAME}</span>
+        </Container>
       </div>
     </footer>
   )

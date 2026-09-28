@@ -1,7 +1,11 @@
 'use client'
 
-import { FooterMinimal } from '@/components/layout/Footer'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Container } from '@/components/layout/Container'
+import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { ReadColumn } from '@/components/layout/ReadColumn'
 import { TopBar } from '@/components/layout/TopBar'
 import { useState } from 'react'
 
@@ -111,10 +115,13 @@ export default function BuyGuidePage() {
         background: 'var(--bg-page)',
       }}
     >
+      <DeskHeader />
       <TopBar title="Hướng Dẫn Mua Hàng" onMenu={() => setIsMenuOpen(true)} />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Hướng dẫn mua hàng' }]} />
 
-      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Container>
+        <ReadColumn className="flex flex-col gap-4 pt-4">
         {/* Hero */}
         <div
           style={{
@@ -414,10 +421,11 @@ export default function BuyGuidePage() {
             </a>
           </div>
         </div>
-      </div>
+        </ReadColumn>
+      </Container>
 
       <div style={{ flex: 1 }} />
-      <FooterMinimal />
+      <Footer />
     </div>
   )
 }

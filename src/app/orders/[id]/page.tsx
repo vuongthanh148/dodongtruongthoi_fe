@@ -1,9 +1,12 @@
 'use client'
 
-import { FooterMinimal } from '@/components/layout/Footer'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { getOrderById } from '@/lib/storefront-api'
+import { maskPhone, maskName, maskAddress } from '@/lib/order-lookup'
 import type { Order } from '@/lib/types'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -124,8 +127,10 @@ export default function OrderDetailPage() {
           background: 'var(--bg-page)',
         }}
       >
+        <DeskHeader />
         {topBar}
         <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tra cứu đơn hàng', href: '/orders' }, { label: 'Chi tiết đơn hàng' }]} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div
             style={{
@@ -137,7 +142,7 @@ export default function OrderDetailPage() {
             Đang tải...
           </div>
         </div>
-        <FooterMinimal />
+        <Footer />
       </div>
     )
   }
@@ -152,8 +157,10 @@ export default function OrderDetailPage() {
           background: 'var(--bg-page)',
         }}
       >
+        <DeskHeader />
         {topBar}
         <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tra cứu đơn hàng', href: '/orders' }, { label: 'Chi tiết đơn hàng' }]} />
         <div style={{ padding: '60px 30px', textAlign: 'center' }}>
           <div
             style={{
@@ -184,7 +191,7 @@ export default function OrderDetailPage() {
           </Link>
         </div>
         <div style={{ flex: 1 }} />
-        <FooterMinimal />
+        <Footer />
       </div>
     )
   }
@@ -202,12 +209,16 @@ export default function OrderDetailPage() {
         background: 'var(--bg-page)',
       }}
     >
+      <DeskHeader />
       {topBar}
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tra cứu đơn hàng', href: '/orders' }, { label: 'Chi tiết đơn hàng' }]} />
 
-      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Status banner */}
-        {banner && (
+      <div className="flex flex-col gap-3 lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:px-8" style={{ padding: '16px 16px 0' }}>
+        {/* Left column: status banner, order info, items */}
+        <div className="lg:min-w-0 lg:flex lg:flex-col lg:gap-3">
+          {/* Status banner */}
+          {banner && (
           <div
             style={{
               ...statusBannerStyle(order.status),
@@ -295,6 +306,46 @@ export default function OrderDetailPage() {
           </div>
         )}
 
+        {order.status !== 'cancelled' && (() => {
+          const stages: { id: string; label: string }[] = [
+            { id: 'pending_confirm', label: 'Đặt hàng' },
+            { id: 'confirmed', label: 'Xác nhận' },
+            { id: 'processing', label: 'Xử lý' },
+            { id: 'shipped', label: 'Giao hàng' },
+            { id: 'completed', label: 'Hoàn tất' },
+          ]
+          const currentIdx = stages.findIndex((s) => s.id === order.status)
+          return (
+            <div className="flex items-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px' }}>
+              {stages.map((s, i) => (
+                <div key={s.id} className="flex flex-1 items-center last:flex-none">
+                  <div className="flex flex-col items-center gap-1.5" style={{ minWidth: 0 }}>
+                    <div
+                      className="grid place-items-center rounded-full"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        fontSize: 11,
+                        background: i < currentIdx ? 'var(--accent)' : i === currentIdx ? 'rgba(139,30,30,0.1)' : 'var(--bg-surface-alt)',
+                        color: i < currentIdx ? 'white' : i === currentIdx ? 'var(--accent)' : 'var(--text-muted)',
+                        border: i === currentIdx ? '1px solid var(--accent)' : 'none',
+                      }}
+                    >
+                      {i < currentIdx ? '✓' : i + 1}
+                    </div>
+                    <span style={{ fontSize: 10.5, textAlign: 'center', color: i <= currentIdx ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: i === currentIdx ? 600 : 400, whiteSpace: 'nowrap' }}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < stages.length - 1 && (
+                    <div className="mx-1 flex-1" style={{ height: 1, background: i < currentIdx ? 'var(--accent)' : 'var(--border)', marginBottom: 16 }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+
         {/* Order header card */}
         <div
           style={{
@@ -345,15 +396,17 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Customer info card */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: '14px 16px',
-          }}
-        >
+        {/* Right column: customer info, contact CTA (sticky) */}
+        <div className="lg:sticky lg:top-[92px] lg:flex lg:flex-col lg:gap-3">
+          {/* Customer info card */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '14px 16px',
+            }}
+          >
           <div
             style={{
               fontFamily: 'var(--font-be-vietnam), sans-serif',
@@ -403,7 +456,7 @@ export default function OrderDetailPage() {
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                {order.phone}
+                {maskPhone(order.phone)}
               </div>
             </div>
             {/* Name */}
@@ -436,7 +489,7 @@ export default function OrderDetailPage() {
                   </svg>
                 </div>
                 <div style={{ fontSize: 13.5, color: 'var(--text-primary)' }}>
-                  {order.customerName}
+                  {maskName(order.customerName)}
                 </div>
               </div>
             )}
@@ -478,7 +531,7 @@ export default function OrderDetailPage() {
                     paddingTop: 5,
                   }}
                 >
-                  {order.address}
+                  {maskAddress(order.address)}
                 </div>
               </div>
             )}
@@ -640,6 +693,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
+        </div>
 
         {/* Contact CTA */}
         <div style={{ background: 'var(--bg-dark)', borderRadius: 12, padding: '16px 16px' }}>
@@ -725,6 +779,7 @@ export default function OrderDetailPage() {
             </a>
           </div>
         </div>
+        </div>
 
         {/* Bottom nav links */}
         <div style={{ display: 'flex', gap: 8 }}>
@@ -767,7 +822,7 @@ export default function OrderDetailPage() {
       </div>
 
       <div style={{ flex: 1 }} />
-      <FooterMinimal />
+      <Footer />
     </div>
   )
 }

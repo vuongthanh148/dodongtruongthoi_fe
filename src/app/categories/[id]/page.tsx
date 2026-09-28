@@ -3,13 +3,19 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { IconFilter, IconGrid, IconList, IconStar } from '@/components/icons'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Container } from '@/components/layout/Container'
+import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { TopBar } from '@/components/layout/TopBar'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { FilterSidebar } from '@/components/layout/FilterSidebar'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
 import { ProductCardSkeleton, ProductCardV2 } from '@/components/ui/ProductCard'
-import { CATEGORIES } from '@/lib/data'
+import { VariantSwatch } from '@/components/ui/VariantSwatch'
+import { BG_TONES, CATEGORIES } from '@/lib/data'
 import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Price } from '@/components/ui/Price'
@@ -95,6 +101,7 @@ export default function CategoryPage() {
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
   const [ratingFilter, setRatingFilter] = useState<'all' | '4+' | '5'>('all')
+  const [bgTone, setBgTone] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
@@ -103,6 +110,7 @@ export default function CategoryPage() {
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
   const [pendingRating, setPendingRating] = useState<'all' | '4+' | '5'>('all')
+  const [pendingBgTone, setPendingBgTone] = useState<string | null>(null)
 
   const { data: categoriesData = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
   const categories = useMemo(
@@ -124,8 +132,9 @@ export default function CategoryPage() {
     let count = 0
     if (priceRange !== 'all') count++
     if (ratingFilter !== 'all') count++
+    if (bgTone !== null) count++
     return count
-  }, [priceRange, ratingFilter])
+  }, [priceRange, ratingFilter, bgTone])
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -151,12 +160,17 @@ export default function CategoryPage() {
             ? product.rating >= 4
             : product.rating === 5
 
+      const bgToneMatch =
+        bgTone === null
+          ? true
+          : product.defaultVariant['bg_tone'] === bgTone
+
       const queryMatch =
         normalizedQuery.length === 0 ||
         product.title.toLowerCase().includes(normalizedQuery) ||
         product.subtitle.toLowerCase().includes(normalizedQuery)
 
-      return priceMatch && ratingMatch && queryMatch
+      return priceMatch && ratingMatch && bgToneMatch && queryMatch
     })
 
     if (sort === 'price-asc') {
@@ -169,7 +183,7 @@ export default function CategoryPage() {
       return [...filtered].sort((a, b) => b.rating - a.rating)
     }
     return filtered
-  }, [products, priceRange, ratingFilter, query, sort])
+  }, [products, priceRange, ratingFilter, bgTone, query, sort])
 
   const pendingVisibleCount = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -195,24 +209,31 @@ export default function CategoryPage() {
             ? product.rating >= 4
             : product.rating === 5
 
+      const bgToneMatch =
+        pendingBgTone === null
+          ? true
+          : product.defaultVariant['bg_tone'] === pendingBgTone
+
       const queryMatch =
         normalizedQuery.length === 0 ||
         product.title.toLowerCase().includes(normalizedQuery) ||
         product.subtitle.toLowerCase().includes(normalizedQuery)
 
-      return priceMatch && ratingMatch && queryMatch
+      return priceMatch && ratingMatch && bgToneMatch && queryMatch
     })
 
     return filtered.length
-  }, [products, pendingPriceRange, pendingRating, query])
+  }, [products, pendingPriceRange, pendingRating, pendingBgTone, query])
 
   return (
     <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
+      <DeskHeader />
       <TopBar title={category?.name ?? 'Danh mục'} onMenu={() => setIsMenuOpen(true)} />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Sản phẩm', href: '/products' }, { label: category?.name ?? 'Danh mục' }]} />
 
       {/* Category pills strip — sticky below TopBar */}
-      <div style={{ position: 'sticky', top: 57, zIndex: 30, background: 'var(--bg-page)', borderBottom: '1px solid var(--border-soft)' }}>
+      <div className="lg:hidden sticky top-[57px] md:top-[69px] lg:top-[76px]" style={{ zIndex: 30, background: 'var(--bg-page)', borderBottom: '1px solid var(--border-soft)' }}>
         <div style={{ display: 'flex', overflowX: 'auto', padding: '10px 14px', gap: 7 }} className="noscroll">
           {categories.map((item) => {
             const isActive = item.id === activeCategoryId
@@ -243,8 +264,7 @@ export default function CategoryPage() {
       </div>
 
       {/* Sort/filter/view bar */}
-      <div style={{
-        display: 'flex',
+      <div className="flex lg:hidden" style={{
         alignItems: 'center',
         padding: '10px 14px',
         borderBottom: '1px solid var(--border-soft)',
@@ -273,7 +293,7 @@ export default function CategoryPage() {
         </select>
         <button
           type="button"
-          onClick={() => { setPendingPriceRange(priceRange); setPendingRating(ratingFilter); setFilterSheetOpen(true) }}
+          onClick={() => { setPendingPriceRange(priceRange); setPendingRating(ratingFilter); setPendingBgTone(bgTone); setFilterSheetOpen(true) }}
           style={{
             display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
             padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 4,
@@ -313,60 +333,81 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      <div style={{ paddingBottom: 100 }}>
-        {isLoading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-                <ProductCardSkeleton compact />
-              </div>
-            ))}
-          </div>
-        ) : visibleProducts.length === 0 ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 10, padding: '22px 14px', margin: 16,
-            border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
-          }}>
-            <div style={{ width: 170 }}>
-              <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
+      <Container>
+        <div className="grid grid-cols-1 gap-0 lg:grid-cols-[216px_minmax(0,1fr)] lg:items-start lg:gap-7 xl:grid-cols-[248px_minmax(0,1fr)] xl:gap-10">
+          <FilterSidebar
+            categories={categories}
+            activeCategoryId={activeCategoryId}
+            onCategoryChange={setActiveCategoryId}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            ratingFilter={ratingFilter}
+            onRatingFilterChange={setRatingFilter}
+            bgTone={bgTone}
+            onBgToneChange={setBgTone}
+            onClearAll={() => {
+              setPriceRange('all')
+              setRatingFilter('all')
+              setBgTone(null)
+            }}
+          />
+
+          <div style={{ paddingBottom: 100 }}>
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3" style={{ borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                  <ProductCardSkeleton compact />
+                </div>
+              ))}
             </div>
-            <Heading as="h3" size="sm" style={{ textAlign: 'center' }}>
-              Không tìm thấy sản phẩm
-            </Heading>
-            <Btn type="button" variant="outline" onClick={() => { setQuery(''); setPriceRange('all'); setSort('featured') }}>
-              Xem tất cả
-            </Btn>
-          </div>
-        ) : view === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
-            {visibleProducts.map((product, idx) => (
-              <ProductCardV2
-                key={product.id}
-                product={product}
-                tall={idx % 2 === 0}
-                style={idx % 4 === 3 ? { background: 'var(--ivory-3, #e5d9c0)' } : undefined}
-                onOpen={() => { window.location.href = `/products/${product.id}` }}
-              />
-            ))}
-            {/* Fill empty cell if odd count */}
-            {visibleProducts.length % 2 !== 0 && (
-              <div style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'rgba(244,237,224,0.4)' }} />
-            )}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {visibleProducts.map((product) => (
-              <CatListRow
-                key={product.id}
-                product={product}
-                categories={categories}
-                onOpen={() => { window.location.href = `/products/${product.id}` }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          ) : visibleProducts.length === 0 ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10, padding: '22px 14px', margin: 16,
+              border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
+            }}>
+              <div style={{ width: 170 }}>
+                <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
+              </div>
+              <Heading as="h3" size="sm" style={{ textAlign: 'center' }}>
+                Không tìm thấy sản phẩm
+              </Heading>
+              <Btn type="button" variant="outline" onClick={() => { setQuery(''); setPriceRange('all'); setBgTone(null); setSort('featured') }}>
+                Xem tất cả
+              </Btn>
+            </div>
+          ) : view === 'grid' ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3" style={{ alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+              {visibleProducts.map((product, idx) => (
+                <ProductCardV2
+                  key={product.id}
+                  product={product}
+                  tall={idx % 2 === 0}
+                  style={idx % 4 === 3 ? { background: 'var(--ivory-3, #e5d9c0)' } : undefined}
+                  onOpen={() => { window.location.href = `/products/${product.id}` }}
+                />
+              ))}
+              {/* Fill empty cell if odd count */}
+              {visibleProducts.length % 2 !== 0 && (
+                <div style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'rgba(244,237,224,0.4)' }} />
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {visibleProducts.map((product) => (
+                <CatListRow
+                  key={product.id}
+                  product={product}
+                  categories={categories}
+                  onOpen={() => { window.location.href = `/products/${product.id}` }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        </div>
+      </Container>
 
       {/* Filter Bottom Sheet */}
       <BottomSheet
@@ -381,6 +422,7 @@ export default function CategoryPage() {
               onClick={() => {
                 setPendingPriceRange('all')
                 setPendingRating('all')
+                setPendingBgTone(null)
               }}
               style={{ flex: 1 }}
             >
@@ -392,6 +434,7 @@ export default function CategoryPage() {
               onClick={() => {
                 setPriceRange(pendingPriceRange)
                 setRatingFilter(pendingRating)
+                setBgTone(pendingBgTone)
                 setFilterSheetOpen(false)
               }}
               style={{ flex: 1 }}
@@ -467,6 +510,24 @@ export default function CategoryPage() {
               })}
             </div>
           </div>
+
+          {/* Background tone section */}
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
+              Màu nền
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {BG_TONES.map((tone) => (
+                <VariantSwatch
+                  key={tone.id}
+                  tone={tone.id}
+                  active={pendingBgTone === tone.id}
+                  size={32}
+                  onClick={() => setPendingBgTone(pendingBgTone === tone.id ? null : tone.id)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </BottomSheet>
 
@@ -512,6 +573,8 @@ export default function CategoryPage() {
           })}
         </div>
       </BottomSheet>
+
+      <Footer />
     </div>
   )
 }
