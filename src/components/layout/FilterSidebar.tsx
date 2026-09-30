@@ -3,7 +3,6 @@ import { BG_TONES } from '@/lib/data'
 import type { Category } from '@/lib/types'
 
 export type PriceRangeId = 'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
-export type RatingFilterId = 'all' | '4+' | '5'
 
 const PRICE_RANGES: { id: PriceRangeId; label: string }[] = [
   { id: 'all', label: 'Tất cả' },
@@ -13,20 +12,15 @@ const PRICE_RANGES: { id: PriceRangeId; label: string }[] = [
   { id: 'over-5m', label: 'Trên 5 triệu' },
 ]
 
-const RATINGS: { id: RatingFilterId; label: string }[] = [
-  { id: 'all', label: 'Tất cả' },
-  { id: '4+', label: '4★ trở lên' },
-  { id: '5', label: '5★' },
-]
-
 interface FilterSidebarProps {
   categories: Category[]
   activeCategoryId: string
   onCategoryChange: (id: string) => void
   priceRange: PriceRangeId
   onPriceRangeChange: (id: PriceRangeId) => void
-  ratingFilter: RatingFilterId
-  onRatingFilterChange: (id: RatingFilterId) => void
+  sizeOptions: { code: string; name: string }[]
+  sizeFilter: string | null
+  onSizeFilterChange: (code: string | null) => void
   bgTone: string | null
   onBgToneChange: (tone: string | null) => void
   onClearAll: () => void
@@ -46,8 +40,9 @@ export function FilterSidebar({
   onCategoryChange,
   priceRange,
   onPriceRangeChange,
-  ratingFilter,
-  onRatingFilterChange,
+  sizeOptions,
+  sizeFilter,
+  onSizeFilterChange,
   bgTone,
   onBgToneChange,
   onClearAll,
@@ -119,22 +114,37 @@ export function FilterSidebar({
       </div>
 
       <div className="border-b py-4.5" style={{ borderColor: 'var(--border-soft)' }}>
-        <GroupHeading>Đánh giá</GroupHeading>
+        <GroupHeading>Kích thước</GroupHeading>
         <div className="flex flex-col gap-2.5">
-          {RATINGS.map((item) => (
-            <label key={item.id} className="flex cursor-pointer items-center gap-2.5 text-sm">
+          <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+            <span
+              className="grid h-4 w-4 shrink-0 place-items-center rounded-[3px] text-[11px] text-white"
+              style={{
+                border: sizeFilter === null ? 'none' : '1.5px solid var(--border)',
+                background: sizeFilter === null ? 'var(--accent)' : 'var(--bg-card)',
+              }}
+              onClick={() => onSizeFilterChange(null)}
+            >
+              {sizeFilter === null ? '✓' : ''}
+            </span>
+            <span className="flex-1" onClick={() => onSizeFilterChange(null)}>
+              Tất cả
+            </span>
+          </label>
+          {sizeOptions.map((item) => (
+            <label key={item.code} className="flex cursor-pointer items-center gap-2.5 text-sm">
               <span
                 className="grid h-4 w-4 shrink-0 place-items-center rounded-[3px] text-[11px] text-white"
                 style={{
-                  border: ratingFilter === item.id ? 'none' : '1.5px solid var(--border)',
-                  background: ratingFilter === item.id ? 'var(--accent)' : 'var(--bg-card)',
+                  border: sizeFilter === item.code ? 'none' : '1.5px solid var(--border)',
+                  background: sizeFilter === item.code ? 'var(--accent)' : 'var(--bg-card)',
                 }}
-                onClick={() => onRatingFilterChange(item.id)}
+                onClick={() => onSizeFilterChange(item.code)}
               >
-                {ratingFilter === item.id ? '✓' : ''}
+                {sizeFilter === item.code ? '✓' : ''}
               </span>
-              <span className="flex-1" onClick={() => onRatingFilterChange(item.id)}>
-                {item.label}
+              <span className="flex-1" onClick={() => onSizeFilterChange(item.code)}>
+                {item.name}
               </span>
             </label>
           ))}

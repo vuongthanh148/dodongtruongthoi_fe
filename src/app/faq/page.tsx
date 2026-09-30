@@ -3,6 +3,7 @@
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { ReadColumn } from '@/components/layout/ReadColumn'
@@ -43,7 +44,7 @@ const faqs = [
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div style={{ borderBottom: '1px solid var(--border-soft)', background: 'var(--bg-card)' }}>
+    <div>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -53,7 +54,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           justifyContent: 'space-between',
           alignItems: 'center',
           gap: 12,
-          padding: '14px 16px',
+          padding: '16px 0',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -135,128 +136,44 @@ export default function FAQPage() {
       <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Câu hỏi thường gặp' }]} />
 
       <Container>
-        <ReadColumn className="flex flex-col gap-4">
-          {/* Hero card */}
-          <div
-            style={{
-              margin: '16px 0 0',
-              background: 'var(--bg-dark)',
-              borderRadius: 14,
-              padding: '20px 20px 22px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Watermark */}
-            <svg
-              width={120}
-              height={120}
-              viewBox="0 0 120 120"
-              style={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.05 }}
-            >
-              <circle cx={60} cy={60} r={55} fill="none" stroke="var(--gold)" strokeWidth={8} />
-              <circle cx={60} cy={60} r={38} fill="none" stroke="var(--gold)" strokeWidth={3} />
-            </svg>
-            <div
-              style={{
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 10,
-                letterSpacing: '0.2em',
-                color: 'rgba(201,169,97,0.7)',
-                textTransform: 'uppercase',
-                marginBottom: 10,
-              }}
-            >
-              FAQ
-            </div>
-            <div
+        <ReadColumn className="flex flex-col gap-4 pt-4">
+          {/* Title and subtitle */}
+          <div style={{ marginBottom: 20 }}>
+            <h1
               style={{
                 fontFamily: 'var(--font-lora), serif',
-                fontWeight: 700,
-                fontSize: 20,
-                color: 'var(--text-on-dark)',
-                lineHeight: 1.3,
+                fontWeight: 600,
+                fontSize: 32,
+                margin: 0,
                 marginBottom: 8,
+                lineHeight: 1.2,
               }}
             >
-              Giải đáp nhanh trước khi đặt hàng
-            </div>
-            <div style={{ fontSize: 12.5, color: 'rgba(244,237,224,0.6)', lineHeight: 1.55 }}>
-              Nếu còn thắc mắc, gọi hotline{' '}
-              <strong style={{ color: 'var(--gold)' }}>0899 · 012 · 288</strong>
+              Câu hỏi thường gặp
+            </h1>
+            <div
+              style={{
+                fontSize: 15,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+              }}
+            >
+              Chưa thấy câu trả lời? Gọi 0899 012 288 hoặc nhắn Zalo.
             </div>
           </div>
 
-          {/* FAQ accordion */}
-          <div
-            style={{
-              margin: '16px 0 0',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
-          >
-            {faqs.map((item, idx) => (
-              <div key={item.q} style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}>
+          {/* FAQ accordion - flat without card styling */}
+          <div>
+            {faqs.map((item) => (
+              <div key={item.q} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                 <FaqItem q={item.q} a={item.a} />
               </div>
             ))}
           </div>
-
-          {/* Contact CTA */}
-          <div
-            style={{
-              margin: '16px 0 0',
-              padding: '16px',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                marginBottom: 10,
-              }}
-            >
-              Câu hỏi chưa có trong danh sách?
-            </div>
-            <a
-              href="tel:0899012288"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '11px 22px',
-                background: 'var(--accent)',
-                borderRadius: 100,
-                color: 'white',
-                textDecoration: 'none',
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontWeight: 500,
-                fontSize: 13.5,
-              }}
-            >
-              <svg
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-              Gọi ngay 0899 012 288
-            </a>
-          </div>
         </ReadColumn>
       </Container>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

@@ -41,7 +41,8 @@ Work top-down, one PR-sized step at a time. Verify each step at 375 / 768 / 1024
      - closes on Esc and on outside click, and returns focus to the trigger on close;
      - the panel's links are reachable with Tab.
    - Breadcrumbs (`md:`+ only) on listing, category, PDP, cart, checkout, orders and content pages. Use a `<nav aria-label="Breadcrumb"><ol>` with `aria-current="page"` on the last item. Add JSON-LD `BreadcrumbList` on product and category pages.
-   - Footer: 5 columns at `lg:`, a brand row plus 4 columns at `md:`, a brand row plus a 2×2 grid at base.
+   - **Showroom block (`VisitBlock`)** above the footer on every storefront page except Liên hệ. It holds address, hotline and hours, plus "Gọi ngay" (`tel:`) and "Chỉ đường" (Google Maps directions, new tab). Keep the contact data in one shared constant, used here and by the Liên hệ page and MenuDrawer.
+   - Footer: 4 columns at `lg:` (brand, Sản phẩm, Hỗ trợ, Chính sách; no contact column), a brand row plus 3 columns at `md:`, a brand row plus a 2-column grid at base.
    - Nav links reserve their bold width so the active state doesn't shift the layout. The reference uses a hidden bold duplicate in an inline-grid; any equivalent approach is fine.
 2. **Home** (`src/app/page.tsx`): hero grid, category strip → grid, featured grid 2 / 3 / 3 / 4 columns, story cards, trust bar.
 3. **Listing + Category** (`src/app/products/page.tsx`, `src/app/categories/[id]/page.tsx`, `src/app/categories/page.tsx`)

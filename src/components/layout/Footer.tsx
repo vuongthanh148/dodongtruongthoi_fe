@@ -1,27 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  DrumMark,
-  IconFacebook,
-  IconMail,
-  IconMapPin,
-  IconMessenger,
-  IconPhone,
-  IconTiktok,
-  IconZalo,
-} from '@/components/icons'
+import useSWR from 'swr'
+import { DrumMark, IconFacebook, IconMessenger, IconTiktok, IconZalo } from '@/components/icons'
 import { Container } from '@/components/layout/Container'
-import {
-  COMPANY_NAME,
-  GOOGLE_MAPS_URL,
-  HOTLINE,
-  SHOP_ADDRESS,
-  SHOP_EMAIL,
-  SITE_NAME,
-  SOCIAL_LINKS,
-} from '@/lib/constants'
-import { MEGA_MENU_GROUPS } from '@/lib/desktop-nav'
+import { COMPANY_NAME, SITE_NAME, SOCIAL_LINKS } from '@/lib/constants'
+import { fetchCategories } from '@/lib/storefront-api'
+import { SWR_KEYS } from '@/lib/swr-keys'
 
 const SUPPORT_LINKS = [
   { label: 'Tra cứu đơn hàng', href: '/orders' },
@@ -44,9 +29,11 @@ function ColHeading({ children }: { children: React.ReactNode }) {
 }
 
 export function Footer() {
+  const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
+
   return (
     <footer className="mt-auto bg-[var(--bg-dark)] text-[rgba(244,237,224,0.78)]">
-      <Container className="py-8 lg:grid lg:grid-cols-[1.5fr_1fr_1fr_1fr_1.3fr] lg:items-start lg:gap-6 lg:py-13 xl:gap-10">
+      <Container className="py-8 lg:grid lg:grid-cols-[1.6fr_1fr_1fr_1fr] lg:items-start lg:gap-6 lg:py-13 xl:gap-10">
         {/* Brand block */}
         <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5 lg:flex-col lg:items-start lg:gap-4 lg:border-b-0 lg:pb-0">
           <div className="flex items-center gap-3">
@@ -78,12 +65,12 @@ export function Footer() {
         </div>
 
         {/* Link columns */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-7 pt-7 md:grid-cols-4 md:gap-6 md:pt-7 lg:contents">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-7 pt-7 md:grid-cols-3 md:gap-6 md:pt-7 lg:contents">
           <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
             <ColHeading>Sản phẩm</ColHeading>
-            {MEGA_MENU_GROUPS.map((g) => (
-              <Link key={g.title} href={g.allHref} className="hover:text-[var(--gold)]">
-                {g.title}
+            {categories.map((c) => (
+              <Link key={c.id} href={`/categories/${c.id}`} className="hover:text-[var(--gold)]">
+                {c.name}
               </Link>
             ))}
           </div>
@@ -100,25 +87,6 @@ export function Footer() {
             {POLICY_LABELS.map((label) => (
               <span key={label}>{label}</span>
             ))}
-          </div>
-          <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
-            <ColHeading>Liên hệ</ColHeading>
-            <a
-              href={`tel:${HOTLINE}`}
-              className="flex items-center gap-2 font-[family-name:var(--font-lora)] text-[17px] font-bold tabular-nums text-[var(--gold)] lg:text-[19px]"
-            >
-              <IconPhone size={15} color="var(--gold)" /> {HOTLINE}
-            </a>
-            <a href={`mailto:${SHOP_EMAIL}`} className="flex min-w-0 items-center gap-2 hover:text-[var(--gold)]">
-              <IconMail size={14} color="var(--gold)" />
-              <span className="min-w-0 break-words">{SHOP_EMAIL}</span>
-            </a>
-            <span className="flex items-center gap-2">
-              <IconMapPin size={14} color="var(--gold)" /> {SHOP_ADDRESS}
-            </span>
-            <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="text-[var(--gold)]">
-              Xem bản đồ →
-            </a>
           </div>
         </div>
       </Container>

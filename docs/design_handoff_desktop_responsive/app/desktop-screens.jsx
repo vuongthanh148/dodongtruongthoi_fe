@@ -56,39 +56,74 @@ function HeroFull() {
   );
 }
 
-function DeskHome({ variant = 'split', megaOpen = false }) {
+const CAMPAIGNS = [
+  { id: 'vu-lan', off: 'Giảm 10%', dates: '01/08/2026 - 31/08/2026', name: 'Mùa Vu Lan báo hiếu', desc: 'Ưu đãi cho bộ đồ thờ cúng và tranh đồng treo phòng thờ trong tháng Bảy âm lịch.' },
+  { id: 'nha-moi', off: 'Giảm 1.500.000đ', dates: '15/08/2026 - 30/09/2026', name: 'Tân gia rước lộc', desc: 'Tranh đồng phong thủy cho nhà mới, miễn phí khắc chữ và lắp đặt.' },
+];
+function CampaignBlock({ campaigns, style }) {
+  const bp = useBp(); const sm = bp === 'sm'; const one = campaigns.length === 1;
+  if (!campaigns.length) return null;
+  const row = !sm && (one || bp === 'xl');
+  const card = (c) => (
+    <div key={c.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: sm ? 8 : 10, color: 'var(--ivory)', background: 'linear-gradient(135deg, var(--son) 0%, var(--son-deep) 100%)', padding: sm ? '18px 16px' : pick(bp, { xl: '26px 28px', lg: '24px 24px', md: '22px 22px' }), flex: sm && !one ? '0 0 85%' : undefined, display: row ? 'grid' : 'flex', flexDirection: 'column', gridTemplateColumns: row ? 'minmax(0,1fr) auto' : undefined, alignItems: row ? 'center' : 'stretch', gap: row ? 24 : 14 }}>
+      <div style={{ position: 'absolute', left: -60, top: -60, opacity: 0.06, pointerEvents: 'none' }}><DrumMark size={sm ? 140 : 180} color="var(--ivory)" /></div>
+      <div style={{ position: 'relative', minWidth: 0 }}>
+        <div className="label-mono" style={{ color: 'var(--gold)', fontSize: sm ? 9.5 : 10.5, marginBottom: 8 }}>{c.off} · {c.dates}</div>
+        <div style={{ fontFamily: 'Lora, serif', fontSize: sm ? 20 : one ? 28 : 24, fontWeight: 600, lineHeight: 1.15, marginBottom: 6 }}>{c.name}</div>
+        <div style={{ fontSize: sm ? 12.5 : 14, lineHeight: 1.55, color: 'rgba(244,237,224,0.8)', maxWidth: 560, textWrap: 'pretty' }}>{c.desc}</div>
+      </div>
+      <a href="#" style={{ position: 'relative', alignSelf: row ? 'center' : 'flex-start', marginTop: row ? 0 : 'auto', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', color: 'var(--son)', background: 'var(--ivory)', borderRadius: 6, height: sm ? 40 : 44, padding: '0 18px', fontSize: sm ? 13 : 14, fontWeight: 600, textDecoration: 'none' }}>Xem ưu đãi →</a>
+    </div>
+  );
+  const list = one ? card(campaigns[0]) : sm
+    ? <div className="noscroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>{campaigns.map(card)}</div>
+    : <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(campaigns.length, 3)}, minmax(0,1fr))`, gap: pick(bp, { xl: 24, lg: 20, md: 16 }) }}>{campaigns.map(card)}</div>;
+  return <section style={style}><DeskHeading eyebrow="Ưu đãi" title="Chương trình khuyến mãi" />{list}</section>;
+}
+
+function DeskHome({ variant = 'split', megaOpen = false, campaigns = CAMPAIGNS }) {
   const bp = useBp(); const sm = bp === 'sm'; const compact = bp === 'md' || sm;
   const cols = pick(bp, { xl: 4, lg: 3, md: 3, sm: 2 });
   const featured = [...PRODUCTS, ...PRODUCTS].slice(0, cols * 2);
-  const gap = pick(bp, { xl: 24, lg: 20, md: 16, sm: 12 });
-  const vgap = pick(bp, { xl: 72, lg: 64, md: 56, sm: 40 });
+  const gap = ggap(bp);
+  const vgap = vpad(bp);
   return (
     <DeskPage active="home" megaOpen={megaOpen}>
       {variant === 'full' && <HeroFull />}
       <Wrap style={{ paddingTop: sm ? 16 : 28 }}>
         {variant === 'split' && <HeroSplit />}
-        {sm ? (
-          <div className="noscroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '20px -16px 36px', padding: '0 16px' }}>
-            {DESK_CATS.map(c => <span key={c.id} style={{ padding: '9px 14px', borderRadius: 18, fontSize: 13.5, whiteSpace: 'nowrap', background: '#fffdf7', border: '1px solid var(--line)' }}>{c.name}</span>)}
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${compact ? 3 : 5}, minmax(0,1fr))`, gap: compact ? 12 : 16, margin: `28px 0 ${vgap - 8}px` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${compact ? 2 : 4}, minmax(0,1fr))`, borderTop: '1px solid var(--line)', marginTop: sm ? 16 : 24 }}>
+          {[['Đồng nguyên chất 99%', 'Có giấy bảo hành chất liệu'], ['Chế tác thủ công', 'Nghệ nhân làng Đại Bái'], ['Bảo hành 12 tháng', 'Bảo dưỡng trọn đời'], ['Giao & lắp đặt', 'Toàn quốc 5–7 ngày']].map(([t, s], i) => (
+            <div key={t} style={{ padding: sm ? '12px 10px' : '16px 20px', borderLeft: (compact ? i % 2 : i) ? '1px solid var(--line)' : 'none', borderBottom: '1px solid var(--line)' }}>
+              <div style={{ fontFamily: 'Lora, serif', fontSize: sm ? 14 : 16, fontWeight: 600 }}>{t}</div>
+              <div style={{ fontSize: sm ? 11.5 : 13, color: 'var(--muted)', marginTop: 2 }}>{s}</div>
+            </div>
+          ))}
+        </div>
+        <section style={{ marginTop: vgap }}>
+          <DeskHeading eyebrow="Danh mục" title="Mua theo danh mục" action={sm ? null : 'Tất cả danh mục'} />
+          <div className={sm ? 'noscroll' : ''} style={sm ? { display: 'flex', gap: 10, overflowX: 'auto', margin: '0 -16px', padding: '0 16px' } : { display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: pick(bp, { xl: 20, lg: 16, md: 12 }) }}>
             {DESK_CATS.map(c => (
-              <div key={c.id} style={{ ...deskCard, padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
-                {bp === 'xl' && <div className={`bronze-art ${c.tone === 'bronze' ? '' : c.tone}`} style={{ width: 52, height: 52, borderRadius: 8, flexShrink: 0 }} />}
+              <div key={c.id} className="mm-tile" style={{ flex: sm ? '0 0 30%' : undefined, minWidth: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: sm ? 8 : 12 }}>
+                <div style={{ borderRadius: sm ? 8 : 10, overflow: 'hidden', aspectRatio: '1/1' }}><div className={`mm-img bronze-art ${c.tone === 'bronze' ? '' : c.tone}`} style={{ width: '100%', height: '100%' }}></div></div>
                 <div>
-                  <div style={{ fontFamily: 'Lora, serif', fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{c.soon ? 'Sắp ra mắt' : c.count + ' sản phẩm'}</div>
+                  <div style={{ fontFamily: 'Lora, serif', fontSize: sm ? 14 : 17, fontWeight: 600, lineHeight: 1.2 }}>{c.name}</div>
+                  <div style={{ fontSize: sm ? 11.5 : 13, color: 'var(--muted)', marginTop: 2 }}>{c.soon ? 'Sắp ra mắt' : c.count + ' sản phẩm'}</div>
                 </div>
               </div>
             ))}
           </div>
-        )}
+        </section>
+        <CampaignBlock campaigns={campaigns} style={{ marginTop: vgap }} />
+        <section style={{ marginTop: vgap }}>
         <DeskHeading eyebrow="Nổi bật" title="Sản phẩm được yêu thích" action="Xem tất cả" />
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))`, gap }}>
           {featured.map((p, i) => <ProductCard key={i} p={p} />)}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: sm ? 14 : 24, margin: `${vgap}px 0` }}>
+        </section>
+        <section style={{ margin: `${vgap}px 0 ${vgap}px` }}>
+        <DeskHeading eyebrow="Câu chuyện" title="Từ làng nghề Đại Bái" action={sm ? null : 'Xem tất cả'} />
+        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: sm ? 14 : 24 }}>
           {STORIES.map(s => (
             <div key={s.id} style={{ ...deskCard, overflow: 'hidden', display: 'grid', gridTemplateColumns: sm ? '1fr' : `${pick(bp, { xl: 220, lg: 150, md: 200 })}px minmax(0,1fr)` }}>
               <div className={`bronze-art ${s.tone === 'dark' ? 'dark' : ''}`} style={{ minHeight: sm ? 150 : 180 }} />
@@ -100,14 +135,7 @@ function DeskHome({ variant = 'split', megaOpen = false }) {
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${compact ? 2 : 4}, minmax(0,1fr))`, borderTop: '1px solid var(--line)', marginBottom: vgap - 8 }}>
-          {[['Đồng nguyên chất 99%', 'Có giấy bảo hành chất liệu'], ['Chế tác thủ công', 'Nghệ nhân làng Đại Bái'], ['Bảo hành 12 tháng', 'Bảo dưỡng trọn đời'], ['Giao & lắp đặt', 'Toàn quốc 5–7 ngày']].map(([t, s], i) => (
-            <div key={t} style={{ padding: sm ? '16px 12px' : '24px 20px', borderLeft: (compact ? i % 2 : i) ? '1px solid var(--line)' : 'none', borderBottom: '1px solid var(--line)' }}>
-              <div style={{ fontFamily: 'Lora, serif', fontSize: sm ? 15 : 17, fontWeight: 600 }}>{t}</div>
-              <div style={{ fontSize: sm ? 12 : 13, color: 'var(--muted)', marginTop: 4 }}>{s}</div>
-            </div>
-          ))}
-        </div>
+        </section>
       </Wrap>
     </DeskPage>
   );
@@ -349,7 +377,7 @@ function DeskPDP({ variant = 'thumbs' }) {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: pick(bp, { xl: 64, lg: 56, md: 48, sm: 36 }), marginBottom: pick(bp, { xl: 72, lg: 64, md: 56, sm: 40 }), display: 'grid', gridTemplateColumns: compact ? 'minmax(0,1fr)' : 'minmax(0,1.25fr) minmax(0,1fr)', gap: colGap }}>
+        <div style={{ marginTop: vpad(bp), marginBottom: vpad(bp), display: 'grid', gridTemplateColumns: compact ? 'minmax(0,1fr)' : 'minmax(0,1.25fr) minmax(0,1fr)', gap: colGap }}>
           <div>
             <div className="noscroll" style={{ display: 'flex', gap: sm ? 22 : 32, borderBottom: '1px solid var(--line)', marginBottom: 24, overflowX: 'auto' }}>
               {tabs.map(([id, l]) => <div key={id} onClick={() => setTab(id)} style={{ padding: '12px 0', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'Lora, serif', fontSize: sm ? 15 : 17, fontWeight: tab === id ? 600 : 500, color: tab === id ? 'var(--son)' : 'var(--ink-2)', borderBottom: tab === id ? '2px solid var(--son)' : '2px solid transparent', marginBottom: -1 }}>{l}</div>)}
@@ -366,7 +394,7 @@ function DeskPDP({ variant = 'thumbs' }) {
         </div>
         <DeskHeading eyebrow="Gợi ý" title="Sản phẩm liên quan" action="Xem thêm" />
         {(() => { const n = pick(bp, { xl: 4, lg: 3, md: 3, sm: 2 }); return (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${n}, minmax(0,1fr))`, gap: pick(bp, { xl: 24, lg: 20, md: 16, sm: 12 }), marginBottom: sm ? 40 : 72 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${n}, minmax(0,1fr))`, gap: ggap(bp), marginBottom: vpad(bp) }}>
             {PRODUCTS.filter(x => x.id !== p.id).slice(0, sm ? 4 : n).map(x => <ProductCard key={x.id} p={x} />)}
           </div>); })()}
       </Wrap>
@@ -460,7 +488,7 @@ function DeskCart() {
       <Wrap>
         <Crumbs items={['Trang chủ', 'Giỏ hàng']} />
         <div style={{ fontFamily: 'Lora, serif', fontSize: pick(bp, { xl: 36, lg: 34, md: 30, sm: 24 }), fontWeight: 600, marginBottom: sm ? 14 : 24 }}>Giỏ hàng <span style={{ fontSize: sm ? 15 : 18, color: 'var(--muted)', fontWeight: 400 }}>({items.length} sản phẩm)</span></div>
-        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : `minmax(0,1fr) ${bp === 'lg' ? 320 : 400}px`, gap: pick(bp, { xl: 40, lg: 28, md: 20, sm: 16 }), alignItems: 'start', marginBottom: sm ? 40 : 72 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : `minmax(0,1fr) ${bp === 'lg' ? 320 : 400}px`, gap: pick(bp, { xl: 40, lg: 28, md: 20, sm: 16 }), alignItems: 'start', marginBottom: vpad(bp) }}>
           <div style={{ ...deskCard }}>
             {!compact && <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 20, padding: '14px 24px', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--muted)' }} className="label-mono">
               <span>Sản phẩm</span><span>Số lượng</span><span style={{ textAlign: 'right' }}>Thành tiền</span><span></span>
@@ -488,4 +516,4 @@ function DeskCart() {
   );
 }
 
-Object.assign(window, { DeskHome, DeskListing, DeskPDP, DeskCart, SummaryBox, Qty, OptRow, optBtn, DESK_CART, FilterGroup, Check });
+Object.assign(window, { CAMPAIGNS, CampaignBlock, DeskHome, DeskListing, DeskPDP, DeskCart, SummaryBox, Qty, OptRow, optBtn, DESK_CART, FilterGroup, Check });

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
@@ -118,6 +119,8 @@ export default function BlogListPage() {
           ))}
         </div>
       </Container>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

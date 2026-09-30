@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
@@ -234,6 +235,8 @@ export default function SavedPage() {
           </div>
         </div>
       )}
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

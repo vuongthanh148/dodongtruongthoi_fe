@@ -7,6 +7,7 @@ import { IconZalo } from '@/components/icons'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { ReadColumn } from '@/components/layout/ReadColumn'
@@ -115,6 +116,8 @@ export default function BlogArticlePage() {
           </div>
         )}
       </Container>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

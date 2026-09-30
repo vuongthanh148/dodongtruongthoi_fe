@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
@@ -14,32 +15,6 @@ import { getCartItems, removeCartItem, setCartItems } from '@/lib/storage'
 import { fetchProduct } from '@/lib/storefront-api'
 import { resolveSKUPrice } from '@/lib/sku'
 import type { CartItem } from '@/lib/types'
-
-function IconShield({ size = 24, color = 'currentColor' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  )
-}
-function IconTruck({ size = 24, color = 'currentColor' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="3" width="15" height="13" />
-      <path d="M16 8h4l3 4v5h-7V8z" />
-      <circle cx="5.5" cy="18.5" r="2.5" />
-      <circle cx="18.5" cy="18.5" r="2.5" />
-    </svg>
-  )
-}
-function IconReturn({ size = 24, color = 'currentColor' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 14l-5-5 5-5" />
-      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
-    </svg>
-  )
-}
 
 export default function CartPage() {
   const router = useRouter()
@@ -60,7 +35,7 @@ export default function CartPage() {
         if (!product) return
         const size = product.sizes.find((s) => s.id === item.sizeId)
         const sizeCode = size?.code ?? null
-        const live = resolveSKUPrice(product.skus, sizeCode, item.selectedAttrs ?? {}, product.discountPrice ?? product.price)
+        const live = resolveSKUPrice(product.skus, sizeCode, item.selectedAttrs ?? {}, size?.price ?? product.discountPrice ?? product.price)
         map[idx] = live
       })
       setLivePrices(map)
@@ -118,94 +93,187 @@ export default function CartPage() {
         <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giỏ hàng' }]} />
 
         {items.length === 0 ? emptyState : (
+          <>
+          <div
+            className="mt-4 mb-3.5 md:mt-6 md:mb-6"
+            style={{ fontFamily: 'var(--font-lora), serif', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)' }}
+          >
+            Giỏ hàng{' '}
+            <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 400 }}>
+              ({items.length} sản phẩm)
+            </span>
+          </div>
           <div className="flex flex-col gap-px lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-10" style={{ padding: '0 16px 16px' }}>
 
           {/* Left column: items list */}
-          <div className="lg:min-w-0">
+          <div className="lg:min-w-0" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            {/* Desktop column header */}
+            <div
+              className="label-mono hidden lg:grid xl:grid-cols-[minmax(0,1fr)_140px_150px_40px]"
+              style={{ gridTemplateColumns: 'minmax(0,1fr) 120px 130px 28px', gap: 20, padding: '14px 24px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 12 }}
+            >
+              <span>Sản phẩm</span>
+              <span>Số lượng</span>
+              <span style={{ textAlign: 'right' }}>Thành tiền</span>
+              <span />
+            </div>
+
             {/* Items */}
             {items.map((item, index) => (
-            <div
-              key={index}
-              style={{
-                background: 'var(--bg-card)',
-                borderBottom: '1px solid var(--border-soft)',
-                padding: '14px 0',
-                display: 'grid',
-                gridTemplateColumns: '80px 1fr',
-                gap: 12,
-              }}
-            >
-              {/* Thumbnail */}
-              <div style={{ background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
-                <ArtPiece
-                  bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
-                  frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
-                  label=""
-                  pad={4}
-                  aspect="1/1"
-                />
-              </div>
-
-              {/* Content */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, position: 'relative' }}>
-                {/* Remove button */}
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  ×
-                </button>
-
-                <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, paddingRight: 24 }}>
-                  {item.productTitle || item.productId}
+            <div key={index}>
+              {/* Mobile / tablet card */}
+              <div
+                className="grid lg:hidden"
+                style={{
+                  borderBottom: '1px solid var(--border-soft)',
+                  padding: '14px 16px',
+                  gridTemplateColumns: '80px 1fr',
+                  gap: 12,
+                }}
+              >
+                {/* Thumbnail */}
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
+                  <ArtPiece
+                    bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+                    frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+                    label=""
+                    pad={4}
+                    aspect="1/1"
+                  />
                 </div>
 
-                {(item.sizeLabel || (item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0)) && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                    {[item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])].filter(Boolean).join(' · ')}
-                  </div>
-                )}
+                {/* Content */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, position: 'relative' }}>
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(index)}
+                    style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    ×
+                  </button>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                  {/* Qty stepper */}
-                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
-                    <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity - 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>−</button>
-                    <div style={{ width: 28, textAlign: 'center', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-primary)' }}>{item.quantity}</div>
-                    <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity + 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>+</button>
+                  <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, paddingRight: 24 }}>
+                    {item.productTitle || item.productId}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                    {livePrices[index] !== undefined && livePrices[index] !== item.unitPrice && (
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
-                        {fmtVND(item.unitPrice * item.quantity)}
+                  {(item.sizeLabel || (item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0)) && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 6 }}>
+                      {[item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                  <Link href={`/products/${item.productId}`} style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>Đổi tùy chọn</Link>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                    {/* Qty stepper */}
+                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+                      <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity - 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>−</button>
+                      <div style={{ width: 28, textAlign: 'center', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-primary)' }}>{item.quantity}</div>
+                      <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity + 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>+</button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                      {livePrices[index] !== undefined && livePrices[index] !== item.unitPrice && (
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
+                          {fmtVND(item.unitPrice * item.quantity)}
+                        </div>
+                      )}
+                      <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: livePrices[index] !== undefined && livePrices[index] !== item.unitPrice ? 'var(--accent)' : 'var(--text-primary)' }}>
+                        {fmtVND(effectivePrice(item, index) * item.quantity)}
                       </div>
-                    )}
-                    <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: livePrices[index] !== undefined && livePrices[index] !== item.unitPrice ? 'var(--accent)' : 'var(--text-primary)' }}>
-                      {fmtVND(effectivePrice(item, index) * item.quantity)}
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Desktop row */}
+              <div
+                className="hidden lg:grid xl:grid-cols-[minmax(0,1fr)_140px_150px_40px]"
+                style={{ gridTemplateColumns: 'minmax(0,1fr) 120px 130px 28px', gap: 20, padding: 24, alignItems: 'center', borderBottom: '1px solid var(--border-soft)' }}
+              >
+                <div style={{ display: 'flex', gap: 18, alignItems: 'center', minWidth: 0 }}>
+                  <div style={{ width: 96, flexShrink: 0, background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
+                    <ArtPiece
+                      bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+                      frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+                      label=""
+                      pad={5}
+                      aspect="4/3"
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, lineHeight: 1.25, color: 'var(--text-primary)' }}>
+                      {item.productTitle || item.productId}
+                    </div>
+                    {(item.sizeLabel || (item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0)) && (
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, marginBottom: 8 }}>
+                        {[item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                    <Link href={`/products/${item.productId}`} style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>Đổi tùy chọn</Link>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', width: 'fit-content' }}>
+                  <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity - 1)} style={{ width: 30, height: 30, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>−</button>
+                  <div style={{ width: 30, textAlign: 'center', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-primary)' }}>{item.quantity}</div>
+                  <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity + 1)} style={{ width: 30, height: 30, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>+</button>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  {livePrices[index] !== undefined && livePrices[index] !== item.unitPrice && (
+                    <div style={{ fontSize: 12.5, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
+                      {fmtVND(item.unitPrice * item.quantity)}
+                    </div>
+                  )}
+                  <div
+                    className="price-num"
+                    style={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color: livePrices[index] !== undefined && livePrices[index] !== item.unitPrice ? 'var(--accent)' : 'var(--text-primary)' }}
+                  >
+                    {fmtVND(effectivePrice(item, index) * item.quantity)}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleRemove(index)}
+                  aria-label="Xóa"
+                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
             ))}
+
+            <Link
+              href="/"
+              className="hidden lg:block"
+              style={{ padding: '18px 24px', fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', color: 'var(--accent)', fontSize: 15, textDecoration: 'none' }}
+            >
+              ← Tiếp tục mua sắm
+            </Link>
           </div>
 
           {/* Right column: summary + trust row */}
           <div className="lg:sticky lg:top-[92px]">
-            {/* Summary box — dark ink */}
-            <div style={{ marginTop: 16, background: 'var(--bg-dark)', borderRadius: 14, padding: 16, color: 'var(--text-on-dark)' }}>
+            {/* Summary box — light cream */}
+            <div className="p-5 lg:p-7" style={{ marginTop: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)' }}>
+              <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, marginBottom: 14 }}>Tóm tắt đơn hàng</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
                   <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(244,237,224,0.75)' }}>
-                  <span>Phí vận chuyển</span><span style={{ fontStyle: 'italic', fontSize: 12 }}>Xác nhận sau</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
+                  <span>Phí giao hàng</span><span>Miễn phí</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
+                  <span>Lắp đặt</span><span>Miễn phí nội thành HN</span>
                 </div>
               </div>
-              <div style={{ height: 1, background: 'rgba(201,169,97,0.2)', marginBottom: 12 }} />
-              <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 4 }}>Tổng cộng</div>
-              <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)' }}>
+              <div style={{ height: 1, background: 'rgba(42,31,26,0.14)', marginBottom: 12 }} />
+              <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 4 }}>Tổng cộng</div>
+              <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)', marginBottom: 16 }}>
                 {fmtVND(subtotal)}
               </div>
 
@@ -224,37 +292,29 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={() => router.push('/')}
+                className="block lg:hidden"
                 style={{
-                  display: 'block', width: '100%', marginTop: 8,
-                  background: 'transparent', color: 'var(--text-on-dark)',
-                  border: '1px solid rgba(244,237,224,0.35)', borderRadius: 6,
+                  width: '100%', marginTop: 8,
+                  background: 'transparent', color: 'var(--text-primary)',
+                  border: '1px solid rgba(42,31,26,0.14)', borderRadius: 6,
                   padding: '12px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
                   fontSize: 13.5, cursor: 'pointer', textAlign: 'center', boxSizing: 'border-box',
                 }}
               >
                 Tiếp tục mua sắm
               </button>
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5, marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(42,31,26,0.14)' }}>
+                Nhân viên sẽ gọi xác nhận đơn trong 30 phút (giờ hành chính).
+              </div>
             </div>
 
-            {/* Trust row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', marginTop: 16, gap: 8 }}>
-              {[
-                { Icon: IconShield, label: 'Bảo hành 10 năm' },
-                { Icon: IconTruck, label: 'Giao lắp toàn quốc' },
-                { Icon: IconReturn, label: 'Đổi trả 7 ngày' },
-              ].map(({ Icon, label }) => (
-                <div key={label} style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                    <Icon size={24} color="var(--bronze)" />
-                  </div>
-                  {label}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
+        </>
       )}
       </Container>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

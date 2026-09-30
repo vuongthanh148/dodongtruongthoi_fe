@@ -150,6 +150,11 @@ function DeskHeader({ active, cartCount = 2, savedCount = 2, megaOpen: megaInit 
   );
 }
 
+// Spacing system: section = gap between page sections; block = title/toolbar → content; grid = card gaps
+const vpad = (bp) => pick(bp, { xl: 72, lg: 64, md: 56, sm: 40 });
+const blk = (bp) => pick(bp, { xl: 32, lg: 28, md: 24, sm: 20 });
+const ggap = (bp) => pick(bp, { xl: 24, lg: 20, md: 16, sm: 12 });
+
 function Crumbs({ items }) {
   const bp = useBp();
   if (bp === 'sm') return <div style={{ height: 16 }} />;
@@ -207,23 +212,16 @@ function DeskFooter() {
     <div key="p" style={col}><div {...h}>Sản phẩm</div>{MENU_GROUPS.map(g => <span key={g.t}>{g.t}</span>)}</div>,
     <div key="s" style={col}><div {...h}>Hỗ trợ</div><span>Tra cứu đơn hàng</span><span>Hướng dẫn mua hàng</span><span>Câu hỏi thường gặp</span><span>Cẩm nang</span></div>,
     <div key="c" style={col}><div {...h}>Chính sách</div><span>Đổi trả</span><span>Vận chuyển & lắp đặt</span><span>Bảo hành</span><span>Thanh toán</span></div>,
-    <div key="l" style={col}>
-      <div {...h}>Liên hệ</div>
-      <span style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: 'Lora, serif', fontSize: stack ? 17 : 19, fontWeight: 700, color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}><IconPhone size={15} color="var(--gold)" /> 0899 012 288</span>
-      <span style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}><IconMail size={14} color="var(--gold)" /><span style={{ overflowWrap: 'anywhere' }}>dodongtruongthoi@gmail.com</span></span>
-      <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><IconPin size={14} color="var(--gold)" /> Đại Bái, Gia Bình, Bắc Ninh</span>
-      <span style={{ color: 'var(--gold)' }}>Xem bản đồ →</span>
-    </div>,
   ];
   return (
     <footer style={{ background: 'var(--ink)', color: 'rgba(244,237,224,0.78)', marginTop: 'auto' }}>
       {stack ? (
         <Wrap style={{ padding: `${sm ? 32 : 36}px ${px}px ${sm ? 24 : 28}px`, display: 'flex', flexDirection: 'column', gap: sm ? 24 : 28 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap', paddingBottom: sm ? 20 : 24, borderBottom: '1px solid rgba(244,237,224,0.1)' }}>{brand}{socials}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: sm ? 'repeat(2, minmax(0,1fr))' : 'repeat(3, minmax(0,1fr)) minmax(0,1.3fr)', gap: sm ? '24px 16px' : 24 }}>{cols}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: sm ? 'repeat(2, minmax(0,1fr))' : 'repeat(3, minmax(0,1fr))', gap: sm ? '24px 16px' : 24 }}>{cols}</div>
         </Wrap>
       ) : (
-        <Wrap style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) repeat(3, minmax(0,1fr)) minmax(0,1.3fr)', gap: bp === 'lg' ? 24 : 40, padding: `52px ${px}px 40px` }}>
+        <Wrap style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) repeat(3, minmax(0,1fr))', gap: bp === 'lg' ? 24 : 40, padding: `52px ${px}px 40px` }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {brand}
             <div style={{ fontSize: 13.5, lineHeight: 1.7, maxWidth: 320 }}>Tranh đồng, trống đồng và đồ thờ chế tác thủ công bởi nghệ nhân làng Đại Bái.</div>
@@ -242,11 +240,50 @@ function DeskFooter() {
   );
 }
 
-function DeskPage({ active, children, bottomBar, megaOpen }) {
+const SHOP = { name: 'Đồ Đồng Trường Thơi', address: 'Làng Đại Bái, Gia Bình, Bắc Ninh', phone: '0899 012 288', tel: '+84899012288', email: 'dodongtruongthoi@gmail.com', hours: 'T2–CN: 7:30 – 18:00', mapQ: 'Làng nghề đúc đồng Đại Bái, Gia Bình, Bắc Ninh' };
+const mapEmbed = (z = 15) => 'https://maps.google.com/maps?q=' + encodeURIComponent(SHOP.mapQ) + '&z=' + z + '&hl=vi&output=embed';
+const mapDir = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(SHOP.mapQ);
+function MapEmbed({ height, radius = 10, z }) {
+  return (
+    <div style={{ position: 'relative', height, borderRadius: radius, overflow: 'hidden', border: '1px solid var(--line)', background: 'var(--ivory-2)' }}>
+      <iframe title={'Bản đồ ' + SHOP.name} src={mapEmbed(z)} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}></iframe>
+    </div>
+  );
+}
+
+function VisitBlock() {
+  const bp = useBp(); const sm = bp === 'sm'; const stack = sm || bp === 'md';
+  const line = (Ic, children) => <div style={{ display: 'grid', gridTemplateColumns: '22px minmax(0,1fr)', gap: 10, alignItems: 'center' }}><Ic size={18} color="var(--bronze)" />{children}</div>;
+  return (
+    <section style={{ background: 'var(--ivory-2)', borderTop: '1px solid var(--line)' }}>
+      <Wrap style={{ display: 'grid', gridTemplateColumns: stack ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1.15fr)', gap: sm ? 20 : 40, alignItems: 'center', padding: `${sm ? 28 : 40}px ${pick(bp, { xl: 32, lg: 32, md: 24, sm: 16 })}px` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+          <div>
+            <div className="label-mono" style={{ color: 'var(--bronze)', fontSize: 11 }}>Showroom & xưởng</div>
+            <div style={{ fontFamily: 'Lora, serif', fontSize: pick(bp, { xl: 26, lg: 24, md: 24, sm: 22 }), fontWeight: 600, marginTop: 6, lineHeight: 1.2 }}>Xưởng sản xuất & Showroom</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: sm ? 'column' : 'row', flexWrap: 'wrap', gap: sm ? 10 : '10px 32px', fontSize: 15 }}>
+            {line(IconPin, <span style={{ whiteSpace: sm ? 'normal' : 'nowrap' }}>{SHOP.address}</span>)}
+            {line(IconPhone, <span style={{ fontFamily: 'Lora, serif', fontSize: 19, fontWeight: 700, color: 'var(--son)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{SHOP.phone}</span>)}
+            {line(IconBox, <span style={{ color: 'var(--ink-2)', whiteSpace: 'nowrap' }}>{SHOP.hours}</span>)}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, maxWidth: stack ? 'none' : 380, marginTop: 6 }}>
+            <a href={'tel:' + SHOP.tel} style={{ ...deskBtn(true), textDecoration: 'none' }}><IconPhone size={16} color="white" /> Gọi ngay</a>
+            <a href={mapDir} target="_blank" rel="noopener" style={{ ...deskBtn(false), background: '#fffdf7', textDecoration: 'none' }}><IconPin size={16} /> Chỉ đường</a>
+          </div>
+        </div>
+        <MapEmbed height={pick(bp, { xl: 240, lg: 220, md: 240, sm: 200 })} />
+      </Wrap>
+    </section>
+  );
+}
+
+function DeskPage({ active, children, bottomBar, megaOpen, noVisit }) {
   return (
     <div className="paper" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       <DeskHeader active={active} megaOpen={megaOpen} />
       {children}
+      {!noVisit && <VisitBlock />}
       <DeskFooter />
       {bottomBar}
     </div>
@@ -263,4 +300,4 @@ function BottomBar({ children }) {
 const deskBtn = (primary) => ({ height: 50, padding: '0 22px', borderRadius: 6, fontFamily: 'Be Vietnam Pro', fontSize: 15, fontWeight: 600, cursor: 'pointer', border: primary ? 'none' : '1.5px solid var(--son)', background: primary ? 'var(--son)' : 'transparent', color: primary ? 'white' : 'var(--son)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, whiteSpace: 'nowrap' });
 const deskCard = { background: '#fffdf7', border: '1px solid var(--line)', borderRadius: 10 };
 
-Object.assign(window, { DESK_CATS, MENU_GROUPS, MegaMenu, VW, useBp, useNarrow, useCompact, pick, Wrap, Logo, IcoBtn, SearchBox, DeskHeader, Crumbs, DeskHeading, DeskFooter, DeskPage, BottomBar, deskBtn, deskCard });
+Object.assign(window, { vpad, blk, ggap, SHOP, mapDir, MapEmbed, VisitBlock, DESK_CATS, MENU_GROUPS, MegaMenu, VW, useBp, useNarrow, useCompact, pick, Wrap, Logo, IcoBtn, SearchBox, DeskHeader, Crumbs, DeskHeading, DeskFooter, DeskPage, BottomBar, deskBtn, deskCard });

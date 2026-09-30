@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ProductCardSkeleton, ProductCardV2 } from '@/components/ui/ProductCard'
+import { Container } from '@/components/layout/Container'
+import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { FEATURED_PRODUCTS_COUNT } from '@/lib/constants'
 import type { Product, Category } from '@/lib/types'
 
@@ -31,8 +32,9 @@ export function FeaturedProductsSection({
   }
 
   return (
-    <section style={{ paddingBlock: '24px' }}>
-      <div style={{ padding: '0 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+    <section className="mt-6 md:mt-10 lg:mt-14 xl:mt-[72px]" style={{ paddingBlock: '24px' }}>
+      <Container>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
         <div>
           <div
             style={{
@@ -55,7 +57,7 @@ export function FeaturedProductsSection({
               lineHeight: 1.1,
             }}
           >
-            {activeCategoryId === 'all' ? 'Được chọn nhiều nhất' : 'Sản phẩm'}
+            {activeCategoryId === 'all' ? 'Sản phẩm được yêu thích' : 'Sản phẩm'}
           </div>
         </div>
         <Link
@@ -74,22 +76,22 @@ export function FeaturedProductsSection({
       </div>
 
 
-      <div className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4" style={{ display: 'grid', alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4 xl:gap-6">
         {loading ? (
           Array(FEATURED_PRODUCTS_COUNT)
             .fill(null)
-            .map((_, i) => <ProductCardSkeleton key={i} compact />)
+            .map((_, i) => <ProductCardSkeleton key={i} />)
         ) : (
-          filteredProducts.map((product, idx) => (
-            <ProductCardV2
+          filteredProducts.map((product) => (
+            <ProductCard
               key={product.id}
               product={product}
-              tall={idx % 2 === 0}
               onOpen={() => router.push(`/products/${product.id}`)}
             />
           ))
         )}
       </div>
+      </Container>
     </section>
   )
 }

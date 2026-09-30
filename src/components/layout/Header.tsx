@@ -10,7 +10,7 @@ import { MegaMenu } from '@/components/layout/MegaMenu'
 import { SITE_NAME } from '@/lib/constants'
 import { DESK_NAV_LINKS } from '@/lib/desktop-nav'
 import { getCartItems, getSavedProducts } from '@/lib/storage'
-import { fetchProducts } from '@/lib/storefront-api'
+import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
 import { SWR_KEYS } from '@/lib/swr-keys'
 
 function IconBtnLink({
@@ -68,9 +68,10 @@ export function DeskHeader() {
   const [query, setQuery] = useState('')
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const navRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
 
   const { data: allProducts = [] } = useSWR(SWR_KEYS.products, fetchProducts)
+  const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
   const bestSellers = allProducts.filter((p) => p.badge === 'best_seller')
   const megaFeatured = (bestSellers.length > 0 ? bestSellers : allProducts).slice(0, 2)
 
@@ -100,7 +101,7 @@ export function DeskHeader() {
       if (e.key === 'Escape') closeMegaNow(true)
     }
     function onPointerDown(e: MouseEvent) {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
         closeMegaNow(false)
       }
     }
@@ -123,13 +124,13 @@ export function DeskHeader() {
   const isProductsActive = pathname?.startsWith('/products') || pathname?.startsWith('/categories')
 
   return (
-    <header className="sticky top-0 z-40 hidden border-b border-[var(--border)] bg-[var(--bg-page)] lg:block">
+    <header ref={headerRef} className="sticky top-0 z-40 hidden border-b border-[var(--border)] bg-[var(--bg-page)] lg:block">
       <Container className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch gap-5 xl:gap-9" style={{ height: 76 }}>
         <div className="flex items-center">
           <Logo />
         </div>
 
-        <nav ref={navRef} className="flex min-w-0 items-stretch gap-5 overflow-hidden pl-2 xl:gap-7 xl:pl-6">
+        <nav className="flex min-w-0 items-stretch gap-5 overflow-hidden pl-2 xl:gap-7 xl:pl-6">
           {DESK_NAV_LINKS.map((link) => {
             const active = link.hasDropdown ? isProductsActive || megaOpen : pathname === link.href
             if (link.hasDropdown) {
@@ -225,6 +226,7 @@ export function DeskHeader() {
         id="desk-mega-menu"
         open={megaOpen}
         activeItemId={undefined}
+        categories={categories}
         featuredProducts={megaFeatured}
         onMouseEnter={openMega}
         onMouseLeave={scheduleClose}

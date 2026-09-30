@@ -2,11 +2,14 @@
 
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
+import { ArtPiece } from '@/components/ui/ArtPiece'
 import { getOrderById } from '@/lib/storefront-api'
 import { maskPhone, maskName, maskAddress } from '@/lib/order-lookup'
+import { HOTLINE } from '@/lib/constants'
 import type { Order } from '@/lib/types'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -200,6 +203,32 @@ export default function OrderDetailPage() {
   const fmtVND = (n: number) => n.toLocaleString('vi-VN') + 'đ'
   const banner = statusBannerText(order.status)
 
+  // Timeline stages
+  const stages: { id: string; label: string }[] = [
+    { id: 'pending_confirm', label: 'Đã đặt' },
+    { id: 'confirmed', label: 'Đã xác nhận' },
+    { id: 'processing', label: 'Đang chế tác' },
+    { id: 'shipped', label: 'Đang giao' },
+    { id: 'completed', label: 'Đã giao' },
+  ]
+  const currentIdx = stages.findIndex((s) => s.id === order.status)
+
+  // Card style
+  const cardStyle: React.CSSProperties = {
+    background: '#fffdf7',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: 24,
+  }
+
+  const cardHeadingStyle: React.CSSProperties = {
+    fontFamily: 'var(--font-lora), serif',
+    fontSize: 18,
+    fontWeight: 600,
+    marginBottom: 16,
+    color: 'var(--text-primary)',
+  }
+
   return (
     <div
       style={{
@@ -212,13 +241,64 @@ export default function OrderDetailPage() {
       <DeskHeader />
       {topBar}
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tra cứu đơn hàng', href: '/orders' }, { label: 'Chi tiết đơn hàng' }]} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tra cứu đơn hàng', href: '/orders' }, { label: order.id.slice(0, 8).toUpperCase() }]} />
 
-      <div className="flex flex-col gap-3 lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:px-8" style={{ padding: '16px 16px 0' }}>
-        {/* Left column: status banner, order info, items */}
-        <div className="lg:min-w-0 lg:flex lg:flex-col lg:gap-3">
-          {/* Status banner */}
-          {banner && (
+      <div
+        style={{
+          maxWidth: 1344,
+          margin: '0 auto',
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '28px',
+        }}
+        className="px-4 sm:px-6 lg:px-8 xl:px-8"
+      >
+        {/* Header row: H1 + Status badge */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 28,
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-lora), serif',
+                fontSize: 32,
+                fontWeight: 600,
+                margin: 0,
+                fontVariantNumeric: 'tabular-nums',
+                color: 'var(--text-primary)',
+              }}
+            >
+              Đơn {order.id.slice(0, 8).toUpperCase()}
+            </h1>
+            <div
+              style={{
+                fontSize: 14,
+                color: 'var(--text-muted)',
+                marginTop: 4,
+              }}
+            >
+              Đặt ngày{' '}
+              {new Date(order.createdAt).toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </div>
+          </div>
+          <span style={statusBadgeStyle(order.status)}>
+            {STATUS_LABELS[order.status] ?? order.status}
+          </span>
+        </div>
+
+        {/* Status banner */}
+        {banner && (
           <div
             style={{
               ...statusBannerStyle(order.status),
@@ -306,520 +386,318 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {order.status !== 'cancelled' && (() => {
-          const stages: { id: string; label: string }[] = [
-            { id: 'pending_confirm', label: 'Đặt hàng' },
-            { id: 'confirmed', label: 'Xác nhận' },
-            { id: 'processing', label: 'Xử lý' },
-            { id: 'shipped', label: 'Giao hàng' },
-            { id: 'completed', label: 'Hoàn tất' },
-          ]
-          const currentIdx = stages.findIndex((s) => s.id === order.status)
-          return (
-            <div className="flex items-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px' }}>
-              {stages.map((s, i) => (
-                <div key={s.id} className="flex flex-1 items-center last:flex-none">
-                  <div className="flex flex-col items-center gap-1.5" style={{ minWidth: 0 }}>
+        {/* Two-column grid: left (timeline + products) | right (payment + delivery + contact) */}
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-8">
+          {/* Left column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Timeline card */}
+            {order.status !== 'cancelled' && (
+              <div style={cardStyle}>
+                <div style={cardHeadingStyle}>Tiến trình</div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${stages.length}, minmax(0,1fr))`,
+                    gap: 0,
+                  }}
+                >
+                  {stages.map((s, i) => (
                     <div
-                      className="grid place-items-center rounded-full"
+                      key={s.id}
                       style={{
-                        width: 22,
-                        height: 22,
-                        fontSize: 11,
-                        background: i < currentIdx ? 'var(--accent)' : i === currentIdx ? 'rgba(139,30,30,0.1)' : 'var(--bg-surface-alt)',
-                        color: i < currentIdx ? 'white' : i === currentIdx ? 'var(--accent)' : 'var(--text-muted)',
-                        border: i === currentIdx ? '1px solid var(--accent)' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: 10,
                       }}
                     >
-                      {i < currentIdx ? '✓' : i + 1}
+                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: '50%',
+                            fontSize: 11,
+                            flexShrink: 0,
+                            background: i <= currentIdx ? 'var(--accent)' : 'var(--bg-surface-alt)',
+                            color: i <= currentIdx ? 'white' : 'var(--text-muted)',
+                            border: i <= currentIdx ? 'none' : '1px solid var(--border)',
+                            display: 'grid',
+                            placeItems: 'center',
+                          }}
+                        >
+                          {i <= currentIdx ? '✓' : ''}
+                        </div>
+                        {i < stages.length - 1 && (
+                          <div
+                            style={{
+                              flex: 1,
+                              height: 2,
+                              background: i < currentIdx ? 'var(--accent)' : 'var(--border)',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: i <= currentIdx ? 'var(--text-primary)' : 'var(--text-muted)',
+                          fontWeight: i === currentIdx ? 600 : 400,
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                        }}
+                      >
+                        {s.label}
+                      </span>
                     </div>
-                    <span style={{ fontSize: 10.5, textAlign: 'center', color: i <= currentIdx ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: i === currentIdx ? 600 : 400, whiteSpace: 'nowrap' }}>
-                      {s.label}
-                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Products card */}
+            <div style={cardStyle}>
+              <div style={cardHeadingStyle}>Sản phẩm</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {order.items.map((item, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '110px minmax(0,1fr) auto',
+                      gap: 14,
+                      alignItems: 'center',
+                    }}
+                  >
+                    {/* Thumbnail */}
+                    <div
+                      style={{
+                        width: 110,
+                        height: 'auto',
+                        aspectRatio: '4/3',
+                        flexShrink: 0,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <ArtPiece
+                        pad={4}
+                        aspect="4/3"
+                        label={item.productTitle}
+                      />
+                    </div>
+                    {/* Info */}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-lora), serif',
+                          fontSize: 17,
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {item.productTitle}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          color: 'var(--text-muted)',
+                          marginTop: 3,
+                        }}
+                      >
+                        {[
+                          item.sizeLabel,
+                          ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : []),
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}{' '}
+                        ·{' ×'}
+                        {item.quantity}
+                      </div>
+                    </div>
+                    {/* Price */}
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-lora), serif',
+                        fontWeight: 700,
+                        fontVariantNumeric: 'tabular-nums',
+                        fontSize: 15,
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {fmtVND(item.unitPrice * item.quantity)}
+                    </div>
                   </div>
-                  {i < stages.length - 1 && (
-                    <div className="mx-1 flex-1" style={{ height: 1, background: i < currentIdx ? 'var(--accent)' : 'var(--border)', marginBottom: 16 }} />
-                  )}
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right column (sticky) */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20,
+            }}
+            className="lg:sticky lg:top-[92px]"
+          >
+            {/* Payment card */}
+            <div style={cardStyle}>
+              <div style={cardHeadingStyle}>Thanh toán</div>
+              {[
+                ['Tạm tính', fmtVND(total)],
+                ['Phí giao hàng', 'Miễn phí'],
+                ['Phương thức', 'COD'],
+              ].map(([k, v]) => (
+                <div
+                  key={k}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 14,
+                    padding: '6px 0',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-muted)' }}>{k}</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{v}</span>
                 </div>
               ))}
-            </div>
-          )
-        })()}
-
-        {/* Order header card */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: '14px 16px',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 10,
-              letterSpacing: '0.2em',
-              color: 'var(--bronze)',
-              textTransform: 'uppercase',
-              marginBottom: 10,
-            }}
-          >
-            Thông tin đơn hàng
-          </div>
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
-          >
-            <div>
               <div
                 style={{
-                  fontFamily: 'var(--font-jetbrains), monospace',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--text-primary)',
-                  letterSpacing: '0.06em',
+                  margin: '10px 0',
+                  height: 1,
+                  background: 'var(--border)',
                 }}
-              >
-                #{order.id.slice(0, 8).toUpperCase()}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
-                {new Date(order.createdAt).toLocaleDateString('vi-VN', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </div>
-            </div>
-            <span style={statusBadgeStyle(order.status)}>
-              {STATUS_LABELS[order.status] ?? order.status}
-            </span>
-          </div>
-        </div>
-
-        {/* Right column: customer info, contact CTA (sticky) */}
-        <div className="lg:sticky lg:top-[92px] lg:flex lg:flex-col lg:gap-3">
-          {/* Customer info card */}
-          <div
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              padding: '14px 16px',
-            }}
-          >
-          <div
-            style={{
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 10,
-              letterSpacing: '0.2em',
-              color: 'var(--bronze)',
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Thông tin giao hàng
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Phone */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              />
               <div
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: 'rgba(107,68,35,0.1)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
                 }}
               >
-                <svg
-                  width={13}
-                  height={13}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--bronze)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-lora), serif',
-                  fontWeight: 700,
-                  fontSize: 15,
-                  color: 'var(--text-primary)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {maskPhone(order.phone)}
-              </div>
-            </div>
-            {/* Name */}
-            {order.customerName && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
+                <span
                   style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: 'rgba(107,68,35,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
                   }}
                 >
-                  <svg
-                    width={13}
-                    height={13}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--bronze)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div style={{ fontSize: 13.5, color: 'var(--text-primary)' }}>
-                  {maskName(order.customerName)}
-                </div>
-              </div>
-            )}
-            {/* Address */}
-            {order.address && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: 'rgba(107,68,35,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    marginTop: 1,
-                  }}
-                >
-                  <svg
-                    width={13}
-                    height={13}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--bronze)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.5,
-                    paddingTop: 5,
-                  }}
-                >
-                  {maskAddress(order.address)}
-                </div>
-              </div>
-            )}
-            {/* Note */}
-            {order.note && (
-              <div
-                style={{
-                  marginTop: 4,
-                  padding: '10px 12px',
-                  background: 'rgba(0,0,0,0.03)',
-                  borderRadius: 8,
-                  fontSize: 12.5,
-                  color: 'var(--text-muted)',
-                  lineHeight: 1.5,
-                  fontStyle: 'italic',
-                }}
-              >
-                &ldquo;{order.note}&rdquo;
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Items card */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: '14px 16px',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 10,
-              letterSpacing: '0.2em',
-              color: 'var(--bronze)',
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Sản phẩm
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {order.items.map((item, index) => (
-              <div
-                key={index}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '52px 1fr auto',
-                  gap: 10,
-                  paddingTop: index === 0 ? 0 : 12,
-                  paddingBottom: 12,
-                  borderBottom:
-                    index < order.items.length - 1 ? '1px solid var(--border-soft)' : 'none',
-                  alignItems: 'flex-start',
-                }}
-              >
-                {/* Thumbnail placeholder */}
-                <div
-                  style={{
-                    width: 52,
-                    height: 52,
-                    background: 'var(--bg-surface)',
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    padding: 4,
-                    flexShrink: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      background: 'var(--bg-surface-alt)',
-                      borderRadius: 4,
-                    }}
-                  />
-                </div>
-                {/* Info */}
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-lora), serif',
-                      fontWeight: 600,
-                      fontSize: 13.5,
-                      color: 'var(--text-primary)',
-                      lineHeight: 1.25,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {item.productTitle}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-muted)',
-                      marginTop: 3,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {[
-                      item.sizeLabel,
-                      ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : []),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                    {item.quantity > 1 ? ` · ×${item.quantity}` : ''}
-                  </div>
-                </div>
-                {/* Price */}
-                <div
+                  Tổng cộng
+                </span>
+                <span
                   style={{
                     fontFamily: 'var(--font-lora), serif',
-                    fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',
-                    fontSize: 13.5,
-                    color: 'var(--text-primary)',
-                    whiteSpace: 'nowrap',
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: 'var(--accent)',
                   }}
                 >
-                  {fmtVND(item.unitPrice * item.quantity)}
-                </div>
+                  {fmtVND(total)}
+                </span>
               </div>
-            ))}
-          </div>
-          {/* Total row */}
-          <div
-            style={{
-              borderTop: '1px solid var(--border)',
-              paddingTop: 12,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 12,
-                color: 'var(--text-muted)',
-              }}
-            >
-              Tổng cộng
             </div>
-            <div
+
+            {/* Delivery card */}
+            <div style={cardStyle}>
+              <div style={cardHeadingStyle}>Giao đến</div>
+              <div style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)' }}>
+                {order.customerName ? maskName(order.customerName) : ''} · {maskPhone(order.phone)}
+                {order.address && (
+                  <>
+                    <br />
+                    {maskAddress(order.address)}
+                  </>
+                )}
+                {order.note && (
+                  <>
+                    <br />
+                    <span style={{ fontSize: 12.5, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      {order.note}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Contact button */}
+            <a
+              href={`tel:${HOTLINE.replace(/\s/g, '')}`}
               style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontWeight: 700,
-                fontVariantNumeric: 'tabular-nums',
-                fontSize: 22,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                height: 50,
+                padding: '0 22px',
+                borderRadius: 6,
+                fontFamily: 'var(--font-be-vietnam), sans-serif',
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: '1.5px solid var(--accent)',
+                background: 'transparent',
                 color: 'var(--accent)',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
               }}
             >
-              {fmtVND(total)}
-            </div>
+              <svg
+                width={16}
+                height={16}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              Liên hệ về đơn hàng
+            </a>
           </div>
-        </div>
-        </div>
 
-        {/* Contact CTA */}
-        <div style={{ background: 'var(--bg-dark)', borderRadius: 12, padding: '16px 16px' }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 10,
-              letterSpacing: '0.2em',
-              color: 'rgba(201,169,97,0.7)',
-              textTransform: 'uppercase',
-              marginBottom: 8,
-            }}
-          >
-            Cần hỗ trợ?
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-lora), serif',
-              fontWeight: 700,
-              fontVariantNumeric: 'tabular-nums',
-              fontSize: 22,
-              color: 'var(--gold)',
-              marginBottom: 12,
-            }}
-          >
-            0899 · 012 · 288
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <a
-              href="tel:0899012288"
-              style={{
-                flex: 1,
-                padding: '11px 0',
-                background: 'rgba(201,169,97,0.15)',
-                border: '1px solid rgba(201,169,97,0.3)',
-                borderRadius: 8,
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 13,
-                color: 'var(--gold)',
-                textAlign: 'center',
-                textDecoration: 'none',
-              }}
-            >
-              Gọi ngay
-            </a>
-            <a
-              href="https://zalo.me/0899012288"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                flex: 1,
-                padding: '11px 0',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 8,
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 13,
-                color: 'rgba(244,237,224,0.8)',
-                textAlign: 'center',
-                textDecoration: 'none',
-              }}
-            >
-              Zalo
-            </a>
-            <a
-              href="https://m.me/dodongtruongthoi"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                flex: 1,
-                padding: '11px 0',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 8,
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 13,
-                color: 'rgba(244,237,224,0.8)',
-                textAlign: 'center',
-                textDecoration: 'none',
-              }}
-            >
-              Messenger
-            </a>
-          </div>
-        </div>
-        </div>
-
-        {/* Bottom nav links */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Link
-            href="/orders"
-            style={{
-              flex: 1,
-              padding: '12px 0',
-              background: 'transparent',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 13,
-              color: 'var(--text-primary)',
-              textAlign: 'center',
-              textDecoration: 'none',
-            }}
-          >
-            Đơn khác
-          </Link>
-          <Link
-            href="/"
-            style={{
-              flex: 1.4,
-              padding: '12px 0',
-              background: 'var(--accent)',
-              border: 'none',
-              borderRadius: 6,
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontWeight: 500,
-              fontSize: 13,
-              color: 'white',
-              textAlign: 'center',
-              textDecoration: 'none',
-            }}
-          >
-            Tiếp tục mua sắm
-          </Link>
         </div>
       </div>
+
+      {/* Bottom nav links */}
+      <div
+        style={{
+          maxWidth: 1344,
+          margin: '0 auto',
+          width: '100%',
+          display: 'flex',
+          gap: 16,
+          justifyContent: 'center',
+          fontSize: 13.5,
+          color: 'var(--text-secondary)',
+        }}
+        className="px-4 sm:px-6 lg:px-8 xl:px-8"
+      >
+        <Link
+          href="/orders"
+          style={{
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+          }}
+        >
+          ← Tra cứu đơn khác
+        </Link>
+        <Link
+          href="/"
+          style={{
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+          }}
+        >
+          Tiếp tục mua sắm
+        </Link>
+      </div>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

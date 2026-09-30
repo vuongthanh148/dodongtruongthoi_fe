@@ -3,13 +3,12 @@
 function PageTitle({ title, sub }) {
   const bp = useBp(); const sm = bp === 'sm';
   return (
-    <div style={{ marginBottom: sm ? 16 : 28 }}>
+    <div style={{ marginBottom: blk(bp) }}>
       <h1 style={{ fontFamily: 'Lora, serif', fontSize: pick(bp, { xl: 36, lg: 34, md: 30, sm: 24 }), fontWeight: 600, margin: 0, lineHeight: 1.15, textWrap: 'balance' }}>{title}</h1>
       {sub && <div style={{ fontSize: sm ? 14 : 15, color: 'var(--muted)', marginTop: 6, textWrap: 'pretty' }}>{sub}</div>}
     </div>
   );
 }
-const vpad = (bp) => pick(bp, { xl: 72, lg: 64, md: 56, sm: 40 });
 
 function DeskCategories() {
   const bp = useBp(); const sm = bp === 'sm';
@@ -19,7 +18,7 @@ function DeskCategories() {
       <Wrap>
         <Crumbs items={['Trang chủ', 'Danh mục']} />
         <PageTitle title="Danh mục sản phẩm" sub="Chọn theo mục đích: trang trí, thờ cúng hay làm quà tặng." />
-        <div style={{ display: 'grid', gridTemplateColumns: cols === 3 ? 'repeat(6, minmax(0,1fr))' : `repeat(${cols}, minmax(0,1fr))`, gap: pick(bp, { xl: 24, lg: 20, md: 16, sm: 12 }), marginBottom: vpad(bp) }}>
+        <div style={{ display: 'grid', gridTemplateColumns: cols === 3 ? 'repeat(6, minmax(0,1fr))' : `repeat(${cols}, minmax(0,1fr))`, gap: ggap(bp), marginBottom: vpad(bp) }}>
           {DESK_CATS.map((c, i) => (
             <div key={c.id} style={{ ...deskCard, overflow: 'hidden', display: sm ? 'grid' : 'block', gridTemplateColumns: sm ? '110px minmax(0,1fr)' : undefined, gridColumn: cols === 3 ? `span ${i < 2 ? 3 : 2}` : (cols === 2 && i === 0 ? '1 / -1' : 'auto') }}>
               <div className={`bronze-art ${c.tone === 'bronze' ? '' : c.tone}`} style={{ aspectRatio: sm ? 'auto' : '16/10', minHeight: sm ? 96 : 0 }} />
@@ -115,7 +114,7 @@ function DeskOrders() {
       <Wrap style={{ maxWidth: 1100 }}>
         <Crumbs items={['Trang chủ', 'Tra cứu đơn hàng']} />
         <PageTitle title="Tra cứu đơn hàng" sub="Nhập số điện thoại đã dùng khi đặt hàng." />
-        <div style={{ display: 'flex', gap: 10, flexDirection: sm ? 'column' : 'row', marginBottom: sm ? 20 : 32, maxWidth: 560 }}>
+        <div style={{ display: 'flex', gap: 10, flexDirection: sm ? 'column' : 'row', marginBottom: blk(bp), maxWidth: 560 }}>
           <div style={{ flex: 1, height: 50, borderRadius: 6, border: '1px solid var(--line)', background: '#fffdf7', padding: '0 16px', display: 'flex', alignItems: 'center', fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>0899 012 288</div>
           <button style={deskBtn(true)}>Tra cứu</button>
         </div>
@@ -226,9 +225,9 @@ function DeskSaved() {
         <Crumbs items={['Trang chủ', 'Đã lưu']} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
           <PageTitle title="Sản phẩm đã lưu" sub={`${list.length} sản phẩm`} />
-          {!sm && <div style={{ marginBottom: 28 }}><button style={{ ...deskBtn(false), height: 42 }}>Thêm tất cả vào giỏ</button></div>}
+          {!sm && <div style={{ marginBottom: blk(bp) }}><button style={{ ...deskBtn(false), height: 42 }}>Thêm tất cả vào giỏ</button></div>}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))`, gap: pick(bp, { xl: 24, lg: 20, md: 16, sm: 12 }), marginBottom: vpad(bp) }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))`, gap: ggap(bp), marginBottom: vpad(bp) }}>
           {list.map(p => <ProductCard key={p.id} p={p} />)}
         </div>
       </Wrap>

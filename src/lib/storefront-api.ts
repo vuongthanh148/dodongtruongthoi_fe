@@ -192,6 +192,7 @@ function normalizeCategory(raw: AdminCategory): Category {
     name: raw.name,
     productCount: raw.product_count ?? 0,
     tone: normalizeTone(raw.tone),
+    imageUrl: raw.image_url ?? undefined,
   }
 }
 

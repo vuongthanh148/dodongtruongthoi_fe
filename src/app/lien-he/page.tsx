@@ -8,7 +8,8 @@ import { Footer } from '@/components/layout/Footer'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
-import { GOOGLE_MAPS_URL, HOTLINE, SHOP_ADDRESS, SHOP_EMAIL, SOCIAL_LINKS, STORES } from '@/lib/constants'
+import { MapEmbed } from '@/components/ui/MapEmbed'
+import { HOTLINE, SHOP_ADDRESS, SHOP_EMAIL, SOCIAL_LINKS, STORES } from '@/lib/constants'
 
 function InfoRow({
   Icon,
@@ -75,39 +76,20 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* Map placeholder */}
+        {/* Map */}
         <div
           className="relative mb-8 overflow-hidden rounded-lg md:mb-10 md:rounded-xl"
-          style={{
-            height: 220,
-            border: '1px solid var(--border)',
-            background:
-              'repeating-linear-gradient(0deg, rgba(107,68,35,0.06) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, rgba(107,68,35,0.06) 0 1px, transparent 1px 40px), var(--bg-surface-alt)',
-          }}
+          style={{ height: 220, border: '1px solid var(--border)' }}
         >
           <style>{`@media (min-width: 768px) { .contact-map { height: 300px !important; } } @media (min-width: 1024px) { .contact-map { height: 340px !important; } } @media (min-width: 1280px) { .contact-map { height: 380px !important; } }`}</style>
           <div className="contact-map absolute inset-0">
-            <div className="absolute left-1/2 top-[46%] flex -translate-x-1/2 -translate-y-full flex-col items-center gap-1.5">
-              <div
-                className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 6px 16px -8px rgba(0,0,0,0.3)' }}
-              >
-                Xưởng Đồ Đồng Trường Thơi
-              </div>
-              <IconMapPin size={30} color="var(--accent)" />
-            </div>
-            <div
-              className="absolute left-3 bottom-3 rounded px-2 py-1"
-              style={{ fontSize: 11.5, color: 'var(--text-muted)', background: 'rgba(255,253,247,0.9)' }}
-            >
-              Nhúng Google Maps tại đây
-            </div>
+            <MapEmbed src={store.mapEmbedUrl} title={`Bản đồ ${store.name}`} height="100%" radius={0} />
             <a
-              href={GOOGLE_MAPS_URL}
+              href={store.mapUrl}
               target="_blank"
               rel="noreferrer"
               className="absolute bottom-3 right-3 flex items-center justify-center"
-              style={{ height: 40, padding: '0 16px', borderRadius: 6, background: 'var(--accent)', color: 'white', fontSize: 13, textDecoration: 'none' }}
+              style={{ height: 40, padding: '0 16px', borderRadius: 6, background: 'var(--accent)', color: 'white', fontSize: 13, textDecoration: 'none', boxShadow: '0 6px 16px -8px rgba(0,0,0,0.4)' }}
             >
               Chỉ đường →
             </a>

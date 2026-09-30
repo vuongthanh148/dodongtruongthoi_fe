@@ -3,6 +3,7 @@
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
@@ -46,15 +47,19 @@ export default function CraftVillagePage() {
       }}
     >
       <DeskHeader />
-      <TopBar title="Làng Nghề" onMenu={() => setIsMenuOpen(true)} />
+      <TopBar title="Giới thiệu" onMenu={() => setIsMenuOpen(true)} />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Làng nghề' }]} />
+
+      {/* Breadcrumb above hero on page background */}
+      <Container>
+        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giới thiệu' }]} />
+      </Container>
 
       {/* Full-bleed hero image area */}
       <div
         style={{
           position: 'relative',
-          height: 220,
+          height: 420,
           overflow: 'hidden',
           background: 'var(--bg-dark)',
           margin: '0 0 0 0',
@@ -74,19 +79,19 @@ export default function CraftVillagePage() {
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(to bottom, rgba(42,31,26,0.2) 0%, rgba(42,31,26,0.7) 100%)',
+              'linear-gradient(180deg, rgba(20,14,9,0.1) 0%, rgba(20,14,9,0.9) 100%)',
           }}
         />
-        {/* Text overlay */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 20px 20px' }}>
+        {/* Text overlay at bottom-left */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 40px 56px' }}>
           <div
             style={{
               fontFamily: 'var(--font-be-vietnam), sans-serif',
               fontSize: 10,
               letterSpacing: '0.2em',
-              color: 'rgba(201,169,97,0.8)',
+              color: 'var(--gold)',
               textTransform: 'uppercase',
-              marginBottom: 6,
+              marginBottom: 10,
             }}
           >
             Làng Đại Bái · Bắc Ninh
@@ -94,10 +99,11 @@ export default function CraftVillagePage() {
           <div
             style={{
               fontFamily: 'var(--font-lora), serif',
-              fontWeight: 700,
-              fontSize: 22,
+              fontWeight: 600,
+              fontSize: 44,
               color: 'var(--text-on-dark)',
-              lineHeight: 1.25,
+              lineHeight: 1.1,
+              maxWidth: 720,
             }}
           >
             Hành trình của lửa, búa và bàn tay người thợ
@@ -106,24 +112,27 @@ export default function CraftVillagePage() {
       </div>
 
       <Container>
-        <div style={{ padding: '20px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Story cards */}
+        <div style={{ paddingTop: 56, paddingBottom: 56, display: 'flex', flexDirection: 'column', gap: 72 }}>
+          {/* Story sections - flat on page background */}
           {stories.map((story, index) => (
-            <div
+            <section
               key={story.label}
-              className={index % 2 === 1 ? 'md:grid md:grid-cols-2 md:items-stretch md:[direction:rtl]' : 'md:grid md:grid-cols-2 md:items-stretch'}
+              className="md:grid md:grid-cols-2 md:items-center md:gap-16"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 12,
-                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 20,
               }}
             >
-              {/* Mini artwork */}
-              <div className={index % 2 === 1 ? 'md:[direction:ltr]' : ''} style={{ background: 'var(--bg-surface)', padding: 12 }}>
-                <ArtPiece bg={story.bg} frame={story.frame} label="" pad={8} aspect="16/9" />
+              {/* Artwork - hidden on mobile, shown on desktop */}
+              <div
+                className={index % 2 === 1 ? 'hidden md:order-2 md:block' :'hidden md:block'}
+                style={{ background: 'var(--bg-surface)', borderRadius: 12, overflow: 'hidden' }}
+              >
+                <ArtPiece bg={story.bg} frame={story.frame} label="" pad={0} aspect="4/3" />
               </div>
-              <div className={`${index % 2 === 1 ? 'md:[direction:ltr]' : ''} md:flex md:flex-col md:justify-center`} style={{ padding: '12px 14px 16px' }}>
+              {/* Text content */}
+              <div>
                 <div
                   style={{
                     fontFamily: 'var(--font-be-vietnam), sans-serif',
@@ -131,125 +140,76 @@ export default function CraftVillagePage() {
                     letterSpacing: '0.18em',
                     color: 'var(--bronze)',
                     textTransform: 'uppercase',
-                    marginBottom: 5,
+                    marginBottom: 10,
                   }}
                 >
-                  {story.label}
+                  {String(index + 1).padStart(2, '0')} · {story.label}
                 </div>
-                <div
+                <p
                   style={{
                     fontFamily: 'var(--font-lora), serif',
-                    fontWeight: 700,
-                    fontSize: 15,
+                    fontWeight: 600,
+                    fontSize: 20,
                     color: 'var(--text-primary)',
-                    marginBottom: 8,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {story.title}
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-be-vietnam), sans-serif',
-                    fontSize: 13,
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.65,
+                    lineHeight: 1.6,
+                    margin: 0,
                   }}
                 >
                   {story.body}
-                </div>
+                </p>
               </div>
-            </div>
+            </section>
           ))}
 
-          {/* Artisan highlight card */}
-          <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            overflow: 'hidden',
-          }}
-        >
-          <ArtPiece bg="bronze" frame="dark" label="" pad={0} aspect="4/3" />
-          <div style={{ padding: '14px 16px 18px' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontStyle: 'italic',
-                fontSize: 15,
-                fontWeight: 500,
-                color: 'var(--bronze)',
-                marginBottom: 3,
-              }}
-            >
-              Nghệ nhân Nguyễn Văn Thành
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                marginBottom: 12,
-              }}
-            >
-              Nghệ nhân làng Đại Bái, Bắc Ninh
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontStyle: 'italic',
-                fontSize: 14,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.6,
-              }}
-            >
-              &quot;Mỗi tác phẩm đồng là một câu chuyện được kể bằng lửa và đôi tay.&quot;
-            </div>
-          </div>
-        </div>
-
-        {/* Contact CTA */}
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: '16px',
-            textAlign: 'center',
-          }}
-        >
+          {/* Divider and footer CTA */}
           <div
             style={{
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 12,
-              color: 'var(--text-muted)',
-              marginBottom: 10,
-            }}
-          >
-            Muốn tham quan xưởng sản xuất hoặc đặt hàng riêng?
-          </div>
-          <a
-            href="tel:0899012288"
-            style={{
-              display: 'inline-flex',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: 8,
-              padding: '11px 22px',
-              background: 'transparent',
-              border: '1px solid var(--accent)',
-              borderRadius: 100,
-              color: 'var(--accent)',
-              textDecoration: 'none',
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 13,
+              gap: 16,
+              paddingTop: 24,
+              borderTop: '1px solid var(--border-soft)',
             }}
           >
-            Liên hệ ngay 0899 012 288
-          </a>
+            <div
+              style={{
+                fontFamily: 'var(--font-lora), serif',
+                fontSize: 26,
+                fontWeight: 600,
+                marginTop: 16,
+              }}
+            >
+              Ghé xưởng tại làng Đại Bái
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              Làng Đại Bái, Bắc Ninh · Mở cửa hàng ngày
+            </div>
+            <a
+              href="tel:0899012288"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '11px 22px',
+                background: 'var(--accent)',
+                border: 'none',
+                borderRadius: 100,
+                color: 'white',
+                textDecoration: 'none',
+                fontFamily: 'var(--font-be-vietnam), sans-serif',
+                fontWeight: 500,
+                fontSize: 13,
+              }}
+            >
+              Xem sản phẩm
+            </a>
           </div>
         </div>
       </Container>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

@@ -3,6 +3,7 @@
 import { IconClose, IconCompare, IconHeart, IconPhone, IconStar } from '@/components/icons'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
@@ -25,6 +26,7 @@ import {
   upsertCartItem,
 } from '@/lib/storage'
 import {
+  fetchCategories,
   fetchProduct,
   fetchProductReviews,
   fetchProducts,
@@ -217,6 +219,8 @@ function ProductDetailPageInner() {
       : null
   )
 
+  const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
+
   const { data: settings = {} } = useSWR(SWR_KEYS.settings, fetchSettings)
 
   const labelOverrides = useMemo(() => parseLabelOverrides(settings), [settings])
@@ -274,6 +278,7 @@ function ProductDetailPageInner() {
   }, [product])
 
   const category = product?.categoryId ?? ''
+  const categoryName = categories.find((c) => c.id === category)?.name ?? category
 
   const selectedSize =
     product?.sizes.find((size) => size.id === resolvedSizeId) ?? product?.sizes[0]
@@ -282,7 +287,7 @@ function ProductDetailPageInner() {
         product.skus,
         selectedSize?.code,
         resolvedAttrs,
-        product.discountPrice ?? product.price
+        selectedSize?.price ?? product.discountPrice ?? product.price
       )
     : 0
   const isSaved = product ? savedVariants.some((v) => v.productId === product.id) : false
@@ -443,7 +448,13 @@ function ProductDetailPageInner() {
         onOpenSaved={() => (window.location.href = '/saved')}
         savedCount={savedVariants.length}
       />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Sản phẩm', href: '/products' }, { label: product.title }]} />
+      <Breadcrumbs
+        items={[
+          { label: 'Trang chủ', href: '/' },
+          { label: categoryName, href: `/categories/${category}` },
+          { label: product.title },
+        ]}
+      />
       <div className="lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[1.25fr_1fr] lg:items-start lg:gap-14 lg:px-8">
       <div style={{ padding: '12px 16px 0' }}>
         <div
@@ -605,7 +616,7 @@ function ProductDetailPageInner() {
               textDecoration: 'none',
             }}
           >
-            ◦ Danh mục
+            ◦ {categoryName}
           </Link>
         </div>
         <Heading as="h1" size="xl" style={{ fontSize: 26, margin: '10px 0 6px', lineHeight: 1.15 }}>
@@ -642,7 +653,7 @@ function ProductDetailPageInner() {
           }}
         >
           <Price amount={currentPrice} size="lg" />
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>(đã bao gồm lắp đặt)</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Đã gồm VAT</div>
         </div>
       </div>
 
@@ -785,53 +796,43 @@ function ProductDetailPageInner() {
             Kích thước
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {product.sizes.map((size) => {
             const on = size.id === resolvedSizeId
+            const displayPrice = resolveSizeDisplayPrice(product.skus, size.code, size.price)
             return (
               <button
                 key={size.id}
                 type="button"
                 onClick={() => setSizeId(size.id)}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  alignItems: 'center',
-                  width: '100%',
-                  padding: 12,
-                  background: on ? 'rgba(139,30,30,0.06)' : 'transparent',
-                  border: 'none',
-                  borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  border: on ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                  background: on ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
                   cursor: 'pointer',
-                  textAlign: 'left',
+                  fontSize: 13,
+                  fontFamily: 'var(--font-be-vietnam), sans-serif',
+                  color: on ? 'var(--accent)' : 'var(--text-primary)',
+                  fontWeight: on ? 600 : 400,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  gap: 2,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-be-vietnam), sans-serif',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: on ? 'var(--accent)' : 'var(--text-primary)',
-                    }}
-                  >
-                    {size.name}
-                  </div>
-                </div>
-                <div
+                <span>{size.name}</span>
+                <span
                   style={{
-                    fontFamily: 'var(--font-lora), serif',
-                    fontWeight: 700,
-                    fontVariantNumeric: 'tabular-nums',
-                    fontSize: 16,
-                    color: on ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontSize: 11.5,
+                    color: 'var(--text-muted)',
+                    fontWeight: 400,
                   }}
                 >
-                  {resolveSizeDisplayPrice(product.skus, size.code, size.price).toLocaleString(
-                    'vi-VN'
-                  )}
-                  đ
-                </div>
+                  {displayPrice.toLocaleString('vi-VN')}đ
+                </span>
               </button>
             )
           })}
@@ -914,7 +915,7 @@ function ProductDetailPageInner() {
           Mua ngay · {currentPrice.toLocaleString('vi-VN')}đ
         </Btn>
       </div>
-      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: 'var(--text-secondary)' }} className="hidden md:flex">
+      <div style={{ padding: '14px 16px 0', gap: 8, alignItems: 'center', fontSize: 13, color: 'var(--text-secondary)' }} className="hidden md:flex">
         <IconPhone size={15} color="var(--accent)" /> Cần tư vấn kích thước? Gọi{' '}
         <b style={{ color: 'var(--accent)' }}>{HOTLINE}</b>
       </div>
@@ -1534,7 +1535,7 @@ function ProductDetailPageInner() {
       )}
 
       <div
-        className="md:hidden"
+        className="flex md:hidden"
         style={{
           position: 'fixed',
           left: 0,
@@ -1544,7 +1545,6 @@ function ProductDetailPageInner() {
           backdropFilter: 'blur(10px)',
           borderTop: '1px solid var(--border)',
           padding: '12px 14px 22px',
-          display: 'flex',
           gap: 8,
           zIndex: 20,
         }}
@@ -1636,6 +1636,8 @@ function ProductDetailPageInner() {
           activeAttrs={resolvedAttrs}
         />
       )}
+
+      <StoreLocationsSection />
 
       <Footer />
     </div>

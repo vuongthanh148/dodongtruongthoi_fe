@@ -25,7 +25,13 @@ const DESK_GROUPS = {
   { sec: 'nav', title: 'Menu "Sản phẩm"', sub: 'Nhóm theo mục đích + sản phẩm nổi bật · rê chuột hoặc bấm để mở, Esc để đóng', items: [
     ['nav-grouped', 'Menu mở · 1440', 1440, <DeskHome variant="split" megaOpen />],
   ] },
-  row('home', 'Trang chủ', 'Hero chia 2/3 + 2 banner phụ', 'home-a', 'Trang chủ', () => <DeskHome variant="split" />),
+  row('home', 'Trang chủ', 'Hero · cam kết · danh mục · khuyến mãi · nổi bật · câu chuyện · showroom', 'home-a', 'Trang chủ', () => <DeskHome variant="split" />),
+  { sec: 'campaign', title: 'Khuyến mãi (CampaignsSection)', sub: '1 chương trình = băng ngang · 2–3 = lưới (desktop) / cuộn ngang 85% (mobile) · 0 = ẩn', items: [
+    ['campaign-one-1440', '1 chương trình · 1440', 1440, <div style={{ padding: 32, background: 'var(--ivory)' }}><CampaignBlock campaigns={CAMPAIGNS.slice(0, 1)} /></div>],
+    ['campaign-many-1440', '2 chương trình · 1440', 1440, <div style={{ padding: 32, background: 'var(--ivory)' }}><CampaignBlock campaigns={CAMPAIGNS} /></div>],
+    ['campaign-one-375', '1 chương trình · 375', 375, <div style={{ padding: 16, background: 'var(--ivory)' }}><CampaignBlock campaigns={CAMPAIGNS.slice(0, 1)} /></div>],
+    ['campaign-many-375', '2 chương trình · 375', 375, <div style={{ padding: 16, background: 'var(--ivory)', overflow: 'hidden' }}><CampaignBlock campaigns={CAMPAIGNS} /></div>],
+  ] },
   row('cats', 'Danh mục (tổng)', 'Lưới ô danh mục', 'cats', 'Danh mục', () => <DeskCategories />),
   row('list', 'Danh mục / Sản phẩm', 'Sidebar lọc → nút Bộ lọc (tablet/mobile)', 'list-a', 'Listing', () => <DeskListing variant="sidebar" />),
   row('pdp', 'Chi tiết sản phẩm', 'Ảnh chính + thumbnail bên dưới · khung mua dính bên phải', 'pdp-a', 'PDP', () => <DeskPDP variant="thumbs" />),

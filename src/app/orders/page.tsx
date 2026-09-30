@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
@@ -169,12 +170,14 @@ export default function OrdersPage() {
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tra cứu đơn hàng' }]} />
 
-      <Container className="w-full pb-16 lg:max-w-[900px]">
+      <Container className="w-full pb-16">
         <StepDots step={step} />
 
         {/* ===== Step: phone ===== */}
         {step === 'phone' && (
           <div key="phone" className="lk-in pt-4 md:pt-2">
+            <h1 style={{ fontFamily: 'var(--font-lora), serif', fontSize: 28, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0', lineHeight: 1.2 }}>Tra cứu đơn hàng</h1>
+            <div style={{ fontSize: 15, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.5 }}>Nhập số điện thoại đã dùng khi đặt hàng.</div>
             <div className="label-mono mb-3" style={{ color: 'var(--bronze)' }}>
               Nhập số điện thoại đặt hàng
             </div>
@@ -216,6 +219,22 @@ export default function OrdersPage() {
                 {loading ? '...' : 'Tra cứu →'}
               </button>
             </form>
+            <button
+              type="button"
+              onClick={() => setPhoneInput('0899 012 288')}
+              style={{
+                marginTop: 12,
+                padding: 0,
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent)',
+                fontSize: 13,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              Dùng số mẫu
+            </button>
             {error && (
               <div className="mt-3 max-w-[560px]" style={{ padding: '10px 14px', background: 'rgba(139,30,30,0.08)', border: '1px solid rgba(139,30,30,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--accent)' }}>
                 {error}
@@ -230,7 +249,7 @@ export default function OrdersPage() {
 
         {/* ===== Step: list (masked) ===== */}
         {step === 'list' && (
-          <div key="list" className="lk-in">
+          <div key="list" className="lk-in max-w-[960px]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
               <span>
                 {orders.length} đơn hàng của <b style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{maskPhone(phone)}</b>
@@ -556,6 +575,8 @@ export default function OrdersPage() {
           </div>
         )}
       </Container>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

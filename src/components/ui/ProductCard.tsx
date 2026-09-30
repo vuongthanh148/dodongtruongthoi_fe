@@ -76,7 +76,7 @@ export function ProductCard({ product, compact = false, noInnerPadding = false, 
       }}
     >
       <div style={{ padding: noInnerPadding ? 0 : 8, background: 'var(--bg-surface-alt)', position: 'relative' }}>
-        <ArtPiece bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'} frame={defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'} label={product.title} pad={6} aspect="4/3" />
+        <ArtPiece bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'} frame={defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'} label={product.title} pad={6} aspect="4/3" imgSrc={getPrimaryImage(product)} />
         {product.badge && badgeMap[product.badge] ? (
           <span
             style={{
@@ -127,140 +127,6 @@ export function ProductCard({ product, compact = false, noInnerPadding = false, 
         </div>
       </div>
     </Card>
-  )
-}
-
-interface ProductCardV2Props {
-  product: Product
-  onOpen?: (bgTone?: string) => void
-  tall?: boolean
-  style?: React.CSSProperties
-}
-
-export function ProductCardV2({ product, onOpen, tall = false, style: styleProp }: ProductCardV2Props) {
-  const [bgTone, setBgTone] = useState(getDefaultBgTone(product))
-  const displayPrice = useMemo(() => product.discountPrice ?? product.price, [product.discountPrice, product.price])
-  const imageUrl = getPrimaryImage(product)
-  const aspectRatio = tall ? '3 / 4' : '4 / 3'
-  const bgToneValues = getBgToneValues(product)
-  const defaultFrame = getDefaultFrame(product)
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen?.(bgTone)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onOpen?.(bgTone)
-        }
-      }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: '1px solid var(--border)',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg-page)',
-        cursor: 'pointer',
-        ...styleProp,
-        minHeight: '100%',
-      }}
-    >
-      <div style={{ position: 'relative', background: 'var(--bg-surface)', padding: 10 }}>
-        <div style={{ position: 'relative' }}>
-          <ArtPiece
-            bg={bgTone as 'gold' | 'red' | 'bronze' | 'dark'}
-            frame={defaultFrame as 'bronze' | 'gold' | 'dark' | 'carved'}
-            label={product.title}
-            pad={8}
-            aspect={aspectRatio}
-            imgSrc={imageUrl ?? undefined}
-          />
-        </div>
-
-        {product.badge && badgeMap[product.badge] ? (
-          <span
-            style={{
-              position: 'absolute',
-              top: 14,
-              left: 14,
-              fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: 9,
-              letterSpacing: '0.1em',
-              color: product.badge === 'sale' ? 'white' : 'var(--text-primary)',
-              textTransform: 'uppercase',
-              background: product.badge === 'sale' ? 'var(--accent)' : 'rgba(255,253,247,0.9)',
-              padding: '3px 8px',
-              borderRadius: 2,
-              border: 'none',
-            }}
-          >
-            {badgeMap[product.badge]}
-          </span>
-        ) : null}
-      </div>
-
-      <div style={{ padding: '10px 10px 12px', display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-        <Heading
-          as="h3"
-          size="sm"
-          style={{
-            fontFamily: 'var(--font-lora), serif',
-            fontSize: 14.5,
-            fontWeight: 600,
-            lineHeight: 1.15,
-            margin: 0,
-            color: 'var(--text-primary)',
-          }}
-        >
-          {product.title}
-        </Heading>
-
-        {bgToneValues.length > 0 && (
-          <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-            {bgToneValues.slice(0, 3).map((tone) => (
-              <button
-                key={tone}
-                type="button"
-                aria-label={`Chọn tông ${tone}`}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setBgTone(tone)
-                }}
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  border: `1px solid ${bgTone === tone ? 'var(--accent)' : 'var(--border)'}`,
-                  background:
-                    tone === 'gold'
-                      ? 'var(--gold)'
-                      : tone === 'red'
-                        ? 'var(--accent)'
-                        : tone === 'bronze'
-                          ? 'var(--bronze)'
-                          : 'var(--bg-dark)',
-                  boxShadow: bgTone === tone ? '0 0 0 2px rgba(139,30,30,0.08)' : 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-          <Price amount={displayPrice} size="md" />
-          {product.rating > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-muted)' }}>
-              <IconStar size={10} color="var(--gold)" />
-              {Number(product.rating.toFixed(1))}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
   )
 }
 

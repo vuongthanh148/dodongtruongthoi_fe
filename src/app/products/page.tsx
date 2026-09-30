@@ -3,6 +3,7 @@
 import { IconFilter, IconGrid, IconList } from '@/components/icons'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
@@ -10,9 +11,11 @@ import { FilterSidebar } from '@/components/layout/FilterSidebar'
 import { Container } from '@/components/layout/Container'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Price } from '@/components/ui/Price'
-import { ProductCardSkeleton, ProductCardV2 } from '@/components/ui/ProductCard'
+import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Btn } from '@/components/ui/Btn'
+import { Heading } from '@/components/ui/Heading'
+import { SortSelect } from '@/components/ui/SortSelect'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
 import { BG_TONES } from '@/lib/data'
 import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
@@ -21,6 +24,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import type { Product } from '@/lib/types'
+
+const PAGE_SIZE = 9
 
 // ── List-view row component ──────────────────────────────────────────────────
 function ProductsListRow({ product, categories, onOpen }: { product: Product; categories: { id: string; name: string }[]; onOpen: () => void }) {
@@ -86,7 +91,7 @@ function ProductsPageInner() {
   const [priceRange, setPriceRange] = useState<
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
-  const [ratingFilter, setRatingFilter] = useState<'all' | '4+' | '5'>('all')
+  const [sizeFilter, setSizeFilter] = useState<string | null>(null)
   const [bgTone, setBgTone] = useState<string | null>(null)
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
@@ -94,14 +99,20 @@ function ProductsPageInner() {
   const [pendingPriceRange, setPendingPriceRange] = useState<
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
-  const [pendingRating, setPendingRating] = useState<'all' | '4+' | '5'>('all')
+  const [pendingSizeFilter, setPendingSizeFilter] = useState<string | null>(null)
   const [pendingBgTone, setPendingBgTone] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState({ key: '', count: PAGE_SIZE })
 
   const { data: allProducts = [], isLoading } = useSWR(SWR_KEYS.products, () =>
     fetchProducts({ limit: 100 })
   )
 
   const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
+
+  // Paging resets automatically whenever the filter key changes
+  const filterKey = JSON.stringify([activeCategoryId, sort, priceRange, sizeFilter, bgTone, qParam])
+  const visibleProductsCount = expanded.key === filterKey ? expanded.count : PAGE_SIZE
+  const loadMore = () => setExpanded({ key: filterKey, count: visibleProductsCount + PAGE_SIZE })
 
   const title = qParam
     ? `Kết quả cho “${qParam}”`
@@ -112,12 +123,14 @@ function ProductsPageInner() {
   const activeFilterCount = useMemo(() => {
     let count = 0
     if (priceRange !== 'all') count++
-    if (ratingFilter !== 'all') count++
+    if (sizeFilter !== null) count++
     if (bgTone !== null) count++
     return count
-  }, [priceRange, ratingFilter, bgTone])
+  }, [priceRange, sizeFilter, bgTone])
 
-  const visibleProducts = useMemo(() => {
+  // Category/search-scoped base list, before price/size/bg-tone filtering — also used to
+  // derive the dynamic size filter options.
+  const scopedProducts = useMemo(() => {
     let ps = allProducts
     if (activeCategoryId !== 'all') {
       ps = ps.filter((p) => p.categoryId === activeCategoryId)
@@ -128,8 +141,21 @@ function ProductsPageInner() {
         (p) => p.title.toLowerCase().includes(q) || (p.subtitle && p.subtitle.toLowerCase().includes(q))
       )
     }
+    return ps
+  }, [allProducts, activeCategoryId, qParam])
 
-    const filtered = ps.filter((product) => {
+  const sizeOptions = useMemo(() => {
+    const byCode = new Map<string, string>()
+    for (const product of scopedProducts) {
+      for (const size of product.sizes) {
+        if (!byCode.has(size.code)) byCode.set(size.code, size.name)
+      }
+    }
+    return Array.from(byCode, ([code, name]) => ({ code, name }))
+  }, [scopedProducts])
+
+  const allVisibleProducts = useMemo(() => {
+    const filtered = scopedProducts.filter((product) => {
       const price = product.discountPrice ?? product.price
 
       const priceMatch =
@@ -143,16 +169,11 @@ function ProductsPageInner() {
                 ? price > 3_000_000 && price <= 5_000_000
                 : price > 5_000_000
 
-      const ratingMatch =
-        ratingFilter === 'all'
-          ? true
-          : ratingFilter === '4+'
-            ? product.rating >= 4
-            : product.rating === 5
+      const sizeMatch = sizeFilter === null ? true : product.sizes.some((s) => s.code === sizeFilter)
 
       const bgToneMatch = bgTone === null ? true : product.defaultVariant['bg_tone'] === bgTone
 
-      return priceMatch && ratingMatch && bgToneMatch
+      return priceMatch && sizeMatch && bgToneMatch
     })
 
     switch (sort) {
@@ -165,21 +186,14 @@ function ProductsPageInner() {
       default:
         return filtered
     }
-  }, [allProducts, activeCategoryId, sort, qParam, priceRange, ratingFilter, bgTone])
+  }, [scopedProducts, sort, priceRange, sizeFilter, bgTone])
+
+  const visibleProducts = useMemo(() => {
+    return allVisibleProducts.slice(0, visibleProductsCount)
+  }, [allVisibleProducts, visibleProductsCount])
 
   const pendingVisibleCount = useMemo(() => {
-    let ps = allProducts
-    if (activeCategoryId !== 'all') {
-      ps = ps.filter((p) => p.categoryId === activeCategoryId)
-    }
-    if (qParam) {
-      const q = qParam.toLowerCase()
-      ps = ps.filter(
-        (p) => p.title.toLowerCase().includes(q) || (p.subtitle && p.subtitle.toLowerCase().includes(q))
-      )
-    }
-
-    const filtered = ps.filter((product) => {
+    const filtered = scopedProducts.filter((product) => {
       const price = product.discountPrice ?? product.price
 
       const priceMatch =
@@ -193,20 +207,15 @@ function ProductsPageInner() {
                 ? price > 3_000_000 && price <= 5_000_000
                 : price > 5_000_000
 
-      const ratingMatch =
-        pendingRating === 'all'
-          ? true
-          : pendingRating === '4+'
-            ? product.rating >= 4
-            : product.rating === 5
+      const sizeMatch = pendingSizeFilter === null ? true : product.sizes.some((s) => s.code === pendingSizeFilter)
 
       const bgToneMatch = pendingBgTone === null ? true : product.defaultVariant['bg_tone'] === pendingBgTone
 
-      return priceMatch && ratingMatch && bgToneMatch
+      return priceMatch && sizeMatch && bgToneMatch
     })
 
     return filtered.length
-  }, [allProducts, activeCategoryId, qParam, pendingPriceRange, pendingRating, pendingBgTone])
+  }, [scopedProducts, pendingPriceRange, pendingSizeFilter, pendingBgTone])
 
   return (
     <div
@@ -226,6 +235,29 @@ function ProductsPageInner() {
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: title }]} />
+
+      {/* Desktop heading row — hidden below lg */}
+      <Container className="hidden lg:flex" style={{ alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: 20 }}>
+        <div>
+          <Heading as="h1" size="xl">{title}</Heading>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
+            {isLoading ? '...' : `${visibleProducts.length} / ${allVisibleProducts.length} sản phẩm`}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Sắp xếp:</span>
+          <SortSelect
+            value={sort}
+            onChange={(v) => setSort(v as 'featured' | 'price-asc' | 'price-desc' | 'rating-desc')}
+            options={[
+              { value: 'featured', label: 'Nổi bật' },
+              { value: 'price-asc', label: 'Giá tăng dần' },
+              { value: 'price-desc', label: 'Giá giảm dần' },
+              { value: 'rating-desc', label: 'Đánh giá cao nhất' },
+            ]}
+          />
+        </div>
+      </Container>
 
       {/* Category pills — hidden at lg+ */}
       <div
@@ -297,11 +329,11 @@ function ProductsPageInner() {
         }}
       >
         <div style={{ flex: 1, fontSize: 12, color: 'var(--text-muted)' }}>
-          {isLoading ? '...' : `${visibleProducts.length} sản phẩm`}
+          {isLoading ? '...' : `${visibleProducts.length} / ${allVisibleProducts.length} sản phẩm`}
         </div>
         <button
           type="button"
-          onClick={() => { setPendingPriceRange(priceRange); setPendingRating(ratingFilter); setPendingBgTone(bgTone); setFilterSheetOpen(true) }}
+          onClick={() => { setPendingPriceRange(priceRange); setPendingSizeFilter(sizeFilter); setPendingBgTone(bgTone); setFilterSheetOpen(true) }}
           style={{
             display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
             padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 4,
@@ -364,24 +396,23 @@ function ProductsPageInner() {
             onCategoryChange={setActiveCategoryId}
             priceRange={priceRange}
             onPriceRangeChange={setPriceRange}
-            ratingFilter={ratingFilter}
-            onRatingFilterChange={setRatingFilter}
+            sizeOptions={sizeOptions}
+            sizeFilter={sizeFilter}
+            onSizeFilterChange={setSizeFilter}
             bgTone={bgTone}
             onBgToneChange={setBgTone}
             onClearAll={() => {
               setActiveCategoryId('all')
               setPriceRange('all')
-              setRatingFilter('all')
+              setSizeFilter(null)
               setBgTone(null)
             }}
           />
           <div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3" style={{ borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-                    <ProductCardSkeleton compact />
-                  </div>
+                  <ProductCardSkeleton key={i} />
                 ))}
               </div>
             ) : visibleProducts.length === 0 ? (
@@ -393,37 +424,59 @@ function ProductsPageInner() {
                 <div style={{ width: 170 }}>
                   <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
                 </div>
-                <Btn type="button" variant="outline" onClick={() => { setPriceRange('all'); setRatingFilter('all'); setBgTone(null); setActiveCategoryId('all') }}>
+                <Btn type="button" variant="outline" onClick={() => { setPriceRange('all'); setSizeFilter(null); setBgTone(null); setActiveCategoryId('all') }}>
                   Xem tất cả
                 </Btn>
               </div>
             ) : view === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3" style={{ alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
-                {visibleProducts.map((product, idx) => (
-                  <ProductCardV2
-                    key={product.id}
-                    product={product}
-                    tall={idx % 2 === 0}
-                    style={idx % 4 === 3 ? { background: 'var(--ivory-3, #e5d9c0)' } : undefined}
-                    onOpen={() => { window.location.href = `/products/${product.id}` }}
-                  />
-                ))}
-                {/* Fill empty cell if odd count */}
-                {visibleProducts.length % 2 !== 0 && (
-                  <div style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'rgba(244,237,224,0.4)' }} />
+              <>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
+                  {visibleProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onOpen={() => { window.location.href = `/products/${product.id}` }}
+                    />
+                  ))}
+                </div>
+                {visibleProducts.length < allVisibleProducts.length && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', gap: 8 }}>
+                    <Btn
+                      type="button"
+                      variant="outline"
+                      onClick={() => loadMore()}
+                      style={{ width: '240px', height: '50px', fontSize: '15px', fontWeight: 600 }}
+                    >
+                      Xem thêm sản phẩm
+                    </Btn>
+                  </div>
                 )}
-              </div>
+              </>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {visibleProducts.map((product) => (
-                  <ProductsListRow
-                    key={product.id}
-                    product={product}
-                    categories={categories}
-                    onOpen={() => { window.location.href = `/products/${product.id}` }}
-                  />
-                ))}
-              </div>
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {visibleProducts.map((product) => (
+                    <ProductsListRow
+                      key={product.id}
+                      product={product}
+                      categories={categories}
+                      onOpen={() => { window.location.href = `/products/${product.id}` }}
+                    />
+                  ))}
+                </div>
+                {visibleProducts.length < allVisibleProducts.length && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', gap: 8 }}>
+                    <Btn
+                      type="button"
+                      variant="outline"
+                      onClick={() => loadMore()}
+                      style={{ width: '240px', height: '50px', fontSize: '15px', fontWeight: 600 }}
+                    >
+                      Xem thêm sản phẩm
+                    </Btn>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -441,7 +494,7 @@ function ProductsPageInner() {
               variant="ghost"
               onClick={() => {
                 setPendingPriceRange('all')
-                setPendingRating('all')
+                setPendingSizeFilter(null)
                 setPendingBgTone(null)
               }}
               style={{ flex: 1 }}
@@ -453,7 +506,7 @@ function ProductsPageInner() {
               variant="primary"
               onClick={() => {
                 setPriceRange(pendingPriceRange)
-                setRatingFilter(pendingRating)
+                setSizeFilter(pendingSizeFilter)
                 setBgTone(pendingBgTone)
                 setFilterSheetOpen(false)
               }}
@@ -500,24 +553,20 @@ function ProductsPageInner() {
             </div>
           </div>
 
-          {/* Rating section */}
+          {/* Size section */}
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
-              Đánh giá
+              Kích thước
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { id: 'all', label: 'Tất cả' },
-                { id: '4+', label: '4★ trở lên' },
-                { id: '5', label: '5★' },
-              ].map((item) => {
-                const active = pendingRating === item.id
+              {[{ code: null as string | null, label: 'Tất cả' }, ...sizeOptions.map((s) => ({ code: s.code, label: s.name }))].map((item) => {
+                const active = pendingSizeFilter === item.code
                 return (
                   <Btn
-                    key={item.id}
+                    key={item.code ?? 'all'}
                     type="button"
                     variant={active ? 'primary' : 'outline'}
-                    onClick={() => setPendingRating(item.id as 'all' | '4+' | '5')}
+                    onClick={() => setPendingSizeFilter(item.code)}
                     style={{
                       borderRadius: 100,
                       borderColor: active ? 'var(--accent)' : 'var(--border)',
@@ -593,6 +642,8 @@ function ProductsPageInner() {
           })}
         </div>
       </BottomSheet>
+
+      <StoreLocationsSection />
 
       <Footer />
     </div>

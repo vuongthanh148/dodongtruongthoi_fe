@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
+import { ArtPiece } from '@/components/ui/ArtPiece'
 import { getCartItems, clearCart } from '@/lib/storage'
 import { createOrder } from '@/lib/storefront-api'
 import type { CartItem } from '@/lib/types'
@@ -118,7 +120,7 @@ export default function CheckoutPage() {
         onOpenSaved={() => router.push('/saved')}
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giỏ hàng', href: '/cart' }, { label: 'Thanh toán' }]} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giỏ hàng', href: '/cart' }, { label: 'Đặt hàng' }]} />
 
       {submitted && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' }}>
@@ -155,43 +157,48 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {!submitted && (<div className="flex flex-col gap-4 lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 lg:px-8" style={{ padding: '16px 16px 0' }}>
+      {!submitted && (<div style={{ padding: '16px 16px 0' }}>
+        <h1 className="lg:mx-auto lg:max-w-[1344px] lg:px-8" style={{ fontFamily: 'var(--font-lora), serif', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 24, marginTop: 0 }}>Đặt hàng</h1>
+        <div className="flex flex-col gap-4 lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 lg:px-8">
 
         {/* Form */}
         <div className="lg:order-1">
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <label style={labelStyle}>Số điện thoại <span style={{ color: 'var(--accent)' }}>*</span></label>
-              <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0912 345 678" style={fieldStyle} />
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
+            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18 }}>Thông tin người nhận</div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label style={labelStyle}>Họ và tên</label>
+                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nguyễn Văn A" style={fieldStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Số điện thoại <span style={{ color: 'var(--accent)' }}>*</span></label>
+                <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0912 345 678" style={fieldStyle} />
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>Tên khách hàng</label>
-              <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nguyễn Văn A" style={fieldStyle} />
+            <div style={{ marginTop: 12 }}>
+              <label style={labelStyle}>Địa chỉ giao hàng</label>
+              <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" style={fieldStyle} />
             </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Địa chỉ giao hàng</label>
-            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" style={fieldStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Ghi chú</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Giao giờ hành chính, gọi trước 30 phút..."
-              rows={3}
-              style={{ ...fieldStyle, borderRadius: 14, resize: 'none' }}
-            />
+            <div style={{ marginTop: 12 }}>
+              <label style={labelStyle}>Ghi chú</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Giao giờ hành chính, gọi trước 30 phút..."
+                rows={3}
+                style={{ ...fieldStyle, borderRadius: 14, resize: 'none' }}
+              />
+            </div>
           </div>
 
-          <div>
-            <label style={labelStyle}>Phương thức thanh toán</label>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20, marginTop: 12 }}>
+            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18 }}>Thanh toán</div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {[
-                { id: 'cod' as const, label: 'Thanh toán khi nhận (COD)' },
-                { id: 'transfer' as const, label: 'Chuyển khoản' },
-                { id: 'showroom' as const, label: 'Tại showroom' },
+                { id: 'cod' as const, label: 'Thanh toán khi nhận', desc: 'COD' },
+                { id: 'transfer' as const, label: 'Chuyển khoản', desc: 'Nhận STK sau khi đặt' },
+                { id: 'showroom' as const, label: 'Tại showroom', desc: 'Làng Đại Bái' },
               ].map((opt) => (
                 <button
                   key={opt.id}
@@ -208,9 +215,13 @@ export default function CheckoutPage() {
                     background: paymentMethod === opt.id ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
                     color: paymentMethod === opt.id ? 'var(--accent)' : 'var(--text-primary)',
                     fontWeight: paymentMethod === opt.id ? 600 : 400,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
                   }}
                 >
-                  {opt.label}
+                  <span style={{ fontSize: 13.5 }}>{opt.label}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>{opt.desc}</span>
                 </button>
               ))}
             </div>
@@ -239,35 +250,61 @@ export default function CheckoutPage() {
         </div>
 
         {/* Order summary & info banner */}
-        <div className="lg:sticky lg:top-[92px] lg:order-2">
-          {/* Order summary block */}
-          <div style={{ background: 'var(--bg-dark)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 12 }}>
-              Đơn hàng của bạn
+        <div className="lg:sticky lg:top-[92px] lg:order-2 lg:flex lg:flex-col lg:gap-4">
+          {/* Order items card */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
+            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 16, fontWeight: 600, marginBottom: 14, color: 'var(--text-primary)' }}>
+              Sản phẩm
             </div>
             {items.map((item, index) => (
-              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 15, color: 'var(--text-on-dark)', lineHeight: 1.2 }}>
+              <div key={index} style={{ display: 'grid', gridTemplateColumns: '72px minmax(0,1fr)', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottom: index < items.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
+                  <ArtPiece
+                    bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+                    frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+                    label=""
+                    pad={3}
+                    aspect="4/3"
+                    imgSrc={item.variantImageUrl}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                     {item.productTitle || item.productId}
                   </div>
-                  <div style={{ fontSize: 11, color: 'rgba(244,237,224,0.5)', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
                     ×{item.quantity}{item.sizeLabel ? ` · ${item.sizeLabel}` : ''}
                   </div>
-                </div>
-                <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--gold)', marginLeft: 10 }}>
-                  {fmtVND(item.unitPrice * item.quantity)}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>
+                    {fmtVND(item.unitPrice * item.quantity)}
+                  </div>
                 </div>
               </div>
             ))}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 16, fontWeight: 600, color: 'var(--text-on-dark)' }}>Tổng</span>
-              <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--gold)' }}>{fmtVND(subtotal)}</span>
+          </div>
+
+          {/* Summary card with totals */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
+                <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
+                <span>Phí giao hàng</span><span>Miễn phí</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
+                <span>Thanh toán</span><span>Xác nhận sau</span>
+              </div>
+            </div>
+            <div style={{ height: 1, background: 'rgba(42,31,26,0.14)', marginBottom: 12 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Tổng cộng</span>
+              <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)' }}>{fmtVND(subtotal)}</span>
             </div>
           </div>
 
           {/* Info banner */}
-          <div style={{ padding: '12px 14px', background: 'rgba(120,160,200,0.12)', border: '1px solid rgba(120,160,200,0.25)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12 }}>
+          <div style={{ padding: '12px 14px', background: 'rgba(120,160,200,0.12)', border: '1px solid rgba(120,160,200,0.25)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(60,100,160,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#3d6090" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
@@ -278,7 +315,10 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
+        </div>
       </div>)}
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

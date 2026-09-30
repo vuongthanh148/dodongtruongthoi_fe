@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { ArtPiece } from '@/components/ui/ArtPiece'
 import { IconChevron } from '@/components/icons'
 import { fetchCategories } from '@/lib/storefront-api'
 import useSWR from 'swr'
@@ -42,7 +44,7 @@ export default function CategoriesPage() {
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Danh mục sản phẩm' }]} />
 
-      <div style={{ padding: '12px 16px 0' }}>
+      <div className="mx-auto w-full px-4 pt-3 lg:max-w-[1344px] lg:px-8">
         <div style={{ fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 14 }}>
           Tất cả danh mục
         </div>
@@ -54,9 +56,9 @@ export default function CategoriesPage() {
                 <Skeleton key={i} style={{ height: 64, borderRadius: 10 }} />
               ))}
             </div>
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="hidden md:grid lg:grid-cols-6 md:grid-cols-2 gap-4">
               {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                <Skeleton key={i} style={{ height: 88, borderRadius: 10 }} />
+                <Skeleton key={i} className={i < 2 ? 'lg:col-span-3' : 'lg:col-span-2'} style={{ height: 200, borderRadius: 10 }} />
               ))}
             </div>
           </>
@@ -103,27 +105,52 @@ export default function CategoriesPage() {
                 </Link>
               ))}
             </div>
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {categories.map((cat) => (
+            <div className="hidden md:grid lg:grid-cols-6 md:grid-cols-2 gap-4">
+              {categories.map((cat, index) => (
                 <Link
                   key={cat.id}
                   href={`/categories/${cat.id}`}
-                  className="flex items-center gap-3 rounded-[10px] border p-4"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+                  className={`group overflow-hidden rounded-[10px] border ${index < 2 ? 'lg:col-span-3' : 'lg:col-span-2'}`}
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', textDecoration: 'none' }}
                 >
-                  <div
-                    className="h-14 w-14 shrink-0 rounded-lg"
-                    style={{ background: BG_TONE_COLORS[cat.tone] ?? BG_TONE_COLORS.bronze, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)' }}
-                  />
-                  <div className="min-w-0">
-                    <div className="font-[family-name:var(--font-lora)] text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {cat.name}
-                    </div>
-                    {(cat.productCount ?? 0) > 0 && (
-                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {cat.productCount} sản phẩm
-                      </div>
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '16/10', overflow: 'hidden' }}>
+                    {cat.imageUrl ? (
+                      <img
+                        src={cat.imageUrl}
+                        alt={cat.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        }}
+                        className="group-hover:scale-105"
+                      />
+                    ) : (
+                      <ArtPiece
+                        bg={(cat.tone as 'gold' | 'red' | 'bronze' | 'dark') ?? 'bronze'}
+                        frame="bronze"
+                        label=""
+                        pad={6}
+                        aspect="16/10"
+                        imgSrc={undefined}
+                      />
                     )}
+                  </div>
+                  <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {cat.name}
+                      </div>
+                      {(cat.productCount ?? 0) > 0 && (
+                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+                          {cat.productCount} sản phẩm
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ flexShrink: 0, display: 'inline-flex' }}>
+                      <IconChevron size={16} color="var(--text-muted)" />
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -131,6 +158,8 @@ export default function CategoriesPage() {
           </>
         )}
       </div>
+
+      <StoreLocationsSection />
 
       <div style={{ flex: 1 }} />
       <Footer />

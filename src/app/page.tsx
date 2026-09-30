@@ -61,6 +61,8 @@ export default function Home() {
 
       <BannerSection banners={banners} />
 
+      <TrustBar />
+
       <SearchOverlay
         open={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -74,16 +76,14 @@ export default function Home() {
         onCategoryChange={setActiveCatId}
       />
 
+      <CampaignsSection campaigns={campaignsData} />
+
       <FeaturedProductsSection
         products={allProducts}
         loading={isLoading}
         activeCategoryId={activeCatId}
         categories={categories}
       />
-
-      <TrustBar />
-
-      <CampaignsSection campaigns={campaignsData} />
 
       <StoriesSection />
 

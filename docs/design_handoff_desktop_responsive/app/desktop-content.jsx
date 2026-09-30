@@ -35,7 +35,7 @@ function DeskBlog() {
       <Wrap>
         <Crumbs items={['Trang chủ', 'Cẩm nang']} />
         <PageTitle title="Cẩm nang đồ đồng" sub="Kiến thức chọn, bày và giữ gìn đồ đồng cho gia đình." />
-        <div className="noscroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: sm ? 20 : 32, ...(sm ? { margin: '0 -16px 20px', padding: '0 16px' } : {}) }}>
+        <div className="noscroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: blk(bp), ...(sm ? { margin: `0 -16px ${blk(bp)}px`, padding: '0 16px' } : {}) }}>
           {TAGS.map(t => <span key={t} onClick={() => setTag(t)} style={{ padding: '8px 14px', borderRadius: 18, fontSize: 13.5, whiteSpace: 'nowrap', cursor: 'pointer', background: t === tag ? 'var(--son)' : '#fffdf7', color: t === tag ? 'white' : 'var(--ink)', border: t === tag ? '1px solid var(--son)' : '1px solid var(--line)' }}>{t}</span>)}
         </div>
         <div style={{ marginBottom: sm ? 32 : 48 }}><PostCard p={first} big /></div>
@@ -93,27 +93,23 @@ function DeskContact() {
   const [sent, setSent] = React.useState(false);
   const row = (Ic, k, v, strong) => <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr)', gap: 10, padding: '14px 0', borderTop: '1px solid var(--line-2)' }}><Ic size={18} color="var(--son)" /><div><div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{k}</div><div style={{ fontSize: strong ? 20 : 15, fontFamily: strong ? 'Lora, serif' : 'inherit', fontWeight: strong ? 700 : 400, color: strong ? 'var(--son)' : 'var(--ink)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{v}</div></div></div>;
   return (
-    <DeskPage active="__contact">
+    <DeskPage active="__contact" noVisit>
       <Wrap>
         <Crumbs items={['Trang chủ', 'Liên hệ']} />
         <PageTitle title="Liên hệ" sub="Ghé xưởng tại làng Đại Bái hoặc nhắn cho chúng tôi, phản hồi trong giờ hành chính." />
-        <div style={{ position: 'relative', borderRadius: sm ? 8 : 12, overflow: 'hidden', height: pick(bp, { xl: 380, lg: 340, md: 300, sm: 220 }), background: 'repeating-linear-gradient(0deg, rgba(107,68,35,0.06) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, rgba(107,68,35,0.06) 0 1px, transparent 1px 40px), var(--ivory-2)', border: '1px solid var(--line)', marginBottom: sm ? 20 : 32 }}>
-          <div style={{ position: 'absolute', left: '50%', top: '46%', transform: 'translate(-50%,-100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <div style={{ background: '#fffdf7', border: '1px solid var(--line)', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -8px rgba(0,0,0,0.3)' }}>Xưởng Đồ Đồng Trường Thơi</div>
-            <IconPin size={30} color="var(--son)" />
-          </div>
-          <div style={{ position: 'absolute', left: 12, bottom: 12, fontSize: 11.5, color: 'var(--muted)', background: 'rgba(255,253,247,0.9)', padding: '4px 8px', borderRadius: 4 }}>Nhúng Google Maps tại đây</div>
-          <button style={{ ...deskBtn(true), position: 'absolute', right: 12, bottom: 12, height: 40, fontSize: 13 }}>Chỉ đường →</button>
+        <div style={{ position: 'relative', marginBottom: blk(bp) }}>
+          <MapEmbed height={pick(bp, { xl: 380, lg: 340, md: 300, sm: 240 })} radius={sm ? 8 : 12} z={14} />
+          <a href={mapDir} target="_blank" rel="noopener" style={{ ...deskBtn(true), position: 'absolute', right: 12, bottom: 12, height: 40, fontSize: 13, textDecoration: 'none', boxShadow: '0 6px 16px -8px rgba(0,0,0,0.4)' }}>Chỉ đường →</a>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: compact ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1.3fr)', gap: pick(bp, { xl: 48, lg: 32, md: 24, sm: 20 }), alignItems: 'start', marginBottom: vpad(bp) }}>
           <div>
             <div style={{ fontFamily: 'Lora, serif', fontSize: 20, fontWeight: 600, marginBottom: 6 }}>Thông tin</div>
-            {row(IconPhone, 'Hotline · Zalo', '0899 012 288', true)}
-            {row(IconPin, 'Xưởng & showroom', 'Làng Đại Bái, Gia Bình, Bắc Ninh')}
-            {row(IconBox, 'Giờ mở cửa', 'Thứ 2 – Chủ nhật · 7:30 – 18:00')}
-            {row(IconMail, 'Email', 'dodongtruongthoi@gmail.com')}
+            {row(IconPhone, 'Hotline · Zalo', SHOP.phone, true)}
+            {row(IconPin, 'Xưởng & showroom', SHOP.address)}
+            {row(IconBox, 'Giờ mở cửa', SHOP.hours)}
+            {row(IconMail, 'Email', SHOP.email)}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
-              <button style={deskBtn(true)}><IconPhone size={16} /> Gọi ngay</button>
+              <a href={'tel:' + SHOP.tel} style={{ ...deskBtn(true), textDecoration: 'none' }}><IconPhone size={16} /> Gọi ngay</a>
               <button style={deskBtn(false)}><IconZalo size={18} /> Zalo</button>
             </div>
           </div>

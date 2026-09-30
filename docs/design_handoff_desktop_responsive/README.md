@@ -30,6 +30,16 @@ Content container: `max-width: 1344px` (1280 + 2×32 padding). Horizontal paddin
 - Buttons: height 50 (44–46 in mobile bottom bars), padding 0 22, 15px/600. Primary: `--son` bg, white text. Secondary: 1.5px `--son` border, `--son` text.
 - Shadows: mega-menu `0 28px 40px -28px rgba(42,31,26,.45)`; mobile bottom bar `0 -8px 20px -12px rgba(0,0,0,.25)`.
 
+## Spacing system (all pages)
+Use three spacing steps everywhere; don't use ad-hoc margins between sections:
+- **Section** `vpad`: 72 / 64 / 56 / 40 (xl / lg / md / sm). Gap between page sections: home sections, PDP → tabs → related, the last block → VisitBlock.
+- **Block** `blk`: 32 / 28 / 24 / 20. From a page title or toolbar (tags, filters, search row, map) to its content.
+- **Grid** `ggap`: 24 / 20 / 16 / 12. Gaps in card grids.
+
+Every page starts the same way: Breadcrumbs (md+) → `PageTitle` (h1 36 / 34 / 30 / 24 + optional sub), then `blk`, then content. Inside a page, each section starts with `DeskHeading`.
+
+Suggested Tailwind mapping: section `mt-10 md:mt-14 lg:mt-16 xl:mt-[72px]`, block `mb-5 md:mb-6 lg:mb-7 xl:mb-8`, grid `gap-3 md:gap-4 lg:gap-5 xl:gap-6`.
+
 ## Global shell
 ### Desktop header (lg+) — `DeskHeader` in `app/desktop-shell.jsx`
 - Sticky, height 76, background `--ivory`, bottom border `--line`.
@@ -55,15 +65,33 @@ Hamburger, logo with tagline, then icons (tra cứu, heart, cart). A second row 
 Unchanged pattern: hamburger · centered logo · search icon · cart.
 ### Breadcrumbs (md+)
 13px `--muted`, chevron separators, last item `--ink`. Hidden on mobile.
+### Showroom block — `VisitBlock` (above the footer on every page except Liên hệ)
+- Full-width band: `--ivory-2` background, top border `--line`, padding 40 (28 at sm).
+- Left side:
+  - eyebrow "SHOWROOM & XƯỞNG";
+  - title "Xưởng sản xuất & Showroom" (Lora 26/24/22);
+  - an info row that wraps: pin icon + address, phone icon + hotline (Lora 19/700 `--son`, tabular-nums), clock + "T2–CN: 7:30 – 18:00".
+- Right side: 2 equal buttons (max 380w at lg+):
+  - **Gọi ngay:** primary, links to `tel:`.
+  - **Chỉ đường:** secondary on `#fffdf7`, opens a Google Maps directions URL in a new tab.
+- md: the buttons move below the info. sm: everything stacks, the info items become a column, buttons are 2 columns full width.
+- **Embedded Google Map** (iframe, `loading="lazy"`, `title`, no API key: `https://maps.google.com/maps?q=<query>&z=15&hl=vi&output=embed`):
+  - lg+: the map sits on the right (info 1fr / map 1.15fr, 240h).
+  - md/sm: the map goes below the buttons (240/200h).
+  - The Liên hệ page uses the same embed at 380/340/300/240h, with a "Chỉ đường →" button overlaid.
+  - Buttons are real links: `tel:` and `https://www.google.com/maps/dir/?api=1&destination=<query>`.
+  - Replace the query with the shop's exact Google Maps place (or its embed URL from Share → Embed) once confirmed.
+- Address, phone and hours must come from one shared config/constant, also used by Liên hệ, the footer and MenuDrawer.
+
 ### Footer — `DeskFooter`
-- **lg/xl:** 5-column grid `1.5fr 1fr 1fr 1fr 1.3fr`:
+- **lg/xl:** 4-column grid `1.6fr 1fr 1fr 1fr`:
   - Brand block: logo, one-line description, 4 round social buttons (40px)
   - **Sản phẩm** (the 4 groups)
   - **Hỗ trợ:** Tra cứu đơn hàng, Hướng dẫn mua hàng, Câu hỏi thường gặp, Cẩm nang
   - **Chính sách:** Đổi trả, Vận chuyển & lắp đặt, Bảo hành, Thanh toán
-  - **Liên hệ:** hotline in Lora 19/700 `--gold`, email, address, "Xem bản đồ →"
-- **md:** brand and socials in one row above a rule, then the 4 link columns in one row.
-- **sm:** brand row, then the link columns in a 2×2 grid.
+- Contact details live in `VisitBlock`, not the footer.
+- **md:** brand and socials in one row above a rule, then the 3 link columns in one row.
+- **sm:** brand row, then the link columns in a 2-column grid.
 - Legal bar: 12px, 60% opacity.
 - Background `--ink`, text `rgba(244,237,224,.78)`, headings `.label-mono` in `--gold`.
 ### Mobile bottom action bar
@@ -76,8 +104,19 @@ Sticky at the bottom on PDP, Cart and Checkout (sm only): price on the left, CTA
    - Hero: 2fr/1fr grid (440h at xl) with a main banner, carousel dots and 2 side banners. At md/sm the side banners go below in 2 columns.
    - Category strip: 5 cards in a row (md: 3 columns; sm: horizontal pill scroller).
    - Featured grid: 4 / 3 / 3 / 2 columns, gap 24 / 20 / 16 / 12.
+   - **Section order (changed from the live `src/app/page.tsx`, reorder it):** Banner → **TrustBar** (compact strip, directly under the hero) → Category strip → **CampaignsSection** → Featured → Stories → VisitBlock (StoreLocations) → Footer.
+     - Why: reassurance first; promos are time-sensitive, so they sit high in the page; a promo CTA leads straight into products.
+     - When there are 0 campaigns, Categories flows directly into Featured.
+   - Trust bar: compact strip, 4 columns (2×2 at md and below), padding 16/20 (12/10 at sm), title Lora 16 (14 at sm).
+   - **Spacing rhythm:** Hero and TrustBar form one group (gap 24 / 16 at sm). Every following section is a `<section>` with the same top margin (72 / 64 / 56 / 40 by bp) and starts with `DeskHeading` (eyebrow + Lora title + optional action + dongson rule). Don't use ad-hoc margins between sections.
+   - **Categories:** heading "Mua theo danh mục"; 5 square image tiles (name Lora 17 + count) at md+; at sm a horizontal scroller with tiles 30% wide. Image-led so it reads differently from the text-only TrustBar above.
+   - **CampaignsSection** (boards `[campaign-one-*] [campaign-many-*]`):
+     - Heading "Ưu đãi / Chương trình khuyến mãi"; the whole section (heading included) is hidden when there are 0 campaigns.
+     - Compact red cards (radius 10, padding 26/28): eyebrow "Giảm X · dates", Lora 24 title (28 when there is only 1), one-line description, solid ivory CTA "Xem ưu đãi →" (44h).
+     - At xl, and for a single campaign at md+, the CTA sits on the right, vertically centred. Otherwise it goes below, pinned to the card bottom.
+     - 2–3 campaigns: grid at md+, horizontal scroller at 85% width at sm.
+     - Keep campaigns out of the hero side banners, so the same promo isn't shown twice above the fold.
    - Story cards: 2 columns (1 column at md and below).
-   - Trust bar: 4 columns (2×2 at md and below).
 3. **Categories index** `[cats-*]` → `src/app/categories/page.tsx`
    - 6-column grid: the first 2 tiles span 3, the other 3 span 2.
    - md: 2 columns, first tile full width. sm: horizontal cards (110px image).
@@ -133,6 +172,7 @@ The current flow shows full order data from a phone number alone. **The API must
 - **Desktop header:** replace the dead `Header.tsx` with it. Show at `lg:`, keep `TopBar` below `lg`.
 - **MegaMenu, Breadcrumbs, FilterSidebar:** new; FilterSidebar is desktop-only, `BottomSheet` stays for mobile.
 - **Footer:** rework `Footer.tsx`.
+- **VisitBlock:** new, rendered in the root layout above the footer and hidden on `/lien-he`.
 - **Order lookup:** new `OrderLookup` state machine (phone → list → verify → locked | detail).
 - **New pages:** `BlogList`, `BlogPost`, `ContactPage`.
 - Verify `ProductCard`, `Carousel`, `CatPill` and `ContactBubbles` at 3–4-column widths.

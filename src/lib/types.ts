@@ -5,6 +5,7 @@ export interface Category {
   name: string
   productCount: number
   tone: CategoryTone
+  imageUrl?: string
 }
 
 export interface VariantAttr {

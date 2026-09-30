@@ -159,7 +159,7 @@ const STORIES = [
 ];
 
 const STORES = [
-  { id: 'main', name: 'Xưởng sản xuất & Showroom', addr: 'Làng Đại Bái, Gia Bình, Bắc Ninh', phone: '0899012288', hours: 'T2–CN: 7:00 — 20:00' },
+  { id: 'main', name: 'Xưởng sản xuất & Showroom', addr: 'Làng Đại Bái, Gia Bình, Bắc Ninh', phone: '0899012288', hours: 'T2–CN: 7:30 – 18:00' },
 ];
 
 const FAQS = [
