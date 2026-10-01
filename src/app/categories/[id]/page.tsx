@@ -2,14 +2,24 @@
 
 import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
+
+const PAGE_SIZE = 9
 import { IconFilter, IconGrid, IconList, IconStar } from '@/components/icons'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Container } from '@/components/layout/Container'
+import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
+import { DeskHeader } from '@/components/layout/Header'
 import { TopBar } from '@/components/layout/TopBar'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
+import { FilterSidebar } from '@/components/layout/FilterSidebar'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
-import { ProductCardSkeleton, ProductCardV2 } from '@/components/ui/ProductCard'
-import { CATEGORIES } from '@/lib/data'
+import { SortSelect } from '@/components/ui/SortSelect'
+import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
+import { VariantSwatch } from '@/components/ui/VariantSwatch'
+import { BG_TONES, CATEGORIES } from '@/lib/data'
 import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Price } from '@/components/ui/Price'
@@ -94,7 +104,8 @@ export default function CategoryPage() {
   const [priceRange, setPriceRange] = useState<
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
-  const [ratingFilter, setRatingFilter] = useState<'all' | '4+' | '5'>('all')
+  const [sizeFilter, setSizeFilter] = useState<string | null>(null)
+  const [bgTone, setBgTone] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
@@ -102,7 +113,9 @@ export default function CategoryPage() {
   const [pendingPriceRange, setPendingPriceRange] = useState<
     'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
   >('all')
-  const [pendingRating, setPendingRating] = useState<'all' | '4+' | '5'>('all')
+  const [pendingSizeFilter, setPendingSizeFilter] = useState<string | null>(null)
+  const [pendingBgTone, setPendingBgTone] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState({ key: '', count: PAGE_SIZE })
 
   const { data: categoriesData = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
   const categories = useMemo(
@@ -115,6 +128,11 @@ export default function CategoryPage() {
     activeCategoryId ? () => fetchProducts({ category: activeCategoryId }) : null
   )
 
+  // Paging resets automatically whenever the filter key changes
+  const filterKey = JSON.stringify([activeCategoryId, sort, priceRange, sizeFilter, bgTone, query])
+  const visibleProductsCount = expanded.key === filterKey ? expanded.count : PAGE_SIZE
+  const loadMore = () => setExpanded({ key: filterKey, count: visibleProductsCount + PAGE_SIZE })
+
   const category = useMemo(
     () => categories.find((item) => item.id === activeCategoryId),
     [activeCategoryId, categories]
@@ -123,14 +141,35 @@ export default function CategoryPage() {
   const activeFilterCount = useMemo(() => {
     let count = 0
     if (priceRange !== 'all') count++
-    if (ratingFilter !== 'all') count++
+    if (sizeFilter !== null) count++
+    if (bgTone !== null) count++
     return count
-  }, [priceRange, ratingFilter])
+  }, [priceRange, sizeFilter, bgTone])
 
-  const visibleProducts = useMemo(() => {
+  // Search-scoped base list, before price/size/bg-tone filtering — also used to derive
+  // the dynamic size filter options.
+  const scopedProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
+    if (normalizedQuery.length === 0) return products
+    return products.filter(
+      (product) =>
+        product.title.toLowerCase().includes(normalizedQuery) ||
+        product.subtitle.toLowerCase().includes(normalizedQuery)
+    )
+  }, [products, query])
 
-    const filtered = products.filter((product) => {
+  const sizeOptions = useMemo(() => {
+    const byCode = new Map<string, string>()
+    for (const product of scopedProducts) {
+      for (const size of product.sizes) {
+        if (!byCode.has(size.code)) byCode.set(size.code, size.name)
+      }
+    }
+    return Array.from(byCode, ([code, name]) => ({ code, name }))
+  }, [scopedProducts])
+
+  const allVisibleProducts = useMemo(() => {
+    const filtered = scopedProducts.filter((product) => {
       const price = product.discountPrice ?? product.price
 
       const priceMatch =
@@ -144,19 +183,14 @@ export default function CategoryPage() {
                 ? price > 3_000_000 && price <= 5_000_000
                 : price > 5_000_000
 
-      const ratingMatch =
-        ratingFilter === 'all'
+      const sizeMatch = sizeFilter === null ? true : product.sizes.some((s) => s.code === sizeFilter)
+
+      const bgToneMatch =
+        bgTone === null
           ? true
-          : ratingFilter === '4+'
-            ? product.rating >= 4
-            : product.rating === 5
+          : product.defaultVariant['bg_tone'] === bgTone
 
-      const queryMatch =
-        normalizedQuery.length === 0 ||
-        product.title.toLowerCase().includes(normalizedQuery) ||
-        product.subtitle.toLowerCase().includes(normalizedQuery)
-
-      return priceMatch && ratingMatch && queryMatch
+      return priceMatch && sizeMatch && bgToneMatch
     })
 
     if (sort === 'price-asc') {
@@ -169,12 +203,14 @@ export default function CategoryPage() {
       return [...filtered].sort((a, b) => b.rating - a.rating)
     }
     return filtered
-  }, [products, priceRange, ratingFilter, query, sort])
+  }, [scopedProducts, priceRange, sizeFilter, bgTone, sort])
+
+  const visibleProducts = useMemo(() => {
+    return allVisibleProducts.slice(0, visibleProductsCount)
+  }, [allVisibleProducts, visibleProductsCount])
 
   const pendingVisibleCount = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-
-    const filtered = products.filter((product) => {
+    const filtered = scopedProducts.filter((product) => {
       const price = product.discountPrice ?? product.price
 
       const priceMatch =
@@ -188,31 +224,51 @@ export default function CategoryPage() {
                 ? price > 3_000_000 && price <= 5_000_000
                 : price > 5_000_000
 
-      const ratingMatch =
-        pendingRating === 'all'
+      const sizeMatch = pendingSizeFilter === null ? true : product.sizes.some((s) => s.code === pendingSizeFilter)
+
+      const bgToneMatch =
+        pendingBgTone === null
           ? true
-          : pendingRating === '4+'
-            ? product.rating >= 4
-            : product.rating === 5
+          : product.defaultVariant['bg_tone'] === pendingBgTone
 
-      const queryMatch =
-        normalizedQuery.length === 0 ||
-        product.title.toLowerCase().includes(normalizedQuery) ||
-        product.subtitle.toLowerCase().includes(normalizedQuery)
-
-      return priceMatch && ratingMatch && queryMatch
+      return priceMatch && sizeMatch && bgToneMatch
     })
 
     return filtered.length
-  }, [products, pendingPriceRange, pendingRating, query])
+  }, [scopedProducts, pendingPriceRange, pendingSizeFilter, pendingBgTone])
 
   return (
     <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
+      <DeskHeader />
       <TopBar title={category?.name ?? 'Danh mục'} onMenu={() => setIsMenuOpen(true)} />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Sản phẩm', href: '/products' }, { label: category?.name ?? 'Danh mục' }]} />
+
+      {/* Desktop heading row — hidden below lg */}
+      <Container className="hidden lg:flex" style={{ alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: 20 }}>
+        <div>
+          <Heading as="h1" size="xl">{category?.name ?? 'Danh mục'}</Heading>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
+            {isLoading ? '...' : `${visibleProducts.length} / ${allVisibleProducts.length} sản phẩm`}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Sắp xếp:</span>
+          <SortSelect
+            value={sort}
+            onChange={(v) => setSort(v as typeof sort)}
+            options={[
+              { value: 'featured', label: 'Nổi bật' },
+              { value: 'price-asc', label: 'Giá: thấp → cao' },
+              { value: 'price-desc', label: 'Giá: cao → thấp' },
+              { value: 'rating-desc', label: 'Đánh giá cao' },
+            ]}
+          />
+        </div>
+      </Container>
 
       {/* Category pills strip — sticky below TopBar */}
-      <div style={{ position: 'sticky', top: 57, zIndex: 30, background: 'var(--bg-page)', borderBottom: '1px solid var(--border-soft)' }}>
+      <div className="lg:hidden sticky top-[57px] md:top-[69px] lg:top-[76px]" style={{ zIndex: 30, background: 'var(--bg-page)', borderBottom: '1px solid var(--border-soft)' }}>
         <div style={{ display: 'flex', overflowX: 'auto', padding: '10px 14px', gap: 7 }} className="noscroll">
           {categories.map((item) => {
             const isActive = item.id === activeCategoryId
@@ -243,15 +299,14 @@ export default function CategoryPage() {
       </div>
 
       {/* Sort/filter/view bar */}
-      <div style={{
-        display: 'flex',
+      <div className="flex lg:hidden" style={{
         alignItems: 'center',
         padding: '10px 14px',
         borderBottom: '1px solid var(--border-soft)',
         gap: 8,
       }}>
         <div style={{ flex: 1, fontSize: 12, color: 'var(--text-muted)' }}>
-          {visibleProducts.length} sản phẩm
+          {visibleProducts.length} / {allVisibleProducts.length} sản phẩm
         </div>
         <select
           value={sort}
@@ -273,7 +328,7 @@ export default function CategoryPage() {
         </select>
         <button
           type="button"
-          onClick={() => { setPendingPriceRange(priceRange); setPendingRating(ratingFilter); setFilterSheetOpen(true) }}
+          onClick={() => { setPendingPriceRange(priceRange); setPendingSizeFilter(sizeFilter); setPendingBgTone(bgTone); setFilterSheetOpen(true) }}
           style={{
             display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
             padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 4,
@@ -313,60 +368,102 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      <div style={{ paddingBottom: 100 }}>
-        {isLoading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-                <ProductCardSkeleton compact />
-              </div>
-            ))}
-          </div>
-        ) : visibleProducts.length === 0 ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 10, padding: '22px 14px', margin: 16,
-            border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
-          }}>
-            <div style={{ width: 170 }}>
-              <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
+      <Container>
+        <div className="grid grid-cols-1 gap-0 lg:grid-cols-[216px_minmax(0,1fr)] lg:items-start lg:gap-7 xl:grid-cols-[248px_minmax(0,1fr)] xl:gap-10">
+          <FilterSidebar
+            categories={categories}
+            activeCategoryId={activeCategoryId}
+            onCategoryChange={setActiveCategoryId}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            sizeOptions={sizeOptions}
+            sizeFilter={sizeFilter}
+            onSizeFilterChange={setSizeFilter}
+            bgTone={bgTone}
+            onBgToneChange={setBgTone}
+            onClearAll={() => {
+              setPriceRange('all')
+              setSizeFilter(null)
+              setBgTone(null)
+            }}
+          />
+
+          <div style={{ paddingBottom: 100 }}>
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
-            <Heading as="h3" size="sm" style={{ textAlign: 'center' }}>
-              Không tìm thấy sản phẩm
-            </Heading>
-            <Btn type="button" variant="outline" onClick={() => { setQuery(''); setPriceRange('all'); setSort('featured') }}>
-              Xem tất cả
-            </Btn>
-          </div>
-        ) : view === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'start', borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
-            {visibleProducts.map((product, idx) => (
-              <ProductCardV2
-                key={product.id}
-                product={product}
-                tall={idx % 2 === 0}
-                style={idx % 4 === 3 ? { background: 'var(--ivory-3, #e5d9c0)' } : undefined}
-                onOpen={() => { window.location.href = `/products/${product.id}` }}
-              />
-            ))}
-            {/* Fill empty cell if odd count */}
-            {visibleProducts.length % 2 !== 0 && (
-              <div style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'rgba(244,237,224,0.4)' }} />
-            )}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {visibleProducts.map((product) => (
-              <CatListRow
-                key={product.id}
-                product={product}
-                categories={categories}
-                onOpen={() => { window.location.href = `/products/${product.id}` }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          ) : visibleProducts.length === 0 ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10, padding: '22px 14px', margin: 16,
+              border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
+            }}>
+              <div style={{ width: 170 }}>
+                <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
+              </div>
+              <Heading as="h3" size="sm" style={{ textAlign: 'center' }}>
+                Không tìm thấy sản phẩm
+              </Heading>
+              <Btn type="button" variant="outline" onClick={() => { setQuery(''); setPriceRange('all'); setBgTone(null); setSort('featured') }}>
+                Xem tất cả
+              </Btn>
+            </div>
+          ) : view === 'grid' ? (
+            <>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
+                {visibleProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onOpen={() => { window.location.href = `/products/${product.id}` }}
+                  />
+                ))}
+              </div>
+              {visibleProducts.length < allVisibleProducts.length && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', gap: 8 }}>
+                  <Btn
+                    type="button"
+                    variant="outline"
+                    onClick={() => loadMore()}
+                    style={{ width: '240px', height: '50px', fontSize: '15px', fontWeight: 600 }}
+                  >
+                    Xem thêm sản phẩm
+                  </Btn>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {visibleProducts.map((product) => (
+                  <CatListRow
+                    key={product.id}
+                    product={product}
+                    categories={categories}
+                    onOpen={() => { window.location.href = `/products/${product.id}` }}
+                  />
+                ))}
+              </div>
+              {visibleProducts.length < allVisibleProducts.length && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', gap: 8 }}>
+                  <Btn
+                    type="button"
+                    variant="outline"
+                    onClick={() => loadMore()}
+                    style={{ width: '240px', height: '50px', fontSize: '15px', fontWeight: 600 }}
+                  >
+                    Xem thêm sản phẩm
+                  </Btn>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        </div>
+      </Container>
 
       {/* Filter Bottom Sheet */}
       <BottomSheet
@@ -380,7 +477,8 @@ export default function CategoryPage() {
               variant="ghost"
               onClick={() => {
                 setPendingPriceRange('all')
-                setPendingRating('all')
+                setPendingSizeFilter(null)
+                setPendingBgTone(null)
               }}
               style={{ flex: 1 }}
             >
@@ -391,7 +489,8 @@ export default function CategoryPage() {
               variant="primary"
               onClick={() => {
                 setPriceRange(pendingPriceRange)
-                setRatingFilter(pendingRating)
+                setSizeFilter(pendingSizeFilter)
+                setBgTone(pendingBgTone)
                 setFilterSheetOpen(false)
               }}
               style={{ flex: 1 }}
@@ -437,24 +536,20 @@ export default function CategoryPage() {
             </div>
           </div>
 
-          {/* Rating section */}
+          {/* Size section */}
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
-              Đánh giá
+              Kích thước
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { id: 'all', label: 'Tất cả' },
-                { id: '4+', label: '4★ trở lên' },
-                { id: '5', label: '5★' },
-              ].map((item) => {
-                const active = pendingRating === item.id
+              {[{ code: null as string | null, label: 'Tất cả' }, ...sizeOptions.map((s) => ({ code: s.code, label: s.name }))].map((item) => {
+                const active = pendingSizeFilter === item.code
                 return (
                   <Btn
-                    key={item.id}
+                    key={item.code ?? 'all'}
                     type="button"
                     variant={active ? 'primary' : 'outline'}
-                    onClick={() => setPendingRating(item.id as 'all' | '4+' | '5')}
+                    onClick={() => setPendingSizeFilter(item.code)}
                     style={{
                       borderRadius: 100,
                       borderColor: active ? 'var(--accent)' : 'var(--border)',
@@ -465,6 +560,24 @@ export default function CategoryPage() {
                   </Btn>
                 )
               })}
+            </div>
+          </div>
+
+          {/* Background tone section */}
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
+              Màu nền
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {BG_TONES.map((tone) => (
+                <VariantSwatch
+                  key={tone.id}
+                  tone={tone.id}
+                  active={pendingBgTone === tone.id}
+                  size={32}
+                  onClick={() => setPendingBgTone(pendingBgTone === tone.id ? null : tone.id)}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -512,6 +625,10 @@ export default function CategoryPage() {
           })}
         </div>
       </BottomSheet>
+
+      <StoreLocationsSection />
+
+      <Footer />
     </div>
   )
 }

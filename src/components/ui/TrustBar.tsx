@@ -1,54 +1,59 @@
 export function TrustBar() {
   const items = [
-    { value: '10 năm', label: 'Bảo hành chống xỉn' },
-    { value: '100%', label: 'Đồng nguyên chất' },
-    { value: 'COD', label: 'Thanh toán khi nhận' },
+    { title: 'Đồng nguyên chất 99%', subtitle: 'Có giấy bảo hành chất liệu' },
+    { title: 'Chế tác thủ công', subtitle: 'Nghệ nhân làng Đại Bái' },
+    { title: 'Bảo hành 12 tháng', subtitle: 'Bảo dưỡng trọn đời' },
+    { title: 'Giao & lắp đặt', subtitle: 'Toàn quốc 5–7 ngày' },
   ]
 
   return (
     <section
+      className="mx-auto w-full lg:max-w-[1344px] grid grid-cols-2 md:grid-cols-4"
       style={{
-        background: 'var(--bg-dark)',
-        color: 'var(--text-on-dark)',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-        borderTop: '1px solid rgba(244,237,224,0.08)',
-        borderBottom: '1px solid rgba(244,237,224,0.08)',
+        background: 'var(--bg-page)',
+        borderTop: '1px solid var(--border)',
       }}
     >
-      {items.map((item, index) => (
-        <div
-          key={item.label}
-          style={{
-            padding: '16px 12px',
-            textAlign: 'center',
-            borderRight: index < items.length - 1 ? '1px solid rgba(244,237,224,0.08)' : 'none',
-          }}
-        >
+      {items.map((item, index) => {
+        // On mobile (2-column): left border on odd indices (1, 3)
+        // On md+ (4-column): left border on every index except 0
+        const mobileLeftBorder = index % 2 === 1 ? 'border-l' : 'border-l-0'
+        const desktopLeftBorder = index > 0 ? 'md:border-l' : 'md:border-l-0'
+        return (
           <div
+            key={item.title}
             style={{
-              fontFamily: 'var(--font-lora), serif',
-              fontSize: 17,
-              fontWeight: 600,
-              color: 'var(--gold)',
-              lineHeight: 1.1,
-              marginBottom: 4,
+              padding: 'clamp(12px, 2vw, 16px) clamp(10px, 2vw, 20px)',
+              borderBottom: '1px solid var(--border)',
+              borderLeftColor: 'var(--border)',
             }}
+            className={`${mobileLeftBorder} ${desktopLeftBorder}`}
           >
-            {item.value}
+            <div
+              style={{
+                fontFamily: 'var(--font-lora), serif',
+                fontSize: 'clamp(14px, 2vw, 16px)',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                lineHeight: 1.1,
+                marginBottom: 2,
+              }}
+            >
+              {item.title}
+            </div>
+            <div
+              style={{
+                fontSize: 'clamp(11.5px, 1.5vw, 13px)',
+                color: 'var(--text-muted)',
+                marginTop: 2,
+                lineHeight: 1.3,
+              }}
+            >
+              {item.subtitle}
+            </div>
           </div>
-          <div
-            style={{
-              fontSize: 9.5,
-              color: 'rgba(244,237,224,0.62)',
-              marginTop: 3,
-              lineHeight: 1.3,
-            }}
-          >
-            {item.label}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </section>
   )
 }

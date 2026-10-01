@@ -1,6 +1,10 @@
 'use client'
 
-import { IconClose, IconCompare, IconHeart, IconStar } from '@/components/icons'
+import { IconClose, IconCompare, IconHeart, IconPhone, IconStar } from '@/components/icons'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Footer } from '@/components/layout/Footer'
+import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
+import { DeskHeader } from '@/components/layout/Header'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Btn } from '@/components/ui/Btn'
@@ -10,6 +14,7 @@ import { Price } from '@/components/ui/Price'
 import { ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
+import { HOTLINE } from '@/lib/constants'
 import { DEFAULT_PLACE_LABELS, DEFAULT_SPEC_LABELS, PRODUCTS, ZODIAC } from '@/lib/data'
 import { pickVariantImage } from '@/lib/image'
 import { resolveSKUPrice, resolveSizeDisplayPrice } from '@/lib/sku'
@@ -21,6 +26,7 @@ import {
   upsertCartItem,
 } from '@/lib/storage'
 import {
+  fetchCategories,
   fetchProduct,
   fetchProductReviews,
   fetchProducts,
@@ -213,6 +219,8 @@ function ProductDetailPageInner() {
       : null
   )
 
+  const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
+
   const { data: settings = {} } = useSWR(SWR_KEYS.settings, fetchSettings)
 
   const labelOverrides = useMemo(() => parseLabelOverrides(settings), [settings])
@@ -270,6 +278,7 @@ function ProductDetailPageInner() {
   }, [product])
 
   const category = product?.categoryId ?? ''
+  const categoryName = categories.find((c) => c.id === category)?.name ?? category
 
   const selectedSize =
     product?.sizes.find((size) => size.id === resolvedSizeId) ?? product?.sizes[0]
@@ -278,7 +287,7 @@ function ProductDetailPageInner() {
         product.skus,
         selectedSize?.code,
         resolvedAttrs,
-        product.discountPrice ?? product.price
+        selectedSize?.price ?? product.discountPrice ?? product.price
       )
     : 0
   const isSaved = product ? savedVariants.some((v) => v.productId === product.id) : false
@@ -336,6 +345,7 @@ function ProductDetailPageInner() {
   if (isLoading) {
     return (
       <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
+        <DeskHeader />
         <TopBar title="Chi tiết sản phẩm" onBack={() => window.history.back()} />
         <div style={{ padding: '12px 16px 0' }}>
           <div
@@ -431,12 +441,21 @@ function ProductDetailPageInner() {
         </div>
       )}
 
+      <DeskHeader />
       <TopBar
         title="Chi tiết sản phẩm"
         onBack={() => window.history.back()}
         onOpenSaved={() => (window.location.href = '/saved')}
         savedCount={savedVariants.length}
       />
+      <Breadcrumbs
+        items={[
+          { label: 'Trang chủ', href: '/' },
+          { label: categoryName, href: `/categories/${category}` },
+          { label: product.title },
+        ]}
+      />
+      <div className="lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[1.25fr_1fr] lg:items-start lg:gap-14 lg:px-8">
       <div style={{ padding: '12px 16px 0' }}>
         <div
           style={{
@@ -579,6 +598,7 @@ function ProductDetailPageInner() {
         </div>
       </div>
 
+      <div className="lg:sticky lg:top-[92px]">
       <div style={{ padding: '16px 16px 0' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <Link
@@ -596,7 +616,7 @@ function ProductDetailPageInner() {
               textDecoration: 'none',
             }}
           >
-            ◦ Danh mục
+            ◦ {categoryName}
           </Link>
         </div>
         <Heading as="h1" size="xl" style={{ fontSize: 26, margin: '10px 0 6px', lineHeight: 1.15 }}>
@@ -633,7 +653,7 @@ function ProductDetailPageInner() {
           }}
         >
           <Price amount={currentPrice} size="lg" />
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>(đã bao gồm lắp đặt)</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Đã gồm VAT</div>
         </div>
       </div>
 
@@ -776,59 +796,133 @@ function ProductDetailPageInner() {
             Kích thước
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {product.sizes.map((size) => {
             const on = size.id === resolvedSizeId
+            const displayPrice = resolveSizeDisplayPrice(product.skus, size.code, size.price)
             return (
               <button
                 key={size.id}
                 type="button"
                 onClick={() => setSizeId(size.id)}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  alignItems: 'center',
-                  width: '100%',
-                  padding: 12,
-                  background: on ? 'rgba(139,30,30,0.06)' : 'transparent',
-                  border: 'none',
-                  borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  border: on ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                  background: on ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
                   cursor: 'pointer',
-                  textAlign: 'left',
+                  fontSize: 13,
+                  fontFamily: 'var(--font-be-vietnam), sans-serif',
+                  color: on ? 'var(--accent)' : 'var(--text-primary)',
+                  fontWeight: on ? 600 : 400,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  gap: 2,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-be-vietnam), sans-serif',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: on ? 'var(--accent)' : 'var(--text-primary)',
-                    }}
-                  >
-                    {size.name}
-                  </div>
-                </div>
-                <div
+                <span>{size.name}</span>
+                <span
                   style={{
-                    fontFamily: 'var(--font-lora), serif',
-                    fontWeight: 700,
-                    fontVariantNumeric: 'tabular-nums',
-                    fontSize: 16,
-                    color: on ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontSize: 11.5,
+                    color: 'var(--text-muted)',
+                    fontWeight: 400,
                   }}
                 >
-                  {resolveSizeDisplayPrice(product.skus, size.code, size.price).toLocaleString(
-                    'vi-VN'
-                  )}
-                  đ
-                </div>
+                  {displayPrice.toLocaleString('vi-VN')}đ
+                </span>
               </button>
             )
           })}
         </div>
       </div>
 
+      <div className="hidden md:flex" style={{ gap: 10, padding: '20px 16px 0' }}>
+        <Btn
+          type="button"
+          variant={isSaved ? 'outline' : 'ghost'}
+          size="lg"
+          onClick={() =>
+            setSavedVariants(toggleSavedProduct(product.id, resolvedAttrs, selectedSize?.id))
+          }
+          style={{
+            padding: '12px 14px',
+            borderRadius: 4,
+            background: isSaved ? 'rgba(139,30,30,0.08)' : 'transparent',
+            color: isSaved ? 'var(--accent)' : 'var(--text-primary)',
+            fontSize: 12,
+            letterSpacing: '0.05em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            borderColor: isSaved ? 'var(--accent)' : 'var(--text-primary)',
+          }}
+        >
+          <IconHeart size={14} color={isSaved ? 'var(--accent)' : 'currentColor'} filled={isSaved} />{' '}
+          {isSaved ? 'Đã lưu' : 'Lưu'}
+        </Btn>
+        <Btn
+          type="button"
+          size="lg"
+          onClick={() => {
+            upsertCartItem({
+              productId: product.id,
+              productTitle: product.title,
+              sizeId: selectedSize?.id,
+              sizeLabel: selectedSize?.name,
+              selectedAttrs: resolvedAttrs,
+              quantity: 1,
+              unitPrice: currentPrice,
+            })
+          }}
+          style={{
+            flex: 1,
+            padding: '12px 14px',
+            borderRadius: 4,
+            fontSize: 13,
+            letterSpacing: '0.03em',
+            background: 'transparent',
+            border: '1px solid var(--text-primary)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          Thêm vào giỏ
+        </Btn>
+        <Btn
+          type="button"
+          size="lg"
+          onClick={() => {
+            upsertCartItem({
+              productId: product.id,
+              productTitle: product.title,
+              sizeId: selectedSize?.id,
+              sizeLabel: selectedSize?.name,
+              selectedAttrs: resolvedAttrs,
+              quantity: 1,
+              unitPrice: currentPrice,
+            })
+            window.location.href = '/cart'
+          }}
+          style={{
+            flex: 1.3,
+            padding: '12px 14px',
+            borderRadius: 4,
+            fontSize: 13,
+          }}
+        >
+          Mua ngay · {currentPrice.toLocaleString('vi-VN')}đ
+        </Btn>
+      </div>
+      <div style={{ padding: '14px 16px 0', gap: 8, alignItems: 'center', fontSize: 13, color: 'var(--text-secondary)' }} className="hidden md:flex">
+        <IconPhone size={15} color="var(--accent)" /> Cần tư vấn kích thước? Gọi{' '}
+        <b style={{ color: 'var(--accent)' }}>{HOTLINE}</b>
+      </div>
+      </div>
+      </div>
+
+      <div className="lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[1.25fr_1fr] lg:items-start lg:gap-14 lg:px-8">
       <div style={{ marginTop: 24, borderTop: '1px solid var(--border-soft)' }}>
         <div
           style={{
@@ -1165,6 +1259,34 @@ function ProductDetailPageInner() {
         </div>
       </div>
 
+      <div
+        className="hidden lg:block"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, marginTop: 24 }}
+      >
+        <div className="label-mono" style={{ color: 'var(--bronze)', fontSize: 10.5, marginBottom: 12 }}>
+          Thông số chính
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {Object.entries(product.specs).slice(0, 6).map(([key, value], idx) => (
+            <div
+              key={`sidebar-spec-${idx}`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '140px minmax(0,1fr)',
+                gap: 12,
+                padding: '10px 0',
+                borderBottom: '1px solid var(--border-soft)',
+                fontSize: 14,
+              }}
+            >
+              <span style={{ color: 'var(--text-muted)' }}>{key}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      </div>
+
       {/* Related Products Section */}
       {relatedProducts.length > 0 && (
         <section style={{ padding: '28px 0 0' }}>
@@ -1193,22 +1315,18 @@ function ProductDetailPageInner() {
             </div>
           </div>
           <div
+            className="noscroll flex gap-2.5 overflow-x-auto md:grid md:grid-cols-3 md:gap-4 md:overflow-visible xl:grid-cols-4"
             style={{
-              display: 'flex',
-              gap: 10,
-              overflowX: 'auto',
               borderTop: '1px solid var(--border)',
               borderLeft: '1px solid var(--border)',
             }}
-            className="noscroll"
           >
             {relatedLoading
               ? [0, 1, 2].map((i) => (
                   <div
                     key={i}
+                    className="w-[148px] shrink-0 md:w-auto"
                     style={{
-                      flexShrink: 0,
-                      width: 148,
                       borderRight: '1px solid var(--border)',
                       borderBottom: '1px solid var(--border)',
                     }}
@@ -1216,7 +1334,7 @@ function ProductDetailPageInner() {
                     <ProductCardSkeleton compact />
                   </div>
                 ))
-              : relatedProducts.map((prod) => {
+              : relatedProducts.slice(0, 8).map((prod) => {
                   const imgUrl = prod.images[0]?.url ?? null
                   return (
                     <div
@@ -1229,9 +1347,8 @@ function ProductDetailPageInner() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') window.location.href = `/products/${prod.id}`
                       }}
+                      className="w-[148px] shrink-0 md:w-auto"
                       style={{
-                        flexShrink: 0,
-                        width: 148,
                         borderRight: '1px solid var(--border)',
                         borderBottom: '1px solid var(--border)',
                         background: 'var(--bg-page)',
@@ -1418,6 +1535,7 @@ function ProductDetailPageInner() {
       )}
 
       <div
+        className="flex md:hidden"
         style={{
           position: 'fixed',
           left: 0,
@@ -1427,7 +1545,6 @@ function ProductDetailPageInner() {
           backdropFilter: 'blur(10px)',
           borderTop: '1px solid var(--border)',
           padding: '12px 14px 22px',
-          display: 'flex',
           gap: 8,
           zIndex: 20,
         }}
@@ -1519,6 +1636,10 @@ function ProductDetailPageInner() {
           activeAttrs={resolvedAttrs}
         />
       )}
+
+      <StoreLocationsSection />
+
+      <Footer />
     </div>
   )
 }

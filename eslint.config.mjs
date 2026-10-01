@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     "design_template2/**",
     "design_templage/**",
     "dodongtruongthoi_design/**",
+    "docs/design_handoff_desktop_responsive/**",
     "node_modules/**",
   ]),
 ]);

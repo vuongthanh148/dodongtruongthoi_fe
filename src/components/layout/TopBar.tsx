@@ -1,7 +1,9 @@
-import { IconHeart, IconMenu, IconSearch } from '@/components/icons'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { IconBox, IconCart, IconHeart, IconMenu, IconSearch } from '@/components/icons'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
-import { getSavedProducts } from '@/lib/storage'
+import { getCartItems, getSavedProducts } from '@/lib/storage'
 import { useEffect, useState } from 'react'
 
 interface TopBarProps {
@@ -25,14 +27,24 @@ export function TopBar({
   onOpenSaved,
   onSearch,
 }: TopBarProps) {
+  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const [storedSavedCount, setStoredSavedCount] = useState(0)
+  const [cartCount, setCartCount] = useState(0)
+  const [tabletQuery, setTabletQuery] = useState('')
   const displayedSavedCount = typeof savedCount === 'number' ? savedCount : storedSavedCount
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setStoredSavedCount(getSavedProducts().length)
+    setCartCount(getCartItems().reduce((s, i) => s + i.quantity, 0))
   }, [])
+
+  function handleTabletSearchSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const q = tabletQuery.trim()
+    router.push(q ? `/products?q=${encodeURIComponent(q)}` : '/products')
+  }
 
   useEffect(() => {
     function handleScroll() {
@@ -46,6 +58,7 @@ export function TopBar({
   }, [])
 
   return (
+    <div className="lg:hidden">
     <header
       style={{
         padding: '12px 14px',
@@ -157,6 +170,7 @@ export function TopBar({
             variant="ghost"
             size="sm"
             onClick={onSearch}
+            className="md:hidden"
             style={{
               padding: 4,
               color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
@@ -165,6 +179,19 @@ export function TopBar({
             <IconSearch size={20} />
           </Btn>
         )}
+        <Link
+          href="/orders"
+          aria-label="Tra cứu đơn hàng"
+          className="hidden md:grid"
+          style={{
+            width: 44,
+            height: 44,
+            placeItems: 'center',
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+          }}
+        >
+          <IconBox size={20} />
+        </Link>
         {onOpenSaved && (
           <Btn
             type="button"
@@ -201,7 +228,82 @@ export function TopBar({
             </span>
           </Btn>
         )}
+        <Link
+          href="/cart"
+          aria-label="Giỏ hàng"
+          className="hidden md:grid"
+          style={{
+            position: 'relative',
+            width: 44,
+            height: 44,
+            placeItems: 'center',
+            color: variant === 'overlay' ? 'var(--text-on-dark)' : 'var(--text-primary)',
+          }}
+        >
+          <IconCart size={20} />
+          {cartCount > 0 && (
+            <span
+              suppressHydrationWarning
+              style={{
+                position: 'absolute',
+                top: 4,
+                right: 2,
+                minWidth: 14,
+                height: 14,
+                padding: '0 3px',
+                background: 'var(--accent)',
+                color: 'white',
+                borderRadius: 7,
+                fontSize: 9,
+                fontWeight: 700,
+                display: 'grid',
+                placeItems: 'center',
+                lineHeight: 1,
+              }}
+            >
+              {cartCount}
+            </span>
+          )}
+        </Link>
       </div>
     </header>
+    {variant !== 'overlay' && (
+      <form
+        onSubmit={handleTabletSearchSubmit}
+        className="brand-focus hidden md:flex"
+        style={{
+          alignItems: 'center',
+          gap: 8,
+          margin: '0 14px 12px',
+          height: 40,
+          borderRadius: 20,
+          border: '1px solid var(--border)',
+          background: 'var(--bg-card)',
+          padding: '0 14px',
+        }}
+      >
+        <IconSearch size={16} color="var(--text-muted)" />
+        <label htmlFor="tablet-search" className="sr-only">
+          Tìm kiếm sản phẩm
+        </label>
+        <input
+          id="tablet-search"
+          type="search"
+          value={tabletQuery}
+          onChange={(e) => setTabletQuery(e.target.value)}
+          placeholder="Tìm tranh đồng, đỉnh đồng, tượng đồng…"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            fontSize: 13,
+            color: 'var(--text-primary)',
+          }}
+        />
+      </form>
+    )}
+    </div>
   )
 }

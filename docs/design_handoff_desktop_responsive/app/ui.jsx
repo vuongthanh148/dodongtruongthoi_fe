@@ -1,0 +1,340 @@
+// Shared UI building blocks
+
+const fmtVND = (n) => n.toLocaleString('vi-VN') + 'đ';
+
+// ─── Bronze artwork — real image when imgSrc provided, CSS fallback otherwise ───
+// bg tint overlays simulate different nền: gold/red/bronze/dark
+const BG_TINTS = {
+  gold:   'rgba(180,130,30,0.0)',       // natural — no tint
+  red:    'rgba(100,20,10,0.35)',        // deep red overlay
+  bronze: 'rgba(60,30,5,0.3)',          // warm brown
+  dark:   'rgba(5,3,1,0.55)',           // near-black dim
+};
+
+function ArtPiece({ bg = 'gold', frame = 'bronze', label = 'Tranh đồng', pad = 10, aspect = '16 / 9', style = {}, imgSrc }) {
+  const frameCls = { bronze: 'frame-bronze', gold: 'frame-gold', dark: 'frame-dark', carved: 'frame-carved' }[frame];
+  const bgCls    = { gold: 'bronze-art gold', red: 'bronze-art red', bronze: 'bronze-art', dark: 'bronze-art dark' }[bg];
+
+  return (
+    <div className={`art-frame ${frameCls}`} style={{ '--p': `${pad}px`, aspectRatio: aspect, ...style }}>
+      {imgSrc ? (
+        /* ── Real image mode ── */
+        <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.2)' }}>
+          <img
+            src={imgSrc}
+            alt={label}
+            style={{
+              width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: 'center',
+              display: 'block',
+            }}
+          />
+          {/* Tint overlay for bg variant */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: BG_TINTS[bg] || 'transparent',
+            mixBlendMode: 'multiply',
+            pointerEvents: 'none',
+          }} />
+          {/* Subtle vignette */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            boxShadow: 'inset 0 0 24px rgba(0,0,0,0.25)',
+            pointerEvents: 'none',
+          }} />
+        </div>
+      ) : (
+        /* ── CSS placeholder fallback ── */
+        <div className={bgCls} style={{ width: '100%', height: '100%', position: 'relative', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.25)' }}>
+          <svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.45, mixBlendMode: 'overlay' }}>
+            <g fill="none" stroke="rgba(255,220,140,0.9)" strokeWidth="0.4">
+              <circle cx="40" cy="45" r="22" /><circle cx="40" cy="45" r="16" /><circle cx="40" cy="45" r="10" />
+              <path d="M14 60 Q 30 50, 50 62 T 88 60" />
+              <path d="M90 70 Q 110 58, 130 68 T 158 66" />
+              <path d="M100 30 q 6 -10 16 -6 q 10 4 4 14" />
+            </g>
+            <g fill="rgba(255,220,140,0.5)"><circle cx="40" cy="45" r="2" /></g>
+          </svg>
+          <div style={{ position: 'absolute', left: 8, bottom: 6, fontFamily: 'Be Vietnam Pro, sans-serif', fontSize: 9, color: 'rgba(255,220,140,0.7)', letterSpacing: '0.08em' }}>
+            {label}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Variant swatch ───
+function VariantSwatch({ tone, active, onClick, size = 22 }) {
+  const t = BG_TONES.find(b => b.id === tone) || BG_TONES[0];
+  return (
+    <button onClick={onClick} aria-label={t.name} style={{
+      width: size, height: size, borderRadius: '50%', background: t.hex,
+      border: active ? '2px solid var(--son)' : '1.5px solid rgba(42,31,26,0.2)',
+      padding: 0, cursor: 'pointer',
+      boxShadow: active ? '0 0 0 2px rgba(139,30,30,0.15)' : 'inset 0 1px 2px rgba(0,0,0,0.25)',
+      transition: 'all 150ms ease',
+    }} />
+  );
+}
+
+// ─── Product card ───
+function ProductCard({ p, onOpen }) {
+  const [bg, setBg] = React.useState(p.defaultBg);
+  return (
+    <div onClick={onOpen} style={{
+      background: '#fffdf7', border: '1px solid var(--line)', borderRadius: 10,
+      overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ padding: 8, background: 'var(--ivory-2)', position: 'relative' }}>
+        <ArtPiece bg={bg} frame={p.defaultFrame} label={p.title} pad={6} aspect="4/3" imgSrc={p.image} />
+        {p.badge && (
+          <span style={{
+            position: 'absolute', top: 14, right: 14,
+            fontFamily: 'Be Vietnam Pro, sans-serif', fontSize: 9, letterSpacing: '0.12em',
+            color: 'var(--ink)', textTransform: 'uppercase',
+            background: '#fffdf7', padding: '3px 7px', borderRadius: 3,
+            border: '1px solid var(--line)',
+          }}>{p.badge}</span>
+        )}
+      </div>
+      <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ fontFamily: 'Lora, serif', fontSize: 16, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }}>{p.title}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.35,
+          display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.subtitle}</div>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
+          {p.bgTones.slice(0, 4).map(t => (
+            <VariantSwatch key={t} tone={t} active={bg === t} size={14}
+              onClick={(e) => { e.stopPropagation(); setBg(t); }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 }}>
+          <div style={{ fontFamily: 'Lora, serif', color: 'var(--son)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15 }}>
+            {fmtVND(p.price)}
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 2, alignItems: 'center' }}>
+            <IconStar size={10} color="#c9a961" /> {p.rating || '0.0'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Floating contact bubble (single, right-bottom) ───
+function ContactBubbles() {
+  const [open, setOpen] = React.useState(false);
+  const items = [
+    { Icon: IconZalo,      label: 'Zalo'      },
+    { Icon: IconMessenger, label: 'Messenger' },
+    { Icon: IconFacebook,  label: 'Facebook'  },
+    { Icon: IconTiktok,    label: 'TikTok'    },
+  ];
+  return (
+    <div style={{ position: 'absolute', right: 14, bottom: 24, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 50, alignItems: 'flex-end' }}>
+      {open && items.map(({ Icon, label }) => (
+        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, color: 'white', background: 'rgba(20,14,9,0.78)', padding: '3px 7px', borderRadius: 10, fontFamily: 'Be Vietnam Pro' }}>{label}</span>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fffdf7', boxShadow: '0 6px 18px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon size={22} />
+          </div>
+        </div>
+      ))}
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: 44, height: 44, borderRadius: '50%',
+        background: open ? 'var(--ink)' : 'var(--son)', border: 'none', color: 'white',
+        boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+      }}>
+        {open
+          ? <IconClose size={18} color="white" />
+          : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a8 8 0 1 1-3.2-6.4L21 4v5h-5" />
+            </svg>}
+      </button>
+    </div>
+  );
+}
+
+// ─── TopBar variants ───
+function TopBar({ title, onBack, onMenu, onOpenSaved, savedCount = 0, showLogo = false, onSearch }) {
+  return (
+    <div style={{
+      padding: '56px 14px 12px', display: 'flex', alignItems: 'center', gap: 6,
+      background: 'var(--ivory)', borderBottom: '1px solid var(--line-2)', position: 'relative',
+    }}>
+      {onBack ? (
+        <button onClick={onBack} style={iconBtn}><IconChevron dir="left" size={22} /></button>
+      ) : onMenu ? (
+        <button onClick={onMenu} style={iconBtn}><IconMenu size={22} /></button>
+      ) : <div style={{ width: 30 }} />}
+
+      {showLogo ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'center' }}>
+          <DrumMark size={26} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Lora, serif', fontWeight: 600, fontSize: 16, letterSpacing: '0.03em', color: 'var(--son)', lineHeight: 1 }}>
+              Đồ Đồng Trường Thơi
+            </div>
+            <div style={{ fontFamily: 'Lora, serif', fontStyle: 'italic', fontSize: 9, color: 'var(--bronze)', letterSpacing: '0.1em' }}>
+              tinh hoa làng nghề Việt
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, fontFamily: 'Lora, serif', fontStyle: 'italic', fontSize: 15, fontWeight: 500, textAlign: 'center', color: 'var(--ink)' }}>
+          {title}
+        </div>
+      )}
+
+      {onSearch && <button onClick={onSearch} style={iconBtn}><IconSearch size={20} /></button>}
+      {onOpenSaved && (
+        <button onClick={onOpenSaved} style={{ ...iconBtn, position: 'relative' }}>
+          <IconHeart size={20} />
+          {savedCount > 0 && (
+            <span style={{ position: 'absolute', top: 0, right: 0, minWidth: 14, height: 14, padding: '0 3px', background: 'var(--son)', color: 'white', borderRadius: 7, fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+              {savedCount}
+            </span>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+const iconBtn = { border: 'none', background: 'transparent', padding: 4, cursor: 'pointer', color: 'var(--ink)', display: 'flex' };
+
+function SectionHeading({ eyebrow, title, action, onAction }) {
+  return (
+    <div style={{ padding: '0 16px', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div>
+          {eyebrow && (
+            <div style={{ fontFamily: 'Be Vietnam Pro, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 4 }}>{eyebrow}</div>
+          )}
+          <div style={{ fontFamily: 'Lora, serif', fontSize: 22, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.1 }}>{title}</div>
+        </div>
+        {action && (
+          <button onClick={onAction} style={{ background: 'transparent', border: 'none', color: 'var(--son)', fontFamily: 'Lora, serif', fontStyle: 'italic', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+            {action} <IconChevron size={12} color="var(--son)" />
+          </button>
+        )}
+      </div>
+      <div className="dongson-rule" style={{ marginTop: 10 }} />
+    </div>
+  );
+}
+
+// ─── Footer (full) ───
+function Footer({ onNavigate }) {
+  return (
+    <div style={{ marginTop: 30 }}>
+      <div style={{ background: 'var(--ink)', padding: '24px 16px 22px', textAlign: 'center', color: 'var(--ivory)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <DrumMark size={32} color="var(--gold)" />
+          <div>
+            <div style={{ fontFamily: 'Lora, serif', fontWeight: 600, fontSize: 18, color: 'var(--gold)', lineHeight: 1 }}>Đồ Đồng Trường Thơi</div>
+            <div style={{ fontFamily: 'Lora, serif', fontStyle: 'italic', fontSize: 10, color: 'rgba(244,237,224,0.7)' }}>tinh hoa làng nghề Việt</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
+          {[IconZalo, IconMessenger, IconFacebook, IconTiktok].map((Ic, i) => <Ic key={i} size={26} />)}
+        </div>
+      </div>
+
+      <div style={{ background: 'var(--ivory)', padding: '20px 16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+        <div>
+          <div style={{ fontFamily: 'Be Vietnam Pro, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 10 }}>Khám phá</div>
+          <FootLink onClick={() => onNavigate && onNavigate('home')}>Trang chủ</FootLink>
+          <FootLink onClick={() => onNavigate && onNavigate('saved')}>Sản phẩm đã lưu</FootLink>
+        </div>
+        <div>
+          <div style={{ fontFamily: 'Be Vietnam Pro, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 10 }}>Thông tin</div>
+          <FootLink arrow onClick={() => onNavigate && onNavigate('craft')}>Câu chuyện làng nghề</FootLink>
+          <FootLink arrow onClick={() => onNavigate && onNavigate('guide')}>Hướng dẫn mua hàng</FootLink>
+          <FootLink arrow onClick={() => onNavigate && onNavigate('faq')}>Câu hỏi thường gặp</FootLink>
+        </div>
+      </div>
+
+      <div style={{ background: 'var(--ivory)', padding: '4px 16px 16px', borderTop: '1px solid var(--line-2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Lora, serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 17, color: 'var(--son)' }}>
+            <IconPhone size={16} color="var(--son)" /> 0899012288
+          </div>
+          <button style={{ background: 'transparent', border: '1px solid var(--son)', color: 'var(--son)', fontFamily: 'Be Vietnam Pro', fontSize: 12, padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}>Bản đồ →</button>
+        </div>
+        <FootInfo Icon={IconMail}>dodongtruongthoi@gmail.com</FootInfo>
+        <FootInfo Icon={IconPin}>Đại Bái, Gia Bình, Bắc Ninh</FootInfo>
+        <button style={{ marginTop: 6, alignSelf: 'flex-start', background: 'transparent', border: 'none', color: 'var(--bronze)', fontFamily: 'Be Vietnam Pro', fontSize: 11, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>Báo cáo sự cố</button>
+      </div>
+
+      <div style={{ background: 'var(--ink)', padding: '14px 16px', textAlign: 'center', color: 'rgba(244,237,224,0.7)', fontSize: 10.5, lineHeight: 1.6 }}>
+        Công ty TNHH Đồ Đồng Trường Thơi · MST: Chưa cập nhật<br/>
+        © 2026 Đồ Đồng Trường Thơi. All rights reserved.
+      </div>
+    </div>
+  );
+}
+
+function FootLink({ children, arrow, onClick }) {
+  return (
+    <button onClick={onClick} style={{ display: 'block', background: 'transparent', border: 'none', padding: '6px 0', textAlign: 'left', fontFamily: 'Be Vietnam Pro', fontSize: 13, color: 'var(--ink)', cursor: 'pointer' }}>
+      {children}{arrow ? ' →' : ''}
+    </button>
+  );
+}
+function FootInfo({ Icon, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--ink-2)' }}>
+      <Icon size={14} color="var(--bronze)" /> {children}
+    </div>
+  );
+}
+
+// ─── Footer minimal ───
+function FooterMinimal() {
+  return (
+    <div style={{ marginTop: 24, background: 'var(--ink)', padding: '20px 16px', textAlign: 'center', color: 'var(--ivory)' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <DrumMark size={26} color="var(--gold)" />
+        <div>
+          <div style={{ fontFamily: 'Lora, serif', fontWeight: 600, fontSize: 15, color: 'var(--gold)', lineHeight: 1 }}>Đồ Đồng Trường Thơi</div>
+          <div style={{ fontFamily: 'Lora, serif', fontStyle: 'italic', fontSize: 9, color: 'rgba(244,237,224,0.7)' }}>tinh hoa làng nghề Việt</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
+        {[IconZalo, IconMessenger, IconFacebook, IconTiktok].map((Ic, i) => <Ic key={i} size={22} />)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Carousel arrow buttons ───
+function CarouselArrows({ onPrev, onNext }) {
+  const btn = {
+    width: 32, height: 32, borderRadius: '50%',
+    background: 'rgba(20,14,9,0.4)', border: '1px solid rgba(255,255,255,0.3)',
+    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 5,
+  };
+  return (
+    <>
+      <button onClick={onPrev} style={{ ...btn, left: 10 }}><IconChevron dir="left" size={14} color="white" /></button>
+      <button onClick={onNext} style={{ ...btn, right: 10 }}><IconChevron size={14} color="white" /></button>
+    </>
+  );
+}
+
+// ─── DongsonBorder decorative separator ───
+function DongsonBorder() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+      <div className="dongson-border" style={{ width: '90%' }} />
+    </div>
+  );
+}
+
+Object.assign(window, {
+  fmtVND, ArtPiece, VariantSwatch, ProductCard,
+  ContactBubbles, TopBar, SectionHeading,
+  Footer, FooterMinimal, CarouselArrows, DongsonBorder,
+});

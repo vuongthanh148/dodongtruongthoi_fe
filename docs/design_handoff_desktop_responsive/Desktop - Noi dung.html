@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desktop — Nội dung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root{--ivory:#f4ede0;--ivory-2:#ece3d1;--ivory-3:#e5d9c0;--ink:#2a1f1a;--ink-2:#4a3a2e;--muted:#8a7761;--son:#8b1e1e;--son-deep:#6a1515;--bronze:#6b4423;--bronze-2:#8a5a30;--gold:#c9a961;--gold-2:#b08a3e;--line:rgba(42,31,26,0.14);--line-2:rgba(42,31,26,0.08)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink)}
+a{color:var(--son)}a:hover{color:var(--son-deep)}
+button{font-family:inherit;color:inherit}
+.price-num{font-family:'Lora',serif;font-variant-numeric:tabular-nums;font-weight:700}
+.label-mono{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+.paper{background-color:var(--ivory);background-image:radial-gradient(circle at 20% 30%,rgba(139,30,30,.025) 0,transparent 40%),radial-gradient(circle at 80% 70%,rgba(107,68,35,.04) 0,transparent 45%),repeating-linear-gradient(0deg,rgba(107,68,35,.018) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(107,68,35,.015) 0 1px,transparent 1px 3px)}
+.dongson-rule{height:1px;background:linear-gradient(90deg,transparent,var(--bronze) 20%,var(--bronze) 80%,transparent);opacity:.35}
+.bronze-art{background:radial-gradient(ellipse at 30% 20%,rgba(255,220,140,.25),transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(80,40,10,.5),transparent 60%),linear-gradient(135deg,#a87a3a 0%,#8a5a2a 40%,#6a3f18 100%);position:relative}
+.bronze-art.red{background:radial-gradient(ellipse at 30% 20%,rgba(255,180,100,.2),transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(60,10,10,.5),transparent 60%),linear-gradient(135deg,#8a3a20 0%,#6a2010 40%,#4a1008 100%)}
+.bronze-art.dark{background:radial-gradient(ellipse at 30% 20%,rgba(201,169,97,.35),transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(0,0,0,.6),transparent 60%),linear-gradient(135deg,#3a2a1a 0%,#1e140a 60%,#0d0803 100%)}
+.bronze-art.gold{background:radial-gradient(ellipse at 30% 20%,rgba(255,240,180,.5),transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(120,80,20,.35),transparent 60%),linear-gradient(135deg,#d9b865 0%,#b8933f 40%,#8a6a1e 100%)}
+.art-frame{padding:var(--p,10px);border-radius:4px}
+.frame-bronze{background:linear-gradient(135deg,#6a4520 0%,#4a2d14 50%,#6a4520 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.3),inset 0 0 0 2px rgba(201,169,97,.2),0 12px 30px -12px rgba(0,0,0,.55)}
+.frame-gold{background:linear-gradient(135deg,#c9a961 0%,#8a6a1e 50%,#c9a961 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),0 10px 24px -10px rgba(0,0,0,.5)}
+.frame-dark{background:linear-gradient(135deg,#2a1d13 0%,#140e09 50%,#2a1d13 100%);box-shadow:inset 0 0 0 1px rgba(201,169,97,.15),0 10px 24px -10px rgba(0,0,0,.55)}
+.frame-carved{background:repeating-linear-gradient(90deg,#5a3818 0 2px,#3e2510 2px 4px),linear-gradient(135deg,#6a4520,#3e2510);box-shadow:inset 0 0 0 2px rgba(201,169,97,.25),0 12px 30px -12px rgba(0,0,0,.55)}
+.nav-link{transition:color 160ms ease,border-color 160ms ease}.nav-link:hover{color:var(--son)!important}.mm-img{transition:transform 400ms cubic-bezier(.2,.8,.2,1)}.mm-tile:hover .mm-img{transform:scale(1.05)}@keyframes lmFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}.lm-fade{animation:lmFade 220ms ease both}@keyframes lkIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.lk-in{animation:lkIn 280ms cubic-bezier(.2,.8,.2,1) both}@keyframes lkShake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}.lk-shake{animation:lkShake 260ms ease}input:focus{border-color:var(--son)!important;box-shadow:0 0 0 3px rgba(139,30,30,0.1)}
+.mm-link{transition:color 140ms,transform 180ms}.mm-link:hover{color:var(--son)!important;transform:translateX(3px)}
+.noscroll::-webkit-scrollbar{display:none}.noscroll{scrollbar-width:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="app/design-canvas.jsx"></script>
+<script type="text/babel" src="app/icons.jsx"></script>
+<script type="text/babel" src="app/data.jsx"></script>
+<script type="text/babel" src="app/ui.jsx"></script>
+<script type="text/babel" src="app/desktop-shell.jsx"></script>
+<script type="text/babel" src="app/desktop-screens.jsx"></script>
+<script type="text/babel" src="app/desktop-pages.jsx"></script>
+<script type="text/babel" src="app/desktop-orders.jsx"></script>
+<script type="text/babel" src="app/desktop-content.jsx"></script>
+<script type="text/babel" src="app/desktop-canvas.jsx"></script>
+<script type="text/babel">
+window.DESK_PAGE = 'content';
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+</script>
+</body>
+</html>

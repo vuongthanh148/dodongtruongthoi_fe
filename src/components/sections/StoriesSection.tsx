@@ -1,8 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { DrumMark } from '@/components/icons'
+import { Container } from '@/components/layout/Container'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Heading } from '@/components/ui/Heading'
 import { STORY_CARDS } from '@/lib/data'
@@ -28,8 +30,12 @@ export function StoriesSection({
     customerPhotos[1]?.imageUrl ??
     banners[1]?.imageUrl
 
+  const storiesForDesktop = STORY_CARDS.slice(0, 2)
+
   return (
+    <>
     <section
+      className="lg:hidden"
       style={{
         background: 'var(--bg-dark)',
         padding: '32px 22px 28px',
@@ -184,5 +190,44 @@ export function StoriesSection({
         </div>
       </div>
     </section>
+
+    {/* Desktop: side-by-side story cards on an ivory surface */}
+    <section className="hidden lg:block" style={{ margin: '64px 0' }}>
+      <Container>
+        <div
+          className="label-mono mb-4"
+          style={{ color: 'var(--bronze)', fontSize: 10 }}
+        >
+          Câu chuyện làng nghề
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          {storiesForDesktop.map((s, i) => (
+            <Link
+              key={s.title}
+              href="/lang-nghe"
+              className="grid grid-cols-[150px_minmax(0,1fr)] overflow-hidden rounded-[10px] border xl:grid-cols-[220px_minmax(0,1fr)]"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+            >
+              <div className={`bronze-art${i % 2 === 1 ? ' dark' : ''}`} style={{ minHeight: 180 }} />
+              <div className="flex flex-col justify-center gap-2 p-7">
+                <div className="label-mono" style={{ color: 'var(--bronze)', fontSize: 10 }}>
+                  {s.eyebrow}
+                </div>
+                <div
+                  className="font-[family-name:var(--font-lora)] text-[22px] font-semibold"
+                  style={{ lineHeight: 1.25 }}
+                >
+                  {s.title}
+                </div>
+                <div className="font-[family-name:var(--font-lora)] text-sm italic" style={{ color: 'var(--accent)' }}>
+                  Đọc câu chuyện →
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Container>
+    </section>
+    </>
   )
 }

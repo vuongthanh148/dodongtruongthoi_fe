@@ -1,6 +1,7 @@
 'use client'
 
 import { Footer } from '@/components/layout/Footer'
+import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ContactBubbles } from '@/components/ui/ContactBubbles'
@@ -49,6 +50,7 @@ export default function Home() {
 
   return (
     <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <DeskHeader />
       <TopBar
         variant="overlay"
         showLogo
@@ -58,6 +60,8 @@ export default function Home() {
       />
 
       <BannerSection banners={banners} />
+
+      <TrustBar />
 
       <SearchOverlay
         open={isSearchOpen}
@@ -72,16 +76,14 @@ export default function Home() {
         onCategoryChange={setActiveCatId}
       />
 
+      <CampaignsSection campaigns={campaignsData} />
+
       <FeaturedProductsSection
         products={allProducts}
         loading={isLoading}
         activeCategoryId={activeCatId}
         categories={categories}
       />
-
-      <TrustBar />
-
-      <CampaignsSection campaigns={campaignsData} />
 
       <StoriesSection />
 
