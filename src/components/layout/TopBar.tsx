@@ -64,7 +64,14 @@ export function TopBar({
   }, [])
 
   return (
-    <div className="lg:hidden">
+    // display:contents removes this wrapper from the box model entirely —
+    // a plain block div here would shrink-wrap to exactly the <header>'s
+    // own height, leaving position:sticky zero room to operate (it would
+    // "run out" of its containing block at the same instant it tries to
+    // stick, so it scrolls away like a static element). contents makes
+    // <header> and the search <form> below it behave as direct children
+    // of TopBar's real parent, restoring sticky against the actual page.
+    <div className="contents lg:hidden">
     <header
       style={{
         padding: '12px 14px',

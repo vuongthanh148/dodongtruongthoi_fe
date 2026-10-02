@@ -11,7 +11,7 @@ export function StoreLocationsSection() {
       <Container className="py-7 md:py-9">
         {STORES.map((store) => (
           <div key={store.name} className="grid grid-cols-1 items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col items-center gap-3.5 text-center lg:items-start lg:text-left">
               <div>
                 <div
                   style={{
