@@ -18,14 +18,14 @@ import type { CartItem } from '@/lib/types'
 
 export default function CartPage() {
   const router = useRouter()
-  const [items, setItems] = useState<CartItem[]>(() =>
-    typeof window !== 'undefined' ? getCartItems() : []
-  )
+  const [items, setItems] = useState<CartItem[]>([])
   const [livePrices, setLivePrices] = useState<Record<string, number>>({})
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     const stored = getCartItems()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(stored)
 
     const uniqueIds = [...new Set(stored.map((i) => i.productId))]
     Promise.all(uniqueIds.map((id) => fetchProduct(id))).then((products) => {

@@ -1259,32 +1259,34 @@ function ProductDetailPageInner() {
         </div>
       </div>
 
-      <div
-        className="hidden lg:block"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, marginTop: 24 }}
-      >
-        <div className="label-mono" style={{ color: 'var(--bronze)', fontSize: 10.5, marginBottom: 12 }}>
-          Thông số chính
+      {product.specs && Object.keys(product.specs).length > 0 && (
+        <div
+          className="hidden lg:block"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, marginTop: 24 }}
+        >
+          <div className="label-mono" style={{ color: 'var(--bronze)', fontSize: 10.5, marginBottom: 12 }}>
+            Thông số chính
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {Object.entries(product.specs).slice(0, 6).map(([key, value], idx) => (
+              <div
+                key={`sidebar-spec-${idx}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '140px minmax(0,1fr)',
+                  gap: 12,
+                  padding: '10px 0',
+                  borderBottom: '1px solid var(--border-soft)',
+                  fontSize: 14,
+                }}
+              >
+                <span style={{ color: 'var(--text-muted)' }}>{key}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {Object.entries(product.specs).slice(0, 6).map(([key, value], idx) => (
-            <div
-              key={`sidebar-spec-${idx}`}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '140px minmax(0,1fr)',
-                gap: 12,
-                padding: '10px 0',
-                borderBottom: '1px solid var(--border-soft)',
-                fontSize: 14,
-              }}
-            >
-              <span style={{ color: 'var(--text-muted)' }}>{key}</span>
-              <span style={{ color: 'var(--text-secondary)' }}>{value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
       </div>
 
       {/* Related Products Section */}

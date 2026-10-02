@@ -29,7 +29,8 @@ const fieldStyle: React.CSSProperties = {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const [items] = useState<CartItem[]>(() => getCartItems())
+  const [items, setItems] = useState<CartItem[]>([])
+  const [cartLoaded, setCartLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -44,10 +45,16 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'transfer' | 'showroom'>('cod')
 
   useEffect(() => {
-    if (items.length === 0 && !submitted) {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(getCartItems())
+    setCartLoaded(true)
+  }, [])
+
+  useEffect(() => {
+    if (cartLoaded && items.length === 0 && !submitted) {
       router.push('/cart')
     }
-  }, [router, items.length, submitted])
+  }, [router, cartLoaded, items.length, submitted])
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   const fmtVND = (n: number) => n.toLocaleString('vi-VN') + 'đ'

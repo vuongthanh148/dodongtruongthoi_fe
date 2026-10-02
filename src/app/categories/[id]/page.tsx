@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 
 const PAGE_SIZE = 9
@@ -98,6 +98,14 @@ export default function CategoryPage() {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeCategoryId, setActiveCategoryId] = useState(initialCategory)
+
+  // Next.js reuses this component instance when navigating between
+  // /categories/[id] routes (e.g. via the desktop sidebar's <Link>), so
+  // params.id changes without a remount — resync local state to match.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveCategoryId(params.id)
+  }, [params.id])
   const [sort, setSort] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating-desc'>(
     'featured'
   )
