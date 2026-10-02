@@ -111,6 +111,20 @@ export function Carousel<T>({
 
   useEffect(() => {
     currentIndexRef.current = currentIndex
+
+    // Scroll to match currentIndex whenever it changes, regardless of
+    // source: this carousel's own nav/dots/swipe/autoplay call navigate()
+    // which already scrolls directly, but a caller can also drive the
+    // carousel purely by changing the currentIndex prop (e.g. custom
+    // external arrow buttons/dots that only call onIndexChange) — without
+    // this, that case updates state but never moves the scroll container.
+    const container = containerRef.current
+    if (container) {
+      const target = container.clientWidth * currentIndex
+      if (Math.abs(container.scrollLeft - target) > 1) {
+        container.scrollTo({ left: target, behavior: 'smooth' })
+      }
+    }
   }, [currentIndex])
 
   useEffect(() => {
