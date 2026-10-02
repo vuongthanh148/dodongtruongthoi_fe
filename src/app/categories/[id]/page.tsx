@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
 const PAGE_SIZE = 9
 import { IconFilter, IconGrid, IconList, IconStar } from '@/components/icons'
@@ -94,18 +94,28 @@ function CatListRow({ product, categories, onOpen }: { product: Product; categor
 
 export default function CategoryPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const initialCategory = params.id
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeCategoryId, setActiveCategoryId] = useState(initialCategory)
 
   // Next.js reuses this component instance when navigating between
-  // /categories/[id] routes (e.g. via the desktop sidebar's <Link>), so
+  // /categories/[id] routes (e.g. a Link in the footer or mega-menu), so
   // params.id changes without a remount — resync local state to match.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveCategoryId(params.id)
   }, [params.id])
+
+  // In-page category pickers (sidebar filter, mobile pill strip) must
+  // navigate rather than just set local state, or the URL goes stale the
+  // moment you pick a different category from this exact page — the bug
+  // this fixes. The effect above then syncs activeCategoryId right back
+  // from params.id, so this is the single source of truth either way.
+  function handleCategoryChange(id: string) {
+    router.push(`/categories/${id}`)
+  }
   const [sort, setSort] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating-desc'>(
     'featured'
   )
@@ -284,7 +294,7 @@ export default function CategoryPage() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveCategoryId(item.id)}
+                onClick={() => handleCategoryChange(item.id)}
                 style={{
                   flexShrink: 0,
                   padding: '6px 12px',
@@ -381,7 +391,7 @@ export default function CategoryPage() {
           <FilterSidebar
             categories={categories}
             activeCategoryId={activeCategoryId}
-            onCategoryChange={setActiveCategoryId}
+            onCategoryChange={handleCategoryChange}
             priceRange={priceRange}
             onPriceRangeChange={setPriceRange}
             sizeOptions={sizeOptions}
