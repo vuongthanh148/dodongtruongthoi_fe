@@ -3,8 +3,9 @@ import { useRouter } from 'next/navigation'
 import { IconBox, IconCart, IconHeart, IconMenu, IconSearch } from '@/components/icons'
 import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
+import { SearchResultsDropdown } from '@/components/ui/SearchResultsDropdown'
 import { getCartItems, getSavedProducts } from '@/lib/storage'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface TopBarProps {
   title?: string
@@ -32,6 +33,8 @@ export function TopBar({
   const [storedSavedCount, setStoredSavedCount] = useState(0)
   const [cartCount, setCartCount] = useState(0)
   const [tabletQuery, setTabletQuery] = useState('')
+  const [tabletSearchFocused, setTabletSearchFocused] = useState(false)
+  const tabletSearchBlurTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const displayedSavedCount = typeof savedCount === 'number' ? savedCount : storedSavedCount
 
   useEffect(() => {
@@ -40,9 +43,12 @@ export function TopBar({
     setCartCount(getCartItems().reduce((s, i) => s + i.quantity, 0))
   }, [])
 
+  useEffect(() => () => clearTimeout(tabletSearchBlurTimer.current), [])
+
   function handleTabletSearchSubmit(e: React.FormEvent) {
     e.preventDefault()
     const q = tabletQuery.trim()
+    setTabletSearchFocused(false)
     router.push(q ? `/products?q=${encodeURIComponent(q)}` : '/products')
   }
 
@@ -272,6 +278,7 @@ export function TopBar({
         onSubmit={handleTabletSearchSubmit}
         className="brand-focus hidden md:flex"
         style={{
+          position: 'relative',
           alignItems: 'center',
           gap: 8,
           margin: '0 14px 12px',
@@ -291,6 +298,13 @@ export function TopBar({
           type="search"
           value={tabletQuery}
           onChange={(e) => setTabletQuery(e.target.value)}
+          onFocus={() => {
+            window.clearTimeout(tabletSearchBlurTimer.current)
+            setTabletSearchFocused(true)
+          }}
+          onBlur={() => {
+            tabletSearchBlurTimer.current = setTimeout(() => setTabletSearchFocused(false), 150)
+          }}
           placeholder="Tìm tranh đồng, đỉnh đồng, tượng đồng…"
           style={{
             flex: 1,
@@ -300,6 +314,14 @@ export function TopBar({
             outline: 'none',
             fontSize: 13,
             color: 'var(--text-primary)',
+          }}
+        />
+        <SearchResultsDropdown
+          query={tabletQuery}
+          open={tabletSearchFocused}
+          onNavigate={() => {
+            setTabletQuery('')
+            setTabletSearchFocused(false)
           }}
         />
       </form>

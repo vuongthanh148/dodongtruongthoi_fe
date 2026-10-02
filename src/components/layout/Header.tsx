@@ -7,6 +7,7 @@ import useSWR from 'swr'
 import { DrumMark, IconBox, IconCart, IconChevron, IconHeart, IconSearch } from '@/components/icons'
 import { Container } from '@/components/layout/Container'
 import { MegaMenu } from '@/components/layout/MegaMenu'
+import { SearchResultsDropdown } from '@/components/ui/SearchResultsDropdown'
 import { SITE_NAME } from '@/lib/constants'
 import { DESK_NAV_LINKS } from '@/lib/desktop-nav'
 import { getCartItems, getSavedProducts } from '@/lib/storage'
@@ -66,6 +67,8 @@ export function DeskHeader() {
   const [savedCount, setSavedCount] = useState(0)
   const [cartCount, setCartCount] = useState(0)
   const [query, setQuery] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const searchBlurTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const headerRef = useRef<HTMLElement>(null)
@@ -114,10 +117,12 @@ export function DeskHeader() {
   }, [megaOpen])
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
+  useEffect(() => () => clearTimeout(searchBlurTimer.current), [])
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault()
     const q = query.trim()
+    setSearchFocused(false)
     router.push(q ? `/products?q=${encodeURIComponent(q)}` : '/products')
   }
 
@@ -189,21 +194,36 @@ export function DeskHeader() {
         </nav>
 
         <div className="flex items-center gap-2 lg:gap-2 xl:gap-3">
-          <form onSubmit={handleSearchSubmit} className="hidden lg:block">
+          <form onSubmit={handleSearchSubmit} className="relative hidden lg:block">
             <label className="sr-only" htmlFor="desk-search">
               Tìm kiếm sản phẩm
             </label>
-            <div className="brand-focus flex h-10 min-w-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-card)] px-3.5 lg:w-[170px] xl:w-[220px]">
+            <div className="brand-focus flex h-10 min-w-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-card)] px-3.5 lg:w-[240px] xl:w-[320px]">
               <IconSearch size={16} color="var(--text-muted)" />
               <input
                 id="desk-search"
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => {
+                  window.clearTimeout(searchBlurTimer.current)
+                  setSearchFocused(true)
+                }}
+                onBlur={() => {
+                  searchBlurTimer.current = setTimeout(() => setSearchFocused(false), 150)
+                }}
                 placeholder="Tìm tranh đồng, đỉnh đồng…"
                 className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
               />
             </div>
+            <SearchResultsDropdown
+              query={query}
+              open={searchFocused}
+              onNavigate={() => {
+                setQuery('')
+                setSearchFocused(false)
+              }}
+            />
           </form>
           <Link
             href="/orders"
