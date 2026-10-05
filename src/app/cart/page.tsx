@@ -11,35 +11,22 @@ import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
+import { BottomActionBar } from '@/components/ui/BottomActionBar'
 import { getCartItems, removeCartItem, setCartItems } from '@/lib/storage'
-import { fetchProduct } from '@/lib/storefront-api'
-import { resolveSKUPrice } from '@/lib/sku'
+import { fetchLivePrices } from '@/lib/cart-prices'
 import type { CartItem } from '@/lib/types'
 
 export default function CartPage() {
   const router = useRouter()
   const [items, setItems] = useState<CartItem[]>([])
-  const [livePrices, setLivePrices] = useState<Record<string, number>>({})
+  const [livePrices, setLivePrices] = useState<Record<number, number>>({})
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     const stored = getCartItems()
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(stored)
-
-    const uniqueIds = [...new Set(stored.map((i) => i.productId))]
-    Promise.all(uniqueIds.map((id) => fetchProduct(id))).then((products) => {
-      const map: Record<string, number> = {}
-      stored.forEach((item, idx) => {
-        const product = products[uniqueIds.indexOf(item.productId)]
-        if (!product) return
-        const size = product.sizes.find((s) => s.id === item.sizeId)
-        const sizeCode = size?.code ?? null
-        const live = resolveSKUPrice(product.skus, sizeCode, item.selectedAttrs ?? {}, size?.price ?? product.discountPrice ?? product.price)
-        map[idx] = live
-      })
-      setLivePrices(map)
-    })
+    fetchLivePrices(stored).then(setLivePrices)
   }, [])
 
   const handleRemove = (index: number) => {
@@ -81,7 +68,7 @@ export default function CartPage() {
   )
 
   return (
-    <div suppressHydrationWarning style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+    <div suppressHydrationWarning className="pb-24 md:pb-0" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
       <DeskHeader />
       <TopBar
         title="Giỏ Hàng"
@@ -277,18 +264,21 @@ export default function CartPage() {
                 {fmtVND(subtotal)}
               </div>
 
-              <Link
-                href="/checkout"
-                style={{
-                  display: 'block', width: '100%', marginTop: 16,
-                  background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6,
-                  padding: '13px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
-                  fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center',
-                  textDecoration: 'none', boxSizing: 'border-box',
-                }}
-              >
-                Tiến hành đặt hàng →
-              </Link>
+              {/* Mobile uses the sticky BottomActionBar instead */}
+              <div className="hidden md:block">
+                <Link
+                  href="/checkout"
+                  style={{
+                    display: 'block', width: '100%', marginTop: 16,
+                    background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6,
+                    padding: '13px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
+                    fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center',
+                    textDecoration: 'none', boxSizing: 'border-box',
+                  }}
+                >
+                  Tiến hành đặt hàng →
+                </Link>
+              </div>
               <button
                 type="button"
                 onClick={() => router.push('/')}
@@ -318,6 +308,15 @@ export default function CartPage() {
 
       <div style={{ flex: 1 }} />
       <Footer />
+
+      {items.length > 0 && (
+        <BottomActionBar
+          totalLabel="Tổng cộng"
+          totalValue={fmtVND(subtotal)}
+          ctaLabel="Tiến hành đặt hàng"
+          ctaHref="/checkout"
+        />
+      )}
     </div>
   )
 }

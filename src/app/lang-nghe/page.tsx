@@ -117,16 +117,11 @@ export default function CraftVillagePage() {
           {stories.map((story, index) => (
             <section
               key={story.label}
-              className="md:grid md:grid-cols-2 md:items-center md:gap-16"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 20,
-              }}
+              className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-center md:gap-16"
             >
-              {/* Artwork - hidden on mobile, shown on desktop */}
+              {/* Artwork - stacked above text on mobile, alternating side at md+ */}
               <div
-                className={index % 2 === 1 ? 'hidden md:order-2 md:block' :'hidden md:block'}
+                className={index % 2 === 1 ? 'w-full md:order-2' : 'w-full'}
                 style={{ background: 'var(--bg-surface)', borderRadius: 12, overflow: 'hidden' }}
               >
                 <ArtPiece bg={story.bg} frame={story.frame} label="" pad={0} aspect="4/3" />

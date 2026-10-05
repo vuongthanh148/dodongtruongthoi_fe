@@ -10,6 +10,8 @@ import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
+import { BottomActionBar } from '@/components/ui/BottomActionBar'
+import { fetchLivePrices } from '@/lib/cart-prices'
 import { getCartItems, clearCart } from '@/lib/storage'
 import { createOrder } from '@/lib/storefront-api'
 import type { CartItem } from '@/lib/types'
@@ -30,6 +32,7 @@ const fieldStyle: React.CSSProperties = {
 export default function CheckoutPage() {
   const router = useRouter()
   const [items, setItems] = useState<CartItem[]>([])
+  const [livePrices, setLivePrices] = useState<Record<number, number>>({})
   const [cartLoaded, setCartLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -37,6 +40,8 @@ export default function CheckoutPage() {
   const [submitted, setSubmitted] = useState(false)
 
   const [orderId, setOrderId] = useState<string | null>(null)
+  // Returned once by the create response; the backend never returns it again.
+  const [lookupCode, setLookupCode] = useState<string | null>(null)
 
   const [phone, setPhone] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -51,12 +56,20 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
+    if (items.length === 0) return
+    fetchLivePrices(items).then(setLivePrices)
+  }, [items])
+
+  useEffect(() => {
     if (cartLoaded && items.length === 0 && !submitted) {
       router.push('/cart')
     }
   }, [router, cartLoaded, items.length, submitted])
 
-  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+  // Live price when available, otherwise the price stored at add-to-cart time
+  const effectivePrice = (item: CartItem, index: number) =>
+    livePrices[index] !== undefined ? livePrices[index] : item.unitPrice
+  const subtotal = items.reduce((sum, item, i) => sum + effectivePrice(item, i) * item.quantity, 0)
   const fmtVND = (n: number) => n.toLocaleString('vi-VN') + 'đ'
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,14 +96,14 @@ export default function CheckoutPage() {
         customerName: customerName || undefined,
         address: address || undefined,
         note: [`Thanh toán: ${paymentMethodLabels[paymentMethod]}`, note].filter(Boolean).join(' — ') || undefined,
-        items: items.map((item) => ({
+        items: items.map((item, index) => ({
           productId: item.productId,
           productTitle: item.productTitle || item.productId,
           sizeCode: item.sizeId,
           sizeLabel: item.sizeLabel || item.sizeId,
           selectedAttrs: item.selectedAttrs,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
+          unitPrice: effectivePrice(item, index),
           variantImageUrl: item.variantImageUrl,
         })),
       })
@@ -98,6 +111,7 @@ export default function CheckoutPage() {
       if (result?.id) {
         clearCart()
         setOrderId(result.id)
+        setLookupCode(result.lookup_code)
         setSubmitted(true)
       } else {
         setError('Có lỗi khi đặt hàng. Vui lòng thử lại.')
@@ -119,7 +133,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+    <div className="pb-24 md:pb-0" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
       <DeskHeader />
       <TopBar
         title="Đặt hàng"
@@ -140,10 +154,23 @@ export default function CheckoutPage() {
             Đặt hàng thành công!
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.6 }}>
-            Chúng tôi sẽ liên hệ {phone} trong 1–2 giờ
+            Chúng tôi sẽ liên hệ {phone} trong 30 phút (giờ hành chính)
           </div>
+          {orderId && lookupCode && (
+            <div style={{ marginTop: 24, padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, maxWidth: 360 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                Mã tra cứu đơn: <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 22, fontWeight: 700, letterSpacing: '0.18em', color: 'var(--accent)' }}>{lookupCode}</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
+                Dùng mã này cùng số điện thoại để tra cứu đơn hàng.
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                Bạn có thể tra cứu đơn tại <Link href="/orders" style={{ color: 'var(--accent)' }}>/orders</Link>.
+              </div>
+            </div>
+          )}
           {orderId && (
-            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 12, color: 'var(--bronze)', marginTop: 8 }}>
+            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 12, color: 'var(--bronze)', marginTop: 12 }}>
               #{orderId}
             </div>
           )}
@@ -170,7 +197,7 @@ export default function CheckoutPage() {
 
         {/* Form */}
         <div className="lg:order-1">
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
             <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18 }}>Thông tin người nhận</div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -240,9 +267,11 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          {/* Mobile submits from the sticky BottomActionBar instead */}
           <button
             type="submit"
             disabled={loading}
+            className="hidden md:block"
             style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: 14, fontFamily: 'var(--font-be-vietnam), sans-serif', fontWeight: 500, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, width: '100%' }}
           >
             {loading ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
@@ -283,7 +312,7 @@ export default function CheckoutPage() {
                     ×{item.quantity}{item.sizeLabel ? ` · ${item.sizeLabel}` : ''}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>
-                    {fmtVND(item.unitPrice * item.quantity)}
+                    {fmtVND(effectivePrice(item, index) * item.quantity)}
                   </div>
                 </div>
               </div>
@@ -318,7 +347,7 @@ export default function CheckoutPage() {
               </svg>
             </div>
             <div style={{ fontSize: 13, color: '#3d5a7a', lineHeight: 1.6 }}>
-              Sẽ liên hệ xác nhận trong <strong>1–2 giờ</strong> làm việc.
+              Sẽ liên hệ xác nhận trong <strong>30 phút</strong> (giờ hành chính).
             </div>
           </div>
         </div>
@@ -329,6 +358,17 @@ export default function CheckoutPage() {
 
       <div style={{ flex: 1 }} />
       <Footer />
+
+      {!submitted && items.length > 0 && (
+        <BottomActionBar
+          totalLabel="Tổng cộng"
+          totalValue={fmtVND(subtotal)}
+          ctaLabel={loading ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
+          ctaType="submit"
+          ctaForm="checkout-form"
+          ctaDisabled={loading}
+        />
+      )}
     </div>
   )
 }

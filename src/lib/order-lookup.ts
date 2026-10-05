@@ -1,8 +1,10 @@
-// Client-side masking helpers for the order lookup flow.
-// IMPORTANT: this is presentation-only masking. The API currently returns full
-// order data (price, address, recipient name) from a phone number alone — see
-// docs/BACKEND_TODO_order_lookup.md for the backend work required to enforce
-// this for real. Do not treat this file as a security boundary.
+// Helpers for the order lookup flow.
+// Verification is enforced by the server: the lookup code is issued once at create time,
+// POST /orders/verify issues a token bound to one order, and GET /orders/{id} requires it
+// (X-Order-Token). Nothing in this file is a security boundary; it only formats display
+// values and keeps the per-session token convenience for the order detail page.
+
+export const LOOKUP_CODE_LENGTH = 6
 
 export function maskOrderCode(id: string): string {
   if (id.length <= 6) return id
@@ -15,19 +17,44 @@ export function maskPhone(phone: string): string {
   return `${digits.slice(0, 4)} ••• ${digits.slice(-3)}`
 }
 
-export function maskName(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length <= 1) return name
-  return parts.map((word, i) => (i === parts.length - 1 ? word : `${word[0]}.`)).join(' ')
+export type StoredOrderToken = { token: string; expiresAt: number }
+
+const TOKEN_KEY_PREFIX = 'ddtt_order_token_'
+
+// In-session convenience only: the server still enforces the token. Every storage
+// access is guarded so blocked or private storage never breaks the page.
+export function readStoredOrderToken(orderId: string): StoredOrderToken | null {
+  try {
+    const key = TOKEN_KEY_PREFIX + orderId
+    const raw = window.sessionStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<StoredOrderToken>
+    if (typeof parsed.token !== 'string' || typeof parsed.expiresAt !== 'number') {
+      window.sessionStorage.removeItem(key)
+      return null
+    }
+    if (parsed.expiresAt <= Date.now()) {
+      window.sessionStorage.removeItem(key)
+      return null
+    }
+    return { token: parsed.token, expiresAt: parsed.expiresAt }
+  } catch {
+    return null
+  }
 }
 
-// Keeps only the last segment (city/province) and redacts the rest, e.g.
-// "12 ngõ 34 Láng Hạ, Đống Đa, Hà Nội" -> "•• Láng Hạ, Đống Đa, Hà Nội"
-export function maskAddress(address: string): string {
-  const segments = address.split(',').map((s) => s.trim())
-  if (segments.length === 0) return address
-  const [first, ...rest] = segments
-  const words = first.split(/\s+/)
-  const maskedFirst = words.length > 2 ? `•• ${words.slice(-2).join(' ')}` : first
-  return [maskedFirst, ...rest].join(', ')
+export function writeStoredOrderToken(orderId: string, value: StoredOrderToken): void {
+  try {
+    window.sessionStorage.setItem(TOKEN_KEY_PREFIX + orderId, JSON.stringify(value))
+  } catch {
+    // storage unavailable; the page still works for this view
+  }
+}
+
+export function clearStoredOrderToken(orderId: string): void {
+  try {
+    window.sessionStorage.removeItem(TOKEN_KEY_PREFIX + orderId)
+  } catch {
+    // storage unavailable
+  }
 }

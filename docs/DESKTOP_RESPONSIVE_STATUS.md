@@ -123,49 +123,25 @@ passes 60/60 — every route at 375/768/1024/1440px has zero horizontal overflow
 
 ## Known gaps / deferred (flagged, not silently skipped)
 
-1. **Hero "2 side banners"** (`BannerSection`) — not implemented. The
-   design's desktop hero shows 2 static promo tiles beside the main carousel,
-   but the current banner data model has no "placement" concept, so pulling
-   `banners[1]`/`[2]` out as static side tiles while they're *also* still
-   cycling in the main carousel would duplicate that content in the DOM.
-   Needs a backend `placement` field (`hero_main` vs `hero_side`) before this
-   can be done without either duplication or faking content.
-2. **TrustBar content** — kept the existing 3-item dark/centered copy instead
-   of switching to the mockup's different 4-item light-style copy. That's a
-   content change, not a responsive-layout one, so left for a deliberate
-   product decision rather than silently rewritten.
-3. **Mega-menu / footer category links** (`src/lib/desktop-nav.ts`,
-   `MEGA_MENU_GROUPS`) point at `/categories/{id}` for a taxonomy
-   (Tranh phong thủy, Tranh tứ quý, Bộ tam sự · ngũ sự, etc.) that's finer-grained
-   than the backend's current flat category list — some of those ids won't
-   resolve to a real category yet. Intended taxonomy per the handoff; needs
-   the backend to either add these categories or the FE to map them once the
-   real IDs are known.
-4. **`categories/page.tsx` empty state** — pre-existing gap (predates this
-   pass): unlike the Home page, this route has no fallback data, so if the
-   categories fetch fails/returns empty it renders nothing rather than a
-   "no categories" message. Not touched since it's a data-fetching gap, not
-   a responsive-layout one.
-5. **Hydration mismatch on `cart`/`checkout`** — pre-existing bug, found while
-   testing this pass (not caused by it): both pages read `localStorage` cart
-   items synchronously in their initial `useState`, which differs between
-   server render (no `localStorage`) and the client's first paint, producing
-   a real React hydration-mismatch warning/re-render whenever the cart is
-   non-empty. `suppressHydrationWarning` on the root div (already present on
-   `cart/page.tsx`) doesn't fix this — it only suppresses text/attribute
-   diffs on that one node, not a structurally different subtree. Proper fix:
-   initialize with `[]` and populate cart state in a `useEffect`, showing a
-   brief loading state — left alone since it's a pre-existing correctness
-   issue outside this pass's scope, but worth a follow-up.
-6. **`orders/[id]` has no verification gate** — direct-link access
-   (e.g. the post-checkout "Xem đơn hàng" link) bypasses the whole lookup
-   flow. Intentional for now (see `docs/BACKEND_TODO_order_lookup.md`), but
-   flagging again here since it's easy to miss.
-7. **PDP related-products / desktop CTA** — verified via `tsc`/lint and code
-   review only, not against real product data in the browser: this sandbox
-   has no reachable backend and the local `PRODUCTS` fallback array is empty,
-   so the actual PDP 2-column layout with real content was never visually
-   confirmed end-to-end. Worth a manual pass once a backend is reachable.
+Status as of the 2026-10-04 design-vs-live pass. Items 1, 2, 3 and 5 from the
+earlier list are resolved and removed.
+
+1. **Hero side tiles at 768/375** — the 1440 hero shows side tiles; md/sm still
+   lack the 2-column side tiles from the design (design README: "At md/sm the
+   side banners go below in 2 columns"). Open.
+2. **Mega-menu / footer product links** — `MEGA_MENU_GROUPS` in
+   `src/lib/desktop-nav.ts` maps design labels that have no API category to
+   `/products?q=<label>`. Replace with real category ids when the backend has
+   them. Partially resolved.
+3. **`categories/page.tsx` empty state** — pre-existing gap: no "no categories"
+   message if the fetch returns empty. Open.
+4. **Review form and order cancel** — storefront has no review submit form
+   (BUG-004) and buyer order page has no cancel action (BUG-002). Feature gaps;
+   build or drop from the E2E plan. Open.
+5. **PDP related-products / desktop CTA** — verified via `tsc`/lint and screenshot
+   only against the local dev data. Re-check against real product data.
+6. **`orders/[id]` has no verification gate** — direct-link access bypasses the
+   lookup flow. Intentional for now (see `docs/BACKEND_TODO_order_lookup.md`).
 
 ## Environment notes for whoever picks this up
 

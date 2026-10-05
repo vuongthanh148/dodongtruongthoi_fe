@@ -10,6 +10,13 @@ import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { MapEmbed } from '@/components/ui/MapEmbed'
 import { HOTLINE, SHOP_ADDRESS, SHOP_EMAIL, SOCIAL_LINKS, STORES } from '@/lib/constants'
+import { submitContactMessage } from '@/lib/storefront-api'
+
+type ContactFieldErrors = { name?: string; phone?: string; message?: string }
+
+const CONTACT_FAILED_TEXT = 'Không gửi được tin nhắn, vui lòng thử lại hoặc gọi trực tiếp.'
+
+const errorTextStyle: React.CSSProperties = { fontSize: 13, color: '#b91c1c' }
 
 function InfoRow({
   Icon,
@@ -51,12 +58,38 @@ export default function ContactPage() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<ContactFieldErrors>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
 
   const store = STORES[0]
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSent(true)
+    if (sending) return
+
+    const payload = { name: name.trim(), phone: phone.trim(), message: message.trim() }
+    const nextErrors: ContactFieldErrors = {}
+    if (!payload.name) nextErrors.name = 'Vui lòng nhập họ và tên.'
+    if (!payload.phone) nextErrors.phone = 'Vui lòng nhập số điện thoại.'
+    if (!payload.message) nextErrors.message = 'Vui lòng nhập nội dung tin nhắn.'
+
+    setFieldErrors(nextErrors)
+    setSubmitError(null)
+    if (Object.keys(nextErrors).length > 0) return
+
+    setSending(true)
+    const result = await submitContactMessage(payload)
+    setSending(false)
+
+    if (result.ok) {
+      setName('')
+      setPhone('')
+      setMessage('')
+      setSent(true)
+      return
+    }
+    setSubmitError(result.status === 400 && result.message ? result.message : CONTACT_FAILED_TEXT)
   }
 
   return (
@@ -140,7 +173,7 @@ export default function ContactPage() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} noValidate>
                 <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, marginBottom: 16 }}>Gửi tin nhắn</div>
                 <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                   <label className="flex flex-col gap-1.5">
@@ -153,6 +186,7 @@ export default function ContactPage() {
                       className="brand-focus"
                       style={{ height: 46, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', padding: '0 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none' }}
                     />
+                    {fieldErrors.name ? <span style={errorTextStyle}>{fieldErrors.name}</span> : null}
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>Số điện thoại</span>
@@ -165,6 +199,7 @@ export default function ContactPage() {
                       className="brand-focus"
                       style={{ height: 46, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', padding: '0 14px', fontSize: 14, color: 'var(--text-primary)', outline: 'none' }}
                     />
+                    {fieldErrors.phone ? <span style={errorTextStyle}>{fieldErrors.phone}</span> : null}
                   </label>
                   <label className="col-span-full flex flex-col gap-1.5">
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>Nội dung</span>
@@ -177,12 +212,19 @@ export default function ContactPage() {
                       className="brand-focus"
                       style={{ borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', padding: 14, fontSize: 14, color: 'var(--text-primary)', outline: 'none', resize: 'none' }}
                     />
+                    {fieldErrors.message ? <span style={errorTextStyle}>{fieldErrors.message}</span> : null}
                   </label>
                 </div>
+                {submitError ? (
+                  <div role="alert" className="mt-4" style={errorTextStyle}>
+                    {submitError}
+                  </div>
+                ) : null}
                 <button
                   type="submit"
+                  disabled={sending}
                   className="mt-4.5 w-full sm:w-auto"
-                  style={{ height: 50, padding: '0 24px', borderRadius: 6, background: 'var(--accent)', color: 'white', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+                  style={{ height: 50, padding: '0 24px', borderRadius: 6, background: 'var(--accent)', color: 'white', border: 'none', fontSize: 15, fontWeight: 600, cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.7 : 1 }}
                 >
                   Gửi tin nhắn
                 </button>

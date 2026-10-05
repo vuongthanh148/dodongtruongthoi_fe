@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin/campaigns', label: 'Campaigns' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/reviews', label: 'Reviews' },
+  { href: '/admin/contact-messages', label: 'Tin nhắn liên hệ' },
   { href: '/admin/settings', label: 'Settings' },
 ]
 

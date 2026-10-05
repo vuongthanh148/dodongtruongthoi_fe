@@ -1,5 +1,5 @@
 import { API_BASE } from '@/lib/api-config'
-import type { Category, Product } from '@/lib/types'
+import type { Category, Order, OrderStatus, OrderSummary, Product } from '@/lib/types'
 
 const apiFetch: typeof fetch = (input, init) =>
   fetch(input, { ...init, headers: { 'ngrok-skip-browser-warning': '1', ...init?.headers } })
@@ -343,6 +343,69 @@ export async function fetchProductReviews(productId: string): Promise<Review[]> 
   }
 }
 
+export type ReviewSubmission = {
+  reviewerName: string
+  rating: number
+  body: string
+}
+
+// Returns true when the review was accepted. Accepted reviews are pending moderation.
+export async function submitReview(
+  productId: string,
+  review: ReviewSubmission
+): Promise<boolean> {
+  try {
+    const res = await apiFetch(`${API_BASE}/products/${productId}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reviewer_name: review.reviewerName,
+        rating: review.rating,
+        body: review.body,
+      }),
+      cache: 'no-store',
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export type ContactMessageInput = {
+  name: string
+  phone: string
+  message: string
+}
+
+export type ContactMessageResult =
+  | { ok: true }
+  | { ok: false; status: number; message?: string }
+
+// Returns ok only on 2xx. On 400 the server's validation message is passed through.
+export async function submitContactMessage(input: ContactMessageInput): Promise<ContactMessageResult> {
+  try {
+    const res = await apiFetch(`${API_BASE}/contacts/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    })
+    if (res.ok) {
+      return { ok: true }
+    }
+    let message: string | undefined
+    try {
+      const body = (await res.json()) as { message?: string }
+      message = body.message || undefined
+    } catch {
+      // non-JSON error body; no server message
+    }
+    return { ok: false, status: res.status, message }
+  } catch {
+    return { ok: false, status: 0 }
+  }
+}
+
 export async function fetchBanners(): Promise<Banner[]> {
   try {
     const res = await apiFetch(`${API_BASE}/banners`)
@@ -470,7 +533,7 @@ export function parseLabelOverrides(settings: Record<string, string>): LabelOver
 // Order API functions
 export async function createOrder(
   req: import('@/lib/types').CreateOrderRequest
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; lookup_code: string } | null> {
   try {
     const res = await apiFetch(`${API_BASE}/orders`, {
       method: 'POST',
@@ -494,39 +557,167 @@ export async function createOrder(
       cache: 'no-store',
     })
     if (!res.ok) return null
-    const data = (await res.json()) as { data?: { id: string } }
+    const data = (await res.json()) as { data?: { id: string; lookup_code: string } }
     return data.data || null
   } catch {
     return null
   }
 }
 
-export async function getOrdersByPhone(phone: string): Promise<import('@/lib/types').Order[]> {
+type RawOrderSummary = {
+  id: string
+  status?: OrderStatus
+  created_at: string
+  total_amount?: number
+  items?: Array<{ product_title: string; quantity: number }>
+}
+
+function normalizeOrderSummary(raw: RawOrderSummary): OrderSummary {
+  return {
+    id: raw.id,
+    status: raw.status || 'pending_confirm',
+    createdAt: raw.created_at,
+    totalAmount: raw.total_amount || 0,
+    items: (raw.items || []).map((item) => ({
+      productTitle: item.product_title,
+      quantity: item.quantity,
+    })),
+  }
+}
+
+// Summaries only (no address, name, note, phone or prices). Ids here are not secret
+// by themselves; the detail still needs a verified token.
+export async function getOrdersByPhone(phone: string): Promise<OrderSummary[]> {
   try {
-    const res = await apiFetch(`${API_BASE}/orders?phone=${encodeURIComponent(phone)}`)
+    const res = await apiFetch(`${API_BASE}/orders?phone=${encodeURIComponent(phone)}`, {
+      cache: 'no-store',
+    })
     if (!res.ok) return []
-    const data = (await res.json()) as { data?: RawOrder[] }
-    const orders = data.data || []
-    return orders.map(normalizeOrder)
+    const data = (await res.json()) as { data?: RawOrderSummary[] }
+    return (data.data || []).map(normalizeOrderSummary)
   } catch {
     return []
   }
 }
 
-export async function getOrderById(id: string): Promise<import('@/lib/types').Order | null> {
+// Timestamps may arrive as ISO strings or epoch numbers (seconds or ms).
+function parseTimestamp(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 1e12 ? value * 1000 : value
+  }
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+const DEFAULT_TOKEN_TTL_MS = 15 * 60 * 1000
+
+export type VerifyOrderResult =
+  | { kind: 'ok'; token: string; expiresAt: number; orderId: string }
+  | { kind: 'invalid'; remainingAttempts: number | null }
+  | { kind: 'locked'; lockedUntil: number | null }
+  | { kind: 'error' }
+
+// Server decides everything: wrong code (401), lock (429) and success (200) all come from here.
+export async function verifyOrderLookup(phone: string, code: string): Promise<VerifyOrderResult> {
   try {
-    const res = await apiFetch(`${API_BASE}/orders/${id}`)
-    if (!res.ok) return null
-    const data = (await res.json()) as { data?: RawOrder }
-    if (!data.data) return null
-    return normalizeOrder(data.data)
+    const res = await apiFetch(`${API_BASE}/orders/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code }),
+      cache: 'no-store',
+    })
+    const body = (await res.json().catch(() => null)) as { data?: Record<string, unknown> } | null
+    const data = body?.data ?? {}
+
+    if (res.status === 200) {
+      if (typeof data.token !== 'string' || !data.token) return { kind: 'error' }
+      if (typeof data.order_id !== 'string' || !data.order_id) return { kind: 'error' }
+      return {
+        kind: 'ok',
+        token: data.token,
+        expiresAt: parseTimestamp(data.expires_at) ?? Date.now() + DEFAULT_TOKEN_TTL_MS,
+        // The token is bound to this order only; callers must use this id, not their own.
+        orderId: data.order_id,
+      }
+    }
+    if (res.status === 401) {
+      const remaining = data.remaining_attempts
+      return {
+        kind: 'invalid',
+        remainingAttempts: typeof remaining === 'number' ? remaining : null,
+      }
+    }
+    if (res.status === 429) {
+      return { kind: 'locked', lockedUntil: parseTimestamp(data.locked_until) }
+    }
+    return { kind: 'error' }
   } catch {
-    return null
+    return { kind: 'error' }
   }
 }
 
+export type OrderDetailResult =
+  | { kind: 'ok'; order: Order }
+  | { kind: 'unauthorized' }
+  | { kind: 'error' }
+
+// Sends X-Order-Token. 401 means no token, an expired token, or a token for a different order.
+export async function fetchOrderDetail(id: string, token: string): Promise<OrderDetailResult> {
+  try {
+    const res = await apiFetch(`${API_BASE}/orders/${encodeURIComponent(id)}`, {
+      headers: { 'X-Order-Token': token },
+      cache: 'no-store',
+    })
+    if (res.status === 401) return { kind: 'unauthorized' }
+    if (!res.ok) return { kind: 'error' }
+    const data = (await res.json()) as { data?: RawOrder }
+    if (!data.data) return { kind: 'error' }
+    return { kind: 'ok', order: normalizeOrder(data.data) }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+
+export class OrderApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'OrderApiError'
+    this.status = status
+  }
+}
+
+// Requires the token verified for this order. Throws OrderApiError on non-2xx so callers can
+// branch on status (401 = token missing/invalid for this order, 409 = not cancellable).
+export async function cancelOrder(id: string, token: string): Promise<import('@/lib/types').Order> {
+  const res = await apiFetch(`${API_BASE}/orders/${encodeURIComponent(id)}/cancel`, {
+    method: 'POST',
+    headers: { 'X-Order-Token': token },
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    let message = `Request failed with status ${res.status}`
+    try {
+      const body = (await res.json()) as { message?: string }
+      if (body.message) message = body.message
+    } catch {
+      // non-JSON error body; keep default message
+    }
+    throw new OrderApiError(res.status, message)
+  }
+  const data = (await res.json()) as { data?: RawOrder }
+  if (!data.data) {
+    throw new OrderApiError(res.status, 'Empty order response')
+  }
+  return normalizeOrder(data.data)
+}
+
 // Helper to normalize order from backend
-function normalizeOrder(raw: RawOrder): import('@/lib/types').Order {
+function normalizeOrder(raw: RawOrder): Order {
   return {
     id: raw.id,
     phone: raw.phone,

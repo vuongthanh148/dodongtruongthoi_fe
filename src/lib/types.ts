@@ -137,6 +137,15 @@ export interface Order {
   updatedAt?: string
 }
 
+// List view returned by GET /orders?phone=... (no address, name, note, phone or prices).
+export interface OrderSummary {
+  id: string
+  status: OrderStatus
+  createdAt: string
+  totalAmount: number
+  items: Array<{ productTitle: string; quantity: number }>
+}
+
 export interface OrderItem {
   productId: string
   productTitle: string

@@ -134,6 +134,26 @@ export async function adminPost<T>(path: string, body: unknown): Promise<T | nul
   }
 }
 
+// Like adminPost, but surfaces the server's `message` on failure (backend returns {success:false,message}).
+export async function adminPostResult<T>(
+  path: string,
+  body: unknown
+): Promise<{ data: T } | { error: string }> {
+  try {
+    const response = await adminFetch(path, { method: 'POST', body: JSON.stringify(body) })
+    const json = (await response.json().catch(() => null)) as {
+      data?: T
+      message?: string
+    } | null
+    if (!response.ok) {
+      return { error: json?.message || `Lỗi máy chủ (${response.status})` }
+    }
+    return { data: (json && 'data' in json ? json.data : json) as T }
+  } catch {
+    return { error: 'Không thể kết nối máy chủ' }
+  }
+}
+
 export async function adminPut<T>(path: string, body: unknown): Promise<T | null> {
   try {
     return await unwrap<T>(await adminFetch(path, { method: 'PUT', body: JSON.stringify(body) }))

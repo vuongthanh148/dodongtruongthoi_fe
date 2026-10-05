@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import useSWR from 'swr'
 import { DrumMark, IconBox, IconCart, IconChevron, IconHeart, IconSearch } from '@/components/icons'
 import { Container } from '@/components/layout/Container'
@@ -11,8 +11,25 @@ import { SearchResultsDropdown } from '@/components/ui/SearchResultsDropdown'
 import { SITE_NAME } from '@/lib/constants'
 import { DESK_NAV_LINKS } from '@/lib/desktop-nav'
 import { getCartItems, getSavedProducts } from '@/lib/storage'
-import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
+import { fetchProducts } from '@/lib/storefront-api'
 import { SWR_KEYS } from '@/lib/swr-keys'
+
+const XL_QUERY = '(min-width: 1280px)'
+
+function subscribeXl(onChange: () => void) {
+  const mq = window.matchMedia(XL_QUERY)
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
+}
+
+// Placeholder copy differs at lg (narrow search pill) vs xl. Server snapshot is xl.
+function useIsXl() {
+  return useSyncExternalStore(
+    subscribeXl,
+    () => window.matchMedia(XL_QUERY).matches,
+    () => true,
+  )
+}
 
 function IconBtnLink({
   href,
@@ -72,9 +89,9 @@ export function DeskHeader() {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const headerRef = useRef<HTMLElement>(null)
+  const isXl = useIsXl()
 
   const { data: allProducts = [] } = useSWR(SWR_KEYS.products, fetchProducts)
-  const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
   const bestSellers = allProducts.filter((p) => p.badge === 'best_seller')
   const megaFeatured = (bestSellers.length > 0 ? bestSellers : allProducts).slice(0, 2)
 
@@ -130,12 +147,12 @@ export function DeskHeader() {
 
   return (
     <header ref={headerRef} className="sticky top-0 z-40 hidden border-b border-[var(--border)] bg-[var(--bg-page)] lg:block">
-      <Container className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch gap-5 xl:gap-9" style={{ height: 76 }}>
+      <Container className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch gap-4 xl:gap-6" style={{ height: 76 }}>
         <div className="flex items-center">
           <Logo />
         </div>
 
-        <nav className="flex min-w-0 items-stretch gap-5 overflow-hidden pl-2 xl:gap-7 xl:pl-6">
+        <nav className="flex min-w-0 items-stretch gap-3 overflow-hidden pl-2 xl:gap-4 xl:pl-4">
           {DESK_NAV_LINKS.map((link) => {
             const active = link.hasDropdown ? isProductsActive || megaOpen : pathname === link.href
             if (link.hasDropdown) {
@@ -212,7 +229,7 @@ export function DeskHeader() {
                 onBlur={() => {
                   searchBlurTimer.current = setTimeout(() => setSearchFocused(false), 150)
                 }}
-                placeholder="Tìm tranh đồng, đỉnh đồng…"
+                placeholder={isXl ? 'Tìm tranh đồng, đỉnh đồng…' : 'Tìm sản phẩm…'}
                 className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
               />
             </div>
@@ -245,8 +262,6 @@ export function DeskHeader() {
       <MegaMenu
         id="desk-mega-menu"
         open={megaOpen}
-        activeItemId={undefined}
-        categories={categories}
         featuredProducts={megaFeatured}
         onMouseEnter={openMega}
         onMouseLeave={scheduleClose}

@@ -5,20 +5,8 @@ import { toast } from 'sonner'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 import { adminDelete, adminGet, adminPost, adminPut } from '@/lib/admin-api'
+import { previewSlug } from '@/lib/slug'
 import type { AdminCategory } from '@/lib/types'
-
-// Client-side preview only — the server (CategoryUsecase.CreateCategory)
-// re-normalizes and de-duplicates the slug regardless of what's sent.
-function previewSlug(name: string): string {
-  return name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
 
 const emptyForm = {
   id: '',

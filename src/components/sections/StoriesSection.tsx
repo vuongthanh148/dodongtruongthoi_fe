@@ -7,6 +7,7 @@ import { DrumMark } from '@/components/icons'
 import { Container } from '@/components/layout/Container'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Heading } from '@/components/ui/Heading'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { STORY_CARDS } from '@/lib/data'
 import type { Banner, CustomerPhoto } from '@/lib/storefront-api'
 
@@ -35,7 +36,7 @@ export function StoriesSection({
   return (
     <>
     <section
-      className="lg:hidden"
+      className="md:hidden"
       style={{
         background: 'var(--bg-dark)',
         padding: '32px 22px 28px',
@@ -192,15 +193,10 @@ export function StoriesSection({
     </section>
 
     {/* Desktop: side-by-side story cards on an ivory surface */}
-    <section className="hidden lg:block" style={{ margin: '64px 0' }}>
+    <section className="hidden md:block" style={{ margin: '64px 0' }}>
       <Container>
-        <div
-          className="label-mono mb-4"
-          style={{ color: 'var(--bronze)', fontSize: 10 }}
-        >
-          Câu chuyện làng nghề
-        </div>
-        <div className="grid grid-cols-2 gap-6">
+        <SectionHeading eyebrow="Câu chuyện" title="Từ làng nghề Đại Bái" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {storiesForDesktop.map((s, i) => (
             <Link
               key={s.title}

@@ -32,18 +32,211 @@ import {
   fetchProducts,
   fetchSettings,
   parseLabelOverrides,
+  submitReview,
 } from '@/lib/storefront-api'
 import { SWR_KEYS } from '@/lib/swr-keys'
 import type { Product, SavedProductVariant } from '@/lib/types'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from 'react'
 import useSWR from 'swr'
 
 type TabId = 'description' | 'guide' | 'specs' | 'reviews'
 type ArtBg = 'gold' | 'red' | 'bronze' | 'dark'
 type ArtFrame = 'bronze' | 'gold' | 'dark' | 'carved'
+
+type ReviewFormErrors = { name?: string; rating?: string; body?: string }
+
+const reviewFieldStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '10px 12px',
+  border: '1px solid var(--border)',
+  borderRadius: 6,
+  background: 'var(--bg-card)',
+  color: 'var(--text-primary)',
+  fontFamily: 'var(--font-be-vietnam), sans-serif',
+  fontSize: 14,
+  outline: 'none',
+}
+
+const reviewErrorStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  color: 'var(--accent)',
+}
+
+function ReviewForm({ productId }: { productId: string }) {
+  const idPrefix = useId()
+  const [reviewerName, setReviewerName] = useState('')
+  const [rating, setRating] = useState(0)
+  const [content, setContent] = useState('')
+  const [errors, setErrors] = useState<ReviewFormErrors>({})
+  const [sending, setSending] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (sending) return
+
+    const nextErrors: ReviewFormErrors = {}
+    if (!reviewerName.trim()) nextErrors.name = 'Vui lòng nhập tên'
+    if (rating < 1) nextErrors.rating = 'Vui lòng chọn số sao'
+    if (content.trim().length < 10) nextErrors.body = 'Nội dung tối thiểu 10 ký tự'
+    setErrors(nextErrors)
+    setStatus('idle')
+    if (Object.keys(nextErrors).length > 0) return
+
+    setSending(true)
+    const ok = await submitReview(productId, {
+      reviewerName: reviewerName.trim(),
+      rating,
+      body: content.trim(),
+    })
+    setSending(false)
+
+    if (ok) {
+      setReviewerName('')
+      setRating(0)
+      setContent('')
+      setStatus('success')
+    } else {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      style={{
+        marginTop: 16,
+        paddingTop: 20,
+        borderTop: '1px solid var(--border-soft)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+      }}
+    >
+      <Label style={{ fontSize: 9.5, letterSpacing: '0.18em' }}>Viết đánh giá</Label>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label
+          htmlFor={`${idPrefix}-name`}
+          style={{ fontSize: 13, color: 'var(--text-secondary)' }}
+        >
+          Tên của bạn
+        </label>
+        <input
+          id={`${idPrefix}-name`}
+          type="text"
+          value={reviewerName}
+          onChange={(e) => {
+            setReviewerName(e.target.value)
+            setErrors((prev) => ({ ...prev, name: undefined }))
+          }}
+          aria-invalid={Boolean(errors.name)}
+          aria-describedby={errors.name ? `${idPrefix}-name-error` : undefined}
+          style={reviewFieldStyle}
+        />
+        {errors.name && (
+          <p id={`${idPrefix}-name-error`} style={reviewErrorStyle}>
+            {errors.name}
+          </p>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span id={`${idPrefix}-rating-label`} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          Số sao
+        </span>
+        <div
+          role="group"
+          aria-labelledby={`${idPrefix}-rating-label`}
+          aria-describedby={errors.rating ? `${idPrefix}-rating-error` : undefined}
+          style={{ display: 'flex', gap: 4 }}
+        >
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              aria-label={`${star} sao`}
+              aria-pressed={rating === star}
+              onClick={() => {
+                setRating(star)
+                setErrors((prev) => ({ ...prev, rating: undefined }))
+              }}
+              style={{
+                width: 44,
+                height: 44,
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontSize: 26,
+                lineHeight: 1,
+                padding: 0,
+                color: star <= rating ? '#c9a961' : 'var(--border)',
+              }}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+        {errors.rating && (
+          <p id={`${idPrefix}-rating-error`} style={reviewErrorStyle}>
+            {errors.rating}
+          </p>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label
+          htmlFor={`${idPrefix}-body`}
+          style={{ fontSize: 13, color: 'var(--text-secondary)' }}
+        >
+          Nội dung đánh giá
+        </label>
+        <textarea
+          id={`${idPrefix}-body`}
+          rows={4}
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value)
+            setErrors((prev) => ({ ...prev, body: undefined }))
+          }}
+          aria-invalid={Boolean(errors.body)}
+          aria-describedby={errors.body ? `${idPrefix}-body-error` : undefined}
+          style={{ ...reviewFieldStyle, resize: 'vertical' }}
+        />
+        {errors.body && (
+          <p id={`${idPrefix}-body-error`} style={reviewErrorStyle}>
+            {errors.body}
+          </p>
+        )}
+      </div>
+
+      {status === 'success' && (
+        <p role="status" style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+          Cảm ơn bạn! Đánh giá sẽ hiển thị sau khi được duyệt.
+        </p>
+      )}
+      {status === 'error' && (
+        <p role="alert" style={reviewErrorStyle}>
+          Không gửi được đánh giá, vui lòng thử lại.
+        </p>
+      )}
+
+      <Btn
+        type="submit"
+        disabled={sending}
+        style={{ width: '100%', height: 46, borderRadius: 6, fontSize: 14 }}
+      >
+        Gửi đánh giá
+      </Btn>
+    </form>
+  )
+}
 
 function CompareModal({
   product,
@@ -1254,6 +1447,7 @@ function ProductDetailPageInner() {
                   </article>
                 ))
               )}
+              <ReviewForm productId={product.id} />
             </div>
           ) : null}
         </div>

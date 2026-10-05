@@ -134,6 +134,10 @@ export default function AdminProductEditPage() {
 
   const effectiveProductId = savedProductId || (isNew ? '' : productId)
 
+  // When SKUs exist the backend derives base_price from the cheapest SKU, so mirror that here.
+  const skuPrices = skus.map((s) => Number(s.price)).filter((n) => Number.isFinite(n))
+  const derivedBasePrice = skuPrices.length > 0 ? Math.min(...skuPrices) : null
+
   const parsedVariantOptions: VariantOption[] = variantOptions.map((row) => ({
     key: row.key.trim(),
     label: row.label.trim(),
@@ -223,10 +227,15 @@ export default function AdminProductEditPage() {
   }, [productId, isNew])
 
   useEffect(() => {
+    // "new" is reserved for the create page; never render the edit form for it.
+    if (productId === 'new') {
+      router.replace('/admin/products/new')
+      return
+    }
     ;(async () => {
       await loadPage()
     })()
-  }, [loadPage])
+  }, [loadPage, productId, router])
 
   function addVariantOptionRow() {
     setVariantOptions((prev) => [...prev, { key: '', label: '', values: '' }])
@@ -465,10 +474,20 @@ export default function AdminProductEditPage() {
             <Field label="Base price">
               <input
                 type="number"
-                value={form.base_price}
+                value={derivedBasePrice !== null ? String(derivedBasePrice) : form.base_price}
                 onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))}
-                style={inputStyle}
+                disabled={derivedBasePrice !== null}
+                style={
+                  derivedBasePrice !== null
+                    ? { ...inputStyle, background: '#f3f4f6', color: '#6b7280' }
+                    : inputStyle
+                }
               />
+              {derivedBasePrice !== null && (
+                <span style={{ fontSize: 12, color: '#6b7280' }}>
+                  Tự động = giá thấp nhất trong bảng SKU
+                </span>
+              )}
             </Field>
           </div>
 

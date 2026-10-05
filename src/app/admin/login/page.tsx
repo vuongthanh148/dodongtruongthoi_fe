@@ -2,14 +2,14 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { setAdminToken, setAdminTokens } from '@/lib/admin-auth'
+import { setAdminTokens } from '@/lib/admin-auth'
 import { adminPost } from '@/lib/admin-api'
 
 function AdminLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('admin123')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   function resolveNextPath(): string {
@@ -26,25 +26,14 @@ function AdminLoginContent() {
   async function handleLogin() {
     setError('')
 
-    try {
-      const json = await adminPost<{ token?: string; refresh_token?: string }>('/login', { username, password })
-      const token = json?.token ?? `local-${Date.now()}`
-      if (token) {
-        setAdminTokens(token, json?.refresh_token)
-        router.push(resolveNextPath())
-        return
-      }
-    } catch {
-      // Fallback path for local FE-only workflow.
-    }
-
-    if (username === 'admin' && password === 'admin123') {
-      setAdminToken(`local-${Date.now()}`)
-      router.push(resolveNextPath())
+    const json = await adminPost<{ token?: string; refresh_token?: string }>('/login', { username, password })
+    if (!json?.token) {
+      setError('Invalid credentials')
       return
     }
 
-    setError('Invalid credentials')
+    setAdminTokens(json.token, json.refresh_token)
+    router.push(resolveNextPath())
   }
 
   return (

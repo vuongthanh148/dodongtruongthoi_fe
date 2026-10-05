@@ -10,9 +10,15 @@ import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { IconBox, IconPhone, IconZalo } from '@/components/icons'
 import { HOTLINE } from '@/lib/constants'
-import { maskAddress, maskName, maskOrderCode, maskPhone } from '@/lib/order-lookup'
-import { getOrdersByPhone } from '@/lib/storefront-api'
-import type { Order } from '@/lib/types'
+import {
+  clearStoredOrderToken,
+  LOOKUP_CODE_LENGTH,
+  maskOrderCode,
+  maskPhone,
+  writeStoredOrderToken,
+} from '@/lib/order-lookup'
+import { fetchOrderDetail, getOrdersByPhone, verifyOrderLookup } from '@/lib/storefront-api'
+import type { Order, OrderSummary } from '@/lib/types'
 
 const STATUS_LABELS: Record<string, string> = {
   pending_confirm: 'Chờ xác nhận',
@@ -24,11 +30,6 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 type Step = 'phone' | 'list' | 'verify' | 'locked' | 'detail'
-type VerifyMode = 'code' | 'otp'
-
-const LOCK_MS = 15 * 60 * 1000
-const RESEND_S = 60
-const MAX_ATTEMPTS = 5
 
 function fmtVND(n: number) {
   return n.toLocaleString('vi-VN') + 'đ'
@@ -76,34 +77,54 @@ export default function OrdersPage() {
   const [step, setStep] = useState<Step>('phone')
   const [phoneInput, setPhoneInput] = useState('')
   const [phone, setPhone] = useState('')
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [selected, setSelected] = useState<Order | null>(null)
+  const [selected, setSelected] = useState<OrderSummary | null>(null)
 
-  const [attempts, setAttempts] = useState(0)
+  // Verified state lives only in memory. Full order data is set only after GET /orders/{id} succeeds with the token.
+  const [token, setToken] = useState<{ value: string; expiresAt: number } | null>(null)
+  const [detail, setDetail] = useState<Order | null>(null)
+
+  // Lock state comes only from the server (429 locked_until). Never guessed locally.
   const [lockedUntil, setLockedUntil] = useState<number | null>(null)
-  const [lockRemaining, setLockRemaining] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
 
-  const [verifyMode, setVerifyMode] = useState<VerifyMode>('code')
   const [verifyValue, setVerifyValue] = useState('')
   const [verifyError, setVerifyError] = useState('')
-  const [otpSent, setOtpSent] = useState<'zalo' | 'sms' | null>(null)
-  const [resendIn, setResendIn] = useState(0)
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null)
+  const [verifying, setVerifying] = useState(false)
 
+  // Countdown ticks while a lock is active. When it runs out, return to the verify step.
   useEffect(() => {
-    if (resendIn <= 0) return
-    const t = setTimeout(() => setResendIn((s) => s - 1), 1000)
-    return () => clearTimeout(t)
-  }, [resendIn])
-
-  useEffect(() => {
-    if (!lockedUntil) return
-    const tick = () => setLockRemaining(Math.max(0, Math.round((lockedUntil - Date.now()) / 1000)))
-    tick()
+    if (lockedUntil === null) return
+    const tick = () => {
+      const current = Date.now()
+      setNow(current)
+      if (current >= lockedUntil) {
+        setLockedUntil(null)
+        setStep((s) => (s === 'locked' ? 'verify' : s))
+      }
+    }
     const t = setInterval(tick, 1000)
     return () => clearInterval(t)
   }, [lockedUntil])
+
+  const lockRemainingS = lockedUntil === null ? 0 : Math.max(0, Math.round((lockedUntil - now) / 1000))
+
+  // The verified session ends at the server's expires_at; drop the detail and ask for the code again.
+  useEffect(() => {
+    if (!token) return
+    const t = setTimeout(
+      () => {
+        setToken(null)
+        setDetail(null)
+        setStep((s) => (s === 'detail' ? 'verify' : s))
+      },
+      Math.max(0, token.expiresAt - Date.now())
+    )
+    return () => clearTimeout(t)
+  }, [token])
 
   async function handlePhoneSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -116,8 +137,12 @@ export default function OrdersPage() {
     setLoading(true)
     try {
       const result = await getOrdersByPhone(normalized)
-      setOrders(result || [])
+      setOrders(result)
       setPhone(normalized)
+      setToken(null)
+      setDetail(null)
+      setLockedUntil(null)
+      setRemainingAttempts(null)
       setStep('list')
     } catch {
       setError('Có lỗi khi tra cứu đơn hàng.')
@@ -126,42 +151,71 @@ export default function OrdersPage() {
     }
   }
 
-  function openVerify(order: Order) {
+  function openVerify(order: OrderSummary) {
     setSelected(order)
-    setVerifyMode('code')
     setVerifyValue('')
     setVerifyError('')
-    setOtpSent(null)
-    setResendIn(0)
-    if (lockedUntil && lockRemaining > 0) {
+    setRemainingAttempts(null)
+    // The countdown effect clears lockedUntil once it passes, so a non-null value means still locked.
+    if (lockedUntil !== null) {
       setStep('locked')
     } else {
       setStep('verify')
     }
   }
 
-  function submitVerify() {
-    if (!selected) return
-    const ok =
-      verifyMode === 'code'
-        ? verifyValue.trim().toUpperCase() === selected.id.toUpperCase()
-        : verifyValue === '123456'
-    if (ok) {
-      setAttempts(0)
-      setStep('detail')
-      return
-    }
-    const next = attempts + 1
-    setAttempts(next)
-    if (next >= MAX_ATTEMPTS) {
-      setLockedUntil(Date.now() + LOCK_MS)
-      setStep('locked')
-      return
-    }
-    setVerifyError(verifyMode === 'code' ? 'Mã đơn không khớp với số điện thoại này.' : 'Mã OTP chưa đúng.')
-  }
+  async function submitVerify() {
+    if (!selected || verifying) return
+    setVerifying(true)
+    setVerifyError('')
+    try {
+      const result = await verifyOrderLookup(phone, verifyValue.trim().toUpperCase())
+      if (result.kind === 'invalid') {
+        setRemainingAttempts(result.remainingAttempts)
+        setVerifyError('Mã tra cứu không đúng.')
+        return
+      }
+      if (result.kind === 'locked') {
+        setLockedUntil(result.lockedUntil)
+        setNow(Date.now())
+        setStep('locked')
+        return
+      }
+      if (result.kind === 'error') {
+        setVerifyError('Có lỗi khi xác minh. Vui lòng thử lại.')
+        return
+      }
 
-  const remaining = MAX_ATTEMPTS - attempts
+      // The token is bound to the order the server verified (result.orderId), which is what
+      // the detail request must use. If the code belongs to a different order, do not show it.
+      const verifiedOrderId = result.orderId
+      writeStoredOrderToken(verifiedOrderId, { token: result.token, expiresAt: result.expiresAt })
+      if (verifiedOrderId !== selected.id) {
+        setVerifyError('Mã tra cứu không đúng.')
+        return
+      }
+
+      const verified = { value: result.token, expiresAt: result.expiresAt }
+      setToken(verified)
+      const detailResult = await fetchOrderDetail(verifiedOrderId, verified.value)
+      if (detailResult.kind === 'ok') {
+        setDetail(detailResult.order)
+        setRemainingAttempts(null)
+        setVerifyValue('')
+        setStep('detail')
+        return
+      }
+      setToken(null)
+      clearStoredOrderToken(verifiedOrderId)
+      setVerifyError(
+        detailResult.kind === 'unauthorized'
+          ? 'Phiên xác minh không hợp lệ. Vui lòng thử lại.'
+          : 'Có lỗi khi tải thông tin đơn hàng.'
+      )
+    } finally {
+      setVerifying(false)
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
@@ -242,7 +296,7 @@ export default function OrdersPage() {
             )}
             <div className="mt-4 flex max-w-[560px] gap-2" style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
               <IconBox size={16} color="var(--bronze)" />
-              <span>Chỉ hiển thị thông tin tóm tắt. Để xem địa chỉ và chi tiết, bạn cần mã đơn hoặc mã OTP.</span>
+              <span>Chỉ hiển thị thông tin tóm tắt. Để xem địa chỉ và chi tiết, bạn cần mã tra cứu.</span>
             </div>
           </div>
         )}
@@ -260,6 +314,9 @@ export default function OrdersPage() {
                   setStep('phone')
                   setPhoneInput('')
                   setOrders([])
+                  setToken(null)
+                  setDetail(null)
+                  setLockedUntil(null)
                 }}
                 style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}
               >
@@ -349,120 +406,40 @@ export default function OrdersPage() {
               Xác minh để xem đơn {maskOrderCode(selected.id)}
             </div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.55 }}>
-              Để bảo vệ địa chỉ và thông tin của bạn, vui lòng xác minh bằng một trong hai cách.
-            </div>
-            <div className="mt-4 mb-4 flex" style={{ borderBottom: '1px solid var(--border)' }}>
-              {(['code', 'otp'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    setVerifyMode(m)
-                    setVerifyValue('')
-                    setVerifyError('')
-                  }}
-                  style={{
-                    flex: 1,
-                    height: 42,
-                    border: 'none',
-                    borderBottom: verifyMode === m ? '2px solid var(--accent)' : '2px solid transparent',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-be-vietnam), sans-serif',
-                    fontSize: 14,
-                    fontWeight: verifyMode === m ? 600 : 400,
-                    color: verifyMode === m ? 'var(--accent)' : 'var(--text-secondary)',
-                  }}
-                >
-                  {m === 'code' ? 'Nhập mã đơn' : 'Nhận mã OTP'}
-                </button>
-              ))}
+              Để bảo vệ địa chỉ và thông tin của bạn, vui lòng nhập mã tra cứu {LOOKUP_CODE_LENGTH} ký tự.
             </div>
 
-            {verifyMode === 'code' ? (
-              <div className="flex flex-col gap-2.5">
-                <input
-                  autoFocus
-                  value={verifyValue}
-                  onChange={(e) => {
-                    setVerifyValue(e.target.value)
-                    setVerifyError('')
-                  }}
-                  placeholder="VD: TT-24815"
-                  className="brand-focus"
-                  style={{ height: 50, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', padding: '0 16px', fontSize: 15, fontFamily: 'ui-monospace, Menlo, monospace', color: 'var(--text-primary)', outline: 'none' }}
-                />
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Mã đơn có trong tin nhắn SMS/Zalo xác nhận đặt hàng.</div>
-              </div>
-            ) : !otpSent ? (
-              <div className="flex flex-col gap-3">
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                  Gửi mã 6 số tới <b style={{ fontVariantNumeric: 'tabular-nums' }}>{maskPhone(selected.phone)}</b> qua:
-                </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpSent('zalo')
-                      setResendIn(RESEND_S)
-                    }}
-                    style={{ height: 46, borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}
-                  >
-                    <IconZalo size={20} /> Zalo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpSent('sms')
-                      setResendIn(RESEND_S)
-                    }}
-                    style={{ height: 46, borderRadius: 6, border: '1.5px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontSize: 14 }}
-                  >
-                    SMS
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                  Đã gửi mã qua {otpSent === 'zalo' ? 'Zalo' : 'SMS'} tới {maskPhone(selected.phone)}.
-                </div>
-                <input
-                  autoFocus
-                  maxLength={6}
-                  value={verifyValue}
-                  onChange={(e) => {
-                    setVerifyValue(e.target.value.replace(/\D/g, ''))
-                    setVerifyError('')
-                  }}
-                  placeholder="••••••"
-                  className="brand-focus"
-                  style={{ height: 56, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', padding: '0 16px', fontSize: 22, letterSpacing: '0.4em', textAlign: 'center', color: 'var(--text-primary)', outline: 'none' }}
-                />
-                <div className="flex justify-between" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                  <span />
-                  {resendIn > 0 ? (
-                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>Gửi lại sau {resendIn}s</span>
-                  ) : (
-                    <button type="button" onClick={() => setResendIn(RESEND_S)} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5 }}>
-                      Gửi lại mã
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+            <form
+              className="mt-4 flex flex-col gap-2.5"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (verifyValue) void submitVerify()
+              }}
+            >
+              <input
+                autoFocus
+                value={verifyValue}
+                maxLength={LOOKUP_CODE_LENGTH}
+                onChange={(e) => {
+                  setVerifyValue(e.target.value.toUpperCase())
+                  setVerifyError('')
+                }}
+                placeholder="VD: 3F9A1C"
+                className="brand-focus"
+                style={{ height: 50, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', padding: '0 16px', fontSize: 15, fontFamily: 'ui-monospace, Menlo, monospace', color: 'var(--text-primary)', outline: 'none' }}
+              />
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Mã tra cứu được hiển thị khi đặt hàng thành công.</div>
 
-            {verifyError && (
-              <div className="lk-shake mt-3" style={{ fontSize: 13.5, color: 'var(--accent)', background: 'rgba(139,30,30,0.06)', padding: '10px 12px', borderRadius: 6 }}>
-                {verifyError} Còn {remaining} lần thử.
-              </div>
-            )}
+              {verifyError && (
+                <div className="lk-shake mt-1" style={{ fontSize: 13.5, color: 'var(--accent)', background: 'rgba(139,30,30,0.06)', padding: '10px 12px', borderRadius: 6 }}>
+                  {verifyError}
+                  {remainingAttempts !== null && ` Còn ${remainingAttempts} lần thử.`}
+                </div>
+              )}
 
-            {(verifyMode === 'code' || otpSent) && (
               <button
-                type="button"
-                onClick={submitVerify}
-                disabled={!verifyValue}
+                type="submit"
+                disabled={!verifyValue || verifying}
                 style={{
                   width: '100%',
                   marginTop: 16,
@@ -473,13 +450,13 @@ export default function OrdersPage() {
                   color: 'white',
                   fontSize: 14,
                   fontWeight: 600,
-                  cursor: verifyValue ? 'pointer' : 'not-allowed',
-                  opacity: verifyValue ? 1 : 0.45,
+                  cursor: verifyValue && !verifying ? 'pointer' : 'not-allowed',
+                  opacity: verifyValue && !verifying ? 1 : 0.45,
                 }}
               >
-                Xem chi tiết đơn
+                {verifying ? 'Đang xác minh...' : 'Xem chi tiết đơn'}
               </button>
-            )}
+            </form>
 
             <div className="mt-4 flex justify-between" style={{ fontSize: 13 }}>
               <button type="button" onClick={() => setStep('list')} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -496,10 +473,10 @@ export default function OrdersPage() {
         {step === 'locked' && (
           <div key="locked" className="lk-in max-w-[520px]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
             <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, color: 'var(--accent)' }}>
-              Tạm khóa tra cứu {lockRemaining > 0 ? `${Math.ceil(lockRemaining / 60)} phút` : ''}
+              Tạm khóa tra cứu {lockRemainingS > 0 ? `${Math.ceil(lockRemainingS / 60)} phút` : ''}
             </div>
             <div style={{ fontSize: 14.5, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.6 }}>
-              Bạn đã nhập sai quá {MAX_ATTEMPTS} lần. Để bảo vệ thông tin khách hàng, việc tra cứu đơn này tạm dừng. Nếu cần gấp, hãy liên hệ trực tiếp.
+              Bạn đã nhập sai quá 5 lần. Để bảo vệ thông tin khách hàng, việc tra cứu đơn này tạm dừng. Nếu cần gấp, hãy liên hệ trực tiếp.
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <a href={`tel:${HOTLINE}`} style={{ height: 46, borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 14 }}>
@@ -513,7 +490,7 @@ export default function OrdersPage() {
         )}
 
         {/* ===== Step: detail (verified) ===== */}
-        {step === 'detail' && selected && (
+        {step === 'detail' && detail && (
           <div key="detail" className="lk-in">
             <div className="mb-4 flex w-fit items-center gap-2 rounded-md px-3.5 py-2.5" style={{ background: 'rgba(58,107,58,0.1)', color: 'var(--color-success)', fontSize: 13.5 }}>
               ✓ Đã xác minh · phiên xem hết hạn sau 15 phút
@@ -522,13 +499,13 @@ export default function OrdersPage() {
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
                 <div className="mb-4 flex items-center justify-between gap-2">
                   <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                    Đơn {maskOrderCode(selected.id)}
+                    Đơn {maskOrderCode(detail.id)}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100, background: 'rgba(0,0,0,0.06)', color: 'var(--text-secondary)' }}>
-                    {STATUS_LABELS[selected.status] ?? selected.status}
+                    {STATUS_LABELS[detail.status] ?? detail.status}
                   </span>
                 </div>
-                {selected.items.map((item, idx) => (
+                {detail.items.map((item, idx) => (
                   <div key={idx} className="grid grid-cols-[80px_minmax(0,1fr)_auto] items-center gap-3.5" style={{ padding: '10px 0', borderTop: '1px solid var(--border-soft)' }}>
                     <div style={{ width: 80, height: 60, background: 'var(--bg-surface)', borderRadius: 8 }} />
                     <div className="min-w-0">
@@ -542,18 +519,15 @@ export default function OrdersPage() {
                 ))}
                 <div className="flex items-baseline justify-between" style={{ paddingTop: 14, borderTop: '1px solid var(--border)' }}>
                   <span style={{ fontWeight: 600 }}>Tổng cộng</span>
-                  <span className="price-num" style={{ fontSize: 22, color: 'var(--accent)' }}>{fmtVND(selected.totalAmount)}</span>
+                  <span className="price-num" style={{ fontSize: 22, color: 'var(--accent)' }}>{fmtVND(detail.totalAmount)}</span>
                 </div>
               </div>
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
                 <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 17, fontWeight: 600, marginBottom: 10 }}>Giao đến</div>
                 <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)' }}>
-                  {selected.customerName ? maskName(selected.customerName) : 'Khách hàng'} · {maskPhone(selected.phone)}
+                  {detail.customerName || 'Khách hàng'} · {maskPhone(detail.phone)}
                   <br />
-                  {selected.address ? maskAddress(selected.address) : '—'}
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.5 }}>
-                  Địa chỉ được che một phần kể cả sau khi xác minh.
+                  {detail.address || '—'}
                 </div>
                 <a
                   href={`tel:${HOTLINE}`}
@@ -566,7 +540,10 @@ export default function OrdersPage() {
             </div>
             <button
               type="button"
-              onClick={() => setStep('list')}
+              onClick={() => {
+                setDetail(null)
+                setStep('list')
+              }}
               className="mt-4"
               style={{ fontSize: 13.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
             >

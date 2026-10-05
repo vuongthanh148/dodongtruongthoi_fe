@@ -1,12 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import useSWR from 'swr'
 import { DrumMark, IconFacebook, IconMessenger, IconTiktok, IconZalo } from '@/components/icons'
 import { Container } from '@/components/layout/Container'
 import { COMPANY_NAME, SITE_NAME, SOCIAL_LINKS } from '@/lib/constants'
-import { fetchCategories } from '@/lib/storefront-api'
-import { SWR_KEYS } from '@/lib/swr-keys'
+import { MEGA_MENU_GROUPS } from '@/lib/desktop-nav'
 
 const SUPPORT_LINKS = [
   { label: 'Tra cứu đơn hàng', href: '/orders' },
@@ -29,8 +27,6 @@ function ColHeading({ children }: { children: React.ReactNode }) {
 }
 
 export function Footer() {
-  const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
-
   return (
     <footer className="mt-auto bg-[var(--bg-dark)] text-[rgba(244,237,224,0.78)]">
       <Container className="py-8 lg:grid lg:grid-cols-[1.6fr_1fr_1fr_1fr] lg:items-start lg:gap-6 lg:py-13 xl:gap-10">
@@ -68,9 +64,9 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-x-4 gap-y-7 pt-7 md:grid-cols-3 md:gap-6 md:pt-7 lg:contents">
           <div className="flex flex-col gap-2.5 text-[13.5px] lg:text-sm">
             <ColHeading>Sản phẩm</ColHeading>
-            {categories.map((c) => (
-              <Link key={c.id} href={`/categories/${c.id}`} className="hover:text-[var(--gold)]">
-                {c.name}
+            {MEGA_MENU_GROUPS.map((g) => (
+              <Link key={g.title} href={g.allHref} className="hover:text-[var(--gold)]">
+                {g.title}
               </Link>
             ))}
           </div>
