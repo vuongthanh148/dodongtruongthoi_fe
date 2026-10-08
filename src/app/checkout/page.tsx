@@ -4,42 +4,116 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
-import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
+import { VisitBlock } from '@/components/sections/VisitBlock'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { BottomActionBar } from '@/components/ui/BottomActionBar'
-import { fetchLivePrices } from '@/lib/cart-prices'
+import { BankTransferPanel, CopyButton } from '@/components/checkout/BankTransferPanel'
+import { fetchLivePrices, type CartLinePrice } from '@/lib/cart-prices'
 import { getCartItems, clearCart } from '@/lib/storage'
 import { createOrder } from '@/lib/storefront-api'
+import { formatVnd } from '@/lib/format'
+import { CART_COPY, CHECKOUT_COPY, CONFIRM_COPY } from '@/lib/content-data'
 import type { CartItem } from '@/lib/types'
 
-const fieldStyle: React.CSSProperties = {
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '12px 14px',
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 100,
-  fontFamily: 'var(--font-be-vietnam), sans-serif',
-  fontSize: 12,
-  color: 'var(--text-primary)',
-  outline: 'none',
+type PaymentMethod = 'cod' | 'transfer' | 'showroom'
+
+const PAYMENT_OPTIONS: PaymentMethod[] = ['cod', 'transfer', 'showroom']
+const FIELD_CLASS =
+  'w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-card)] px-3.5 py-3 font-body text-[15px] text-[var(--text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_var(--accent-subtle)]'
+const LABEL_CLASS = 'mb-1.5 block font-body text-[13px] font-medium text-[var(--text-secondary)]'
+const CARD_CLASS = 'rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] p-5 md:p-6'
+
+function OrderItemsCard({
+  items,
+  linePrices,
+  title,
+}: {
+  items: CartItem[]
+  linePrices: Record<number, CartLinePrice>
+  title: string
+}) {
+  return (
+    <section className="flex flex-col gap-4 rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] p-4 md:p-5">
+      <h2 className="font-body text-[16px] font-semibold text-[var(--text-primary)]">{title}</h2>
+      {items.map((item, index) => {
+        const unitPrice = linePrices[index]?.price ?? item.unitPrice
+        const meta = [item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])]
+          .filter(Boolean)
+          .join(' · ')
+        return (
+          <div
+            key={`${item.productId}-${item.sizeId ?? ''}-${index}`}
+            className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--border-soft)] pb-4 last:border-b-0 last:pb-0"
+          >
+            <div className="overflow-hidden rounded-[8px] bg-[var(--bg-surface)] p-1.5">
+              <ArtPiece
+                bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+                frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+                label=""
+                pad={3}
+                aspect="4/3"
+                imgSrc={item.variantImageUrl}
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="font-body text-[15px] font-semibold leading-[1.3] text-[var(--text-primary)]">
+                {item.productTitle || item.productId}
+              </div>
+              <div className="mt-0.5 text-[13px] text-[var(--text-muted-strong)]">
+                {meta ? `${meta} · ` : ''}x{item.quantity}
+              </div>
+            </div>
+            <span className="price-num text-[15px] tabular-nums">{formatVnd(unitPrice * item.quantity)}</span>
+          </div>
+        )
+      })}
+    </section>
+  )
+}
+
+function TotalsCard({ subtotal, children }: { subtotal: number; children?: React.ReactNode }) {
+  return (
+    <section className={`${CARD_CLASS} flex flex-col gap-4`}>
+      <h2 className="font-body text-[18px] font-semibold text-[var(--text-primary)] xl:text-[20px]">{CART_COPY.summaryTitle}</h2>
+      <dl className="flex flex-col gap-2.5 text-[14px]">
+        <div className="flex justify-between gap-4">
+          <dt className="text-[var(--text-muted-strong)]">{CART_COPY.subtotal}</dt>
+          <dd className="tabular-nums">{formatVnd(subtotal)}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-[var(--text-muted-strong)]">{CART_COPY.shipping}</dt>
+          <dd>{CART_COPY.shippingValue}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-[var(--text-muted-strong)]">{CART_COPY.installation}</dt>
+          <dd className="text-right">{CART_COPY.installationValue}</dd>
+        </div>
+      </dl>
+      <div className="h-px bg-[var(--border-soft)]" />
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="font-body text-[16px] font-semibold text-[var(--text-primary)]">{CART_COPY.total}</span>
+        <span className="price-num text-[24px] md:text-[26px]">{formatVnd(subtotal)}</span>
+      </div>
+      {children}
+    </section>
+  )
 }
 
 export default function CheckoutPage() {
   const router = useRouter()
   const [items, setItems] = useState<CartItem[]>([])
-  const [livePrices, setLivePrices] = useState<Record<number, number>>({})
+  const [linePrices, setLinePrices] = useState<Record<number, CartLinePrice>>({})
   const [cartLoaded, setCartLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const [orderId, setOrderId] = useState<string | null>(null)
   // Returned once by the create response; the backend never returns it again.
   const [lookupCode, setLookupCode] = useState<string | null>(null)
 
@@ -47,7 +121,7 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState('')
   const [address, setAddress] = useState('')
   const [note, setNote] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'transfer' | 'showroom'>('cod')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -57,7 +131,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (items.length === 0) return
-    fetchLivePrices(items).then(setLivePrices)
+    fetchLivePrices(items).then(setLinePrices)
   }, [items])
 
   useEffect(() => {
@@ -66,11 +140,10 @@ export default function CheckoutPage() {
     }
   }, [router, cartLoaded, items.length, submitted])
 
-  // Live price when available, otherwise the price stored at add-to-cart time
-  const effectivePrice = (item: CartItem, index: number) =>
-    livePrices[index] !== undefined ? livePrices[index] : item.unitPrice
+  // Live price when available, otherwise the price stored at add-to-cart time.
+  // The server prices the order itself; this value is only sent as unitPrice and ignored there.
+  const effectivePrice = (item: CartItem, index: number) => linePrices[index]?.price ?? item.unitPrice
   const subtotal = items.reduce((sum, item, i) => sum + effectivePrice(item, i) * item.quantity, 0)
-  const fmtVND = (n: number) => n.toLocaleString('vi-VN') + 'đ'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,18 +157,13 @@ export default function CheckoutPage() {
       return
     }
 
-    const paymentMethodLabels: Record<'cod' | 'transfer' | 'showroom', string> = {
-      cod: 'Thanh toán khi nhận (COD)',
-      transfer: 'Chuyển khoản',
-      showroom: 'Tại showroom',
-    }
-
     try {
       const result = await createOrder({
         phone: normalizedPhone,
         customerName: customerName || undefined,
         address: address || undefined,
-        note: [`Thanh toán: ${paymentMethodLabels[paymentMethod]}`, note].filter(Boolean).join(' — ') || undefined,
+        note: note || undefined,
+        paymentMethod,
         items: items.map((item, index) => ({
           productId: item.productId,
           productTitle: item.productTitle || item.productId,
@@ -110,7 +178,6 @@ export default function CheckoutPage() {
 
       if (result?.id) {
         clearCart()
-        setOrderId(result.id)
         setLookupCode(result.lookup_code)
         setSubmitted(true)
       } else {
@@ -123,247 +190,250 @@ export default function CheckoutPage() {
     }
   }
 
-  const labelStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-be-vietnam), sans-serif',
-    fontWeight: 500,
-    fontSize: 12.5,
-    color: 'var(--text-secondary)',
-    marginBottom: 6,
-    display: 'block',
-  }
+  const confirmation = (
+    <div className="grid gap-6 pt-4 md:pt-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-10">
+      <section className="flex min-w-0 flex-col gap-5">
+        <div className="flex items-start gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] md:h-14 md:w-14" aria-hidden="true">
+            <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-heading text-[26px] font-semibold leading-[1.15] text-[var(--text-primary)] md:text-[30px] lg:text-[34px] xl:text-[36px]">
+              {CONFIRM_COPY.title}
+            </h1>
+            <p className="mt-1.5 text-[15px] leading-[1.55] text-[var(--text-secondary)]">{CONFIRM_COPY.body(phone)}</p>
+          </div>
+        </div>
+
+        <div className={`${CARD_CLASS} flex flex-col gap-2`}>
+          <div className="text-[14px] text-[var(--text-muted-strong)]">{CONFIRM_COPY.codeLabel}</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-body text-[28px] font-bold tracking-[0.12em] text-[var(--accent)] tabular-nums md:text-[32px]">
+              {lookupCode}
+            </span>
+            {lookupCode && <CopyButton text={lookupCode} label={CONFIRM_COPY.codeLabel} />}
+          </div>
+          <p className="text-[13px] leading-[1.5] text-[var(--text-muted-strong)]">{CONFIRM_COPY.codeHint}</p>
+        </div>
+
+        {paymentMethod === 'transfer' && <BankTransferPanel mode="confirm" amount={subtotal} memo={lookupCode} />}
+
+        <div className="flex flex-col gap-1.5 rounded-[10px] bg-[var(--bg-surface-alt)] p-5">
+          <h2 className="font-body text-[16px] font-semibold text-[var(--text-primary)]">{CONFIRM_COPY.nextTitle}</h2>
+          <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">{CONFIRM_COPY.nextBody}</p>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/orders"
+            className="inline-flex h-[50px] flex-1 items-center justify-center rounded-[6px] bg-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-white no-underline"
+          >
+            {CONFIRM_COPY.track}
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex h-[50px] flex-1 items-center justify-center rounded-[6px] border-[1.5px] border-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-[var(--accent)] no-underline"
+          >
+            {CONFIRM_COPY.continueShopping}
+          </Link>
+        </div>
+      </section>
+
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-[92px]">
+        <OrderItemsCard items={items} linePrices={linePrices} title={CONFIRM_COPY.itemsTitle} />
+        <TotalsCard subtotal={subtotal}>
+          <div className="border-t border-[var(--border-soft)] pt-3 text-[13px] text-[var(--text-muted-strong)]">
+            {CONFIRM_COPY.paymentLabel}: {CHECKOUT_COPY.methods[paymentMethod].label}
+          </div>
+        </TotalsCard>
+      </aside>
+    </div>
+  )
+
+  // lg: two columns, form left and items + summary sticky right.
+  // md/sm: one column, items card first, form, then summary (the right column dissolves
+  // with `contents` so its cards take part in the form's flex order).
+  const form = (
+    <form
+      id="checkout-form"
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-4 pt-4 md:gap-5 md:pt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-10"
+    >
+      <div className="order-2 flex min-w-0 flex-col gap-4 md:gap-5 lg:order-none">
+        <section className={CARD_CLASS}>
+          <h2 className="mb-5 font-body text-[18px] font-semibold text-[var(--text-primary)] md:text-[20px]">
+            {CHECKOUT_COPY.recipientTitle}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="checkout-name" className={LABEL_CLASS}>
+                {CHECKOUT_COPY.nameLabel}
+              </label>
+              <input
+                id="checkout-name"
+                type="text"
+                autoComplete="name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder={CHECKOUT_COPY.namePlaceholder}
+                className={FIELD_CLASS}
+              />
+            </div>
+            <div>
+              <label htmlFor="checkout-phone" className={LABEL_CLASS}>
+                {CHECKOUT_COPY.phoneLabel} <span className="text-[var(--accent)]">*</span>
+              </label>
+              <input
+                id="checkout-phone"
+                type="tel"
+                autoComplete="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={CHECKOUT_COPY.phonePlaceholder}
+                className={FIELD_CLASS}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label htmlFor="checkout-address" className={LABEL_CLASS}>
+                {CHECKOUT_COPY.addressLabel}
+              </label>
+              <input
+                id="checkout-address"
+                type="text"
+                autoComplete="street-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder={CHECKOUT_COPY.addressPlaceholder}
+                className={FIELD_CLASS}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label htmlFor="checkout-note" className={LABEL_CLASS}>
+                {CHECKOUT_COPY.noteLabel}
+              </label>
+              <textarea
+                id="checkout-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={CHECKOUT_COPY.notePlaceholder}
+                rows={3}
+                className={`${FIELD_CLASS} resize-none rounded-[8px]`}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className={CARD_CLASS}>
+          <h2 className="mb-5 font-body text-[18px] font-semibold text-[var(--text-primary)] md:text-[20px]">
+            {CHECKOUT_COPY.paymentTitle}
+          </h2>
+          <div role="radiogroup" aria-label={CHECKOUT_COPY.paymentTitle} className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {PAYMENT_OPTIONS.map((id) => {
+              const selected = paymentMethod === id
+              const option = CHECKOUT_COPY.methods[id]
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setPaymentMethod(id)}
+                  className={`flex flex-col gap-1 rounded-[8px] p-4 text-left transition-colors ${
+                    selected
+                      ? 'border-[1.5px] border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]'
+                      : 'border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:border-[var(--accent)]'
+                  }`}
+                >
+                  <span className="font-body text-[15px] font-semibold">{option.label}</span>
+                  <span className="text-[13px] text-[var(--text-muted-strong)]">{option.desc}</span>
+                </button>
+              )
+            })}
+          </div>
+          {paymentMethod === 'transfer' && (
+            <div className="mt-5">
+              <BankTransferPanel mode="checkout" amount={subtotal} memo={null} />
+            </div>
+          )}
+        </section>
+
+        {error && (
+          <div role="alert" className="rounded-[8px] border border-[var(--accent-subtle)] bg-[var(--accent-subtle)] px-3.5 py-3 text-[14px] text-[var(--accent)]">
+            {error}
+          </div>
+        )}
+
+        <Link href="/cart" className="w-fit font-body text-[15px] italic text-[var(--accent)] no-underline">
+          {CHECKOUT_COPY.back}
+        </Link>
+      </div>
+
+      <div className="contents lg:sticky lg:top-[92px] lg:flex lg:flex-col lg:gap-4">
+        <div className="order-1 lg:order-none">
+          <OrderItemsCard items={items} linePrices={linePrices} title={CHECKOUT_COPY.itemsTitle} />
+        </div>
+        <div className="order-3 flex flex-col gap-4 lg:order-none">
+          <TotalsCard subtotal={subtotal}>
+            {/* Below md the BottomActionBar submits the form */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="hidden h-[50px] w-full items-center justify-center rounded-[6px] bg-[var(--accent)] font-body text-[15px] font-semibold text-white md:flex disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loading ? CHECKOUT_COPY.submitting : CHECKOUT_COPY.submit}
+            </button>
+            <p className="text-[12.5px] leading-[1.5] text-[var(--text-muted-strong)]">{CHECKOUT_COPY.terms}</p>
+          </TotalsCard>
+          <p className="rounded-[10px] border border-[var(--border-soft)] bg-[var(--bg-surface-alt)] px-4 py-3 text-[13px] leading-[1.55] text-[var(--text-secondary)]">
+            {CHECKOUT_COPY.staffNote}
+          </p>
+        </div>
+      </div>
+    </form>
+  )
 
   return (
-    <div className="pb-24 md:pb-0" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+    <div className="flex min-h-screen flex-col bg-[var(--bg-page)] pb-24 md:pb-0">
       <DeskHeader />
       <TopBar
-        title="Đặt hàng"
+        title={CHECKOUT_COPY.title}
         onMenu={() => setIsMenuOpen(true)}
         onOpenSaved={() => router.push('/saved')}
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giỏ hàng', href: '/cart' }, { label: 'Đặt hàng' }]} />
+      <Container>
+        <Breadcrumbs
+          items={[
+            { label: 'Trang chủ', href: '/' },
+            { label: CART_COPY.title, href: '/cart' },
+            { label: CHECKOUT_COPY.title },
+          ]}
+        />
+        {submitted ? (
+          confirmation
+        ) : (
+          <>
+            <h1 className="mt-4 font-heading text-[26px] font-semibold leading-[1.1] text-[var(--text-primary)] md:mt-6 md:text-[30px] lg:text-[34px] xl:text-[36px]">
+              {CHECKOUT_COPY.title}
+            </h1>
+            {form}
+          </>
+        )}
+      </Container>
 
-      {submitted && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(0,150,80,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#009650" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 24, fontWeight: 500, color: 'var(--text-primary)', marginTop: 20 }}>
-            Đặt hàng thành công!
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.6 }}>
-            Chúng tôi sẽ liên hệ {phone} trong 30 phút (giờ hành chính)
-          </div>
-          {orderId && lookupCode && (
-            <div style={{ marginTop: 24, padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, maxWidth: 360 }}>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                Mã tra cứu đơn: <span style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 22, fontWeight: 700, letterSpacing: '0.18em', color: 'var(--accent)' }}>{lookupCode}</span>
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
-                Dùng mã này cùng số điện thoại để tra cứu đơn hàng.
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
-                Bạn có thể tra cứu đơn tại <Link href="/orders" style={{ color: 'var(--accent)' }}>/orders</Link>.
-              </div>
-            </div>
-          )}
-          {orderId && (
-            <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 12, color: 'var(--bronze)', marginTop: 12 }}>
-              #{orderId}
-            </div>
-          )}
-          <Link
-            href="/"
-            style={{ display: 'block', marginTop: 32, background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 100, padding: '14px 32px', fontFamily: 'var(--font-be-vietnam), sans-serif', fontWeight: 500, fontSize: 14, textDecoration: 'none' }}
-          >
-            Tiếp tục mua sắm
-          </Link>
-          {orderId && (
-            <Link
-              href={`/orders/${orderId}`}
-              style={{ display: 'block', marginTop: 14, fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none' }}
-            >
-              Xem đơn hàng →
-            </Link>
-          )}
-        </div>
-      )}
+      <VisitBlock />
 
-      {!submitted && (<div style={{ padding: '16px 16px 0' }}>
-        <h1 className="lg:mx-auto lg:max-w-[1344px] lg:px-8" style={{ fontFamily: 'var(--font-lora), serif', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 24, marginTop: 0 }}>Đặt hàng</h1>
-        <div className="flex flex-col gap-4 lg:mx-auto lg:grid lg:max-w-[1344px] lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 lg:px-8">
-
-        {/* Form */}
-        <div className="lg:order-1">
-          <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18 }}>Thông tin người nhận</div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div>
-                <label style={labelStyle}>Họ và tên</label>
-                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nguyễn Văn A" style={fieldStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Số điện thoại <span style={{ color: 'var(--accent)' }}>*</span></label>
-                <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0912 345 678" style={fieldStyle} />
-              </div>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <label style={labelStyle}>Địa chỉ giao hàng</label>
-              <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" style={fieldStyle} />
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <label style={labelStyle}>Ghi chú</label>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Giao giờ hành chính, gọi trước 30 phút..."
-                rows={3}
-                style={{ ...fieldStyle, borderRadius: 14, resize: 'none' }}
-              />
-            </div>
-          </div>
-
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 20, marginTop: 12 }}>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18 }}>Thanh toán</div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {[
-                { id: 'cod' as const, label: 'Thanh toán khi nhận', desc: 'COD' },
-                { id: 'transfer' as const, label: 'Chuyển khoản', desc: 'Nhận STK sau khi đặt' },
-                { id: 'showroom' as const, label: 'Tại showroom', desc: 'Làng Đại Bái' },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setPaymentMethod(opt.id)}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 8,
-                    textAlign: 'left',
-                    fontSize: 13,
-                    fontFamily: 'var(--font-be-vietnam), sans-serif',
-                    cursor: 'pointer',
-                    border: paymentMethod === opt.id ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                    background: paymentMethod === opt.id ? 'rgba(139,30,30,0.06)' : 'var(--bg-card)',
-                    color: paymentMethod === opt.id ? 'var(--accent)' : 'var(--text-primary)',
-                    fontWeight: paymentMethod === opt.id ? 600 : 400,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
-                  }}
-                >
-                  <span style={{ fontSize: 13.5 }}>{opt.label}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>{opt.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ padding: '10px 14px', background: 'rgba(139,30,30,0.08)', border: '1px solid rgba(139,30,30,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--accent)' }}>
-              {error}
-            </div>
-          )}
-
-          {/* Mobile submits from the sticky BottomActionBar instead */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="hidden md:block"
-            style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: 14, fontFamily: 'var(--font-be-vietnam), sans-serif', fontWeight: 500, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, width: '100%' }}
-          >
-            {loading ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
-          </button>
-          <Link
-            href="/cart"
-            style={{ display: 'block', textAlign: 'center', background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '12px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13.5, textDecoration: 'none' }}
-          >
-            ← Quay lại giỏ hàng
-          </Link>
-          </form>
-        </div>
-
-        {/* Order summary & info banner */}
-        <div className="lg:sticky lg:top-[92px] lg:order-2 lg:flex lg:flex-col lg:gap-4">
-          {/* Order items card */}
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-            <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 16, fontWeight: 600, marginBottom: 14, color: 'var(--text-primary)' }}>
-              Sản phẩm
-            </div>
-            {items.map((item, index) => (
-              <div key={index} style={{ display: 'grid', gridTemplateColumns: '72px minmax(0,1fr)', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottom: index < items.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <div style={{ background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
-                  <ArtPiece
-                    bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
-                    frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
-                    label=""
-                    pad={3}
-                    aspect="4/3"
-                    imgSrc={item.variantImageUrl}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-                    {item.productTitle || item.productId}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                    ×{item.quantity}{item.sizeLabel ? ` · ${item.sizeLabel}` : ''}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>
-                    {fmtVND(effectivePrice(item, index) * item.quantity)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Summary card with totals */}
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
-                <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
-                <span>Phí giao hàng</span><span>Miễn phí</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
-                <span>Thanh toán</span><span>Xác nhận sau</span>
-              </div>
-            </div>
-            <div style={{ height: 1, background: 'rgba(42,31,26,0.14)', marginBottom: 12 }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Tổng cộng</span>
-              <span style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)' }}>{fmtVND(subtotal)}</span>
-            </div>
-          </div>
-
-          {/* Info banner */}
-          <div style={{ padding: '12px 14px', background: 'rgba(120,160,200,0.12)', border: '1px solid rgba(120,160,200,0.25)', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(60,100,160,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#3d6090" strokeWidth="2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
-              </svg>
-            </div>
-            <div style={{ fontSize: 13, color: '#3d5a7a', lineHeight: 1.6 }}>
-              Sẽ liên hệ xác nhận trong <strong>30 phút</strong> (giờ hành chính).
-            </div>
-          </div>
-        </div>
-        </div>
-      </div>)}
-
-      <StoreLocationsSection />
-
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
       <Footer />
 
       {!submitted && items.length > 0 && (
         <BottomActionBar
-          totalLabel="Tổng cộng"
-          totalValue={fmtVND(subtotal)}
-          ctaLabel={loading ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
+          totalLabel={CART_COPY.total}
+          totalValue={formatVnd(subtotal)}
+          ctaLabel={loading ? CHECKOUT_COPY.submitting : CHECKOUT_COPY.submit}
           ctaType="submit"
           ctaForm="checkout-form"
           ctaDisabled={loading}

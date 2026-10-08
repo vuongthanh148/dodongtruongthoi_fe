@@ -6,32 +6,175 @@ import { useRouter } from 'next/navigation'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
-import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
+import { VisitBlock } from '@/components/sections/VisitBlock'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { BottomActionBar } from '@/components/ui/BottomActionBar'
 import { getCartItems, removeCartItem, setCartItems } from '@/lib/storage'
-import { fetchLivePrices } from '@/lib/cart-prices'
+import { dropLinePrice, fetchLivePrices, type CartLinePrice } from '@/lib/cart-prices'
+import { campaignEndLine } from '@/lib/campaign-price'
+import { formatVnd } from '@/lib/format'
+import { CART_COPY } from '@/lib/content-data'
 import type { CartItem } from '@/lib/types'
+
+const CTA_LINK_CLASS =
+  'inline-flex h-[50px] w-full items-center justify-center rounded-[6px] bg-[var(--accent)] px-5 font-body text-[15px] font-semibold text-white no-underline'
+
+function QtyStepper({ value, onChange }: { value: number; onChange: (next: number) => void }) {
+  const btn =
+    'flex h-8 w-8 items-center justify-center text-[16px] text-[var(--text-primary)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40'
+  return (
+    <div className="inline-flex items-center overflow-hidden rounded-[6px] border border-[var(--border)]">
+      <button type="button" className={btn} onClick={() => onChange(value - 1)} disabled={value <= 1} aria-label={CART_COPY.decrease}>
+        −
+      </button>
+      <span className="w-9 text-center font-body text-[15px] font-semibold tabular-nums text-[var(--text-primary)]" aria-live="polite">
+        {value}
+      </span>
+      <button type="button" className={btn} onClick={() => onChange(value + 1)} aria-label={CART_COPY.increase}>
+        +
+      </button>
+    </div>
+  )
+}
+
+interface CartLineProps {
+  item: CartItem
+  index: number
+  line: CartLinePrice | undefined
+  onRemove: () => void
+  onQuantity: (next: number) => void
+}
+
+function CartLine({ item, line, onRemove, onQuantity }: CartLineProps) {
+  const campaign = line?.campaign ?? null
+  const unitPrice = line?.price ?? item.unitPrice
+  const lineTotal = unitPrice * item.quantity
+  // Stored at add-to-cart time on sale, and the campaign has since ended: show the list price.
+  const expired = !!line && !campaign && item.unitPrice < line.listPrice
+  const endLine = campaign ? campaignEndLine(campaign) : null
+  const attrs = item.selectedAttrs ? Object.values(item.selectedAttrs) : []
+  const meta = [item.sizeLabel, ...attrs].filter(Boolean).join(' · ')
+  const title = item.productTitle || item.productId
+  const art = (pad: number) => (
+    <ArtPiece
+      bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
+      frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
+      label=""
+      pad={pad}
+      aspect="4/3"
+      imgSrc={item.variantImageUrl}
+    />
+  )
+
+  const priceBlock = (
+    <div className="flex flex-col items-end gap-1 text-right">
+      {campaign && line && (
+        <div className="flex items-center gap-2">
+          <s className="text-[13px] tabular-nums text-[var(--text-muted-strong)]">{formatVnd(line.listPrice * item.quantity)}</s>
+          <span className="inline-flex h-6 items-center rounded-[4px] bg-[var(--accent)] px-1.5 font-body text-[13px] font-bold text-white tabular-nums">
+            −{line.percent}%
+          </span>
+        </div>
+      )}
+      <span className="price-num text-[16px] md:text-[18px]">{formatVnd(lineTotal)}</span>
+    </div>
+  )
+
+  const notices = (
+    <>
+      {expired && (
+        <p role="status" className="rounded-[6px] bg-[var(--bg-surface-alt)] px-3 py-2 text-[13px] leading-[1.5] text-[var(--text-secondary)]">
+          {CART_COPY.endedNotice}
+        </p>
+      )}
+      {endLine?.soon && (
+        <p className="text-[13px] font-semibold text-[var(--accent)]">{endLine.text}</p>
+      )}
+      {campaign && !endLine?.soon && <p className="text-[13px] text-[var(--text-muted-strong)]">{campaign.name}</p>}
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile and tablet: item card */}
+      <div className="flex flex-col gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] p-4 lg:hidden md:p-5">
+        <div className="grid grid-cols-[80px_minmax(0,1fr)] gap-3.5 md:grid-cols-[96px_minmax(0,1fr)] md:gap-4">
+          <div className="overflow-hidden rounded-[8px] bg-[var(--bg-surface)] p-1.5">{art(4)}</div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 font-body text-[15px] font-semibold leading-[1.3] text-[var(--text-primary)]">{title}</div>
+              <button
+                type="button"
+                onClick={onRemove}
+                aria-label={CART_COPY.remove}
+                className="-mr-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center text-[20px] leading-none text-[var(--text-muted-strong)] hover:text-[var(--accent)]"
+              >
+                ×
+              </button>
+            </div>
+            {meta && <div className="text-[13px] leading-[1.4] text-[var(--text-muted-strong)]">{meta}</div>}
+            <Link href={`/products/${item.productId}`} className="text-[13px] text-[var(--accent)] no-underline">
+              {CART_COPY.changeOptions}
+            </Link>
+            {notices}
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <QtyStepper value={item.quantity} onChange={onQuantity} />
+          {priceBlock}
+        </div>
+      </div>
+
+      {/* Desktop: table row */}
+      <div className="hidden items-center gap-5 border-b border-[var(--border-soft)] px-6 py-6 last:border-b-0 lg:grid lg:grid-cols-[minmax(0,1fr)_120px_130px_28px] xl:grid-cols-[minmax(0,1fr)_140px_150px_40px]">
+        <div className="flex min-w-0 items-center gap-[18px]">
+          <div className="w-[120px] shrink-0 overflow-hidden rounded-[8px] bg-[var(--bg-surface)] p-1.5">{art(5)}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="font-body text-[18px] font-semibold leading-[1.25] text-[var(--text-primary)]">{title}</div>
+            {meta && <div className="text-[13px] text-[var(--text-muted-strong)]">{meta}</div>}
+            <Link href={`/products/${item.productId}`} className="w-fit text-[13px] text-[var(--accent)] no-underline">
+              {CART_COPY.changeOptions}
+            </Link>
+            {notices}
+          </div>
+        </div>
+        <QtyStepper value={item.quantity} onChange={onQuantity} />
+        <div className="flex justify-end">{priceBlock}</div>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={CART_COPY.remove}
+          className="flex h-7 w-7 items-center justify-center text-[22px] leading-none text-[var(--text-muted-strong)] hover:text-[var(--accent)]"
+        >
+          ×
+        </button>
+      </div>
+    </>
+  )
+}
 
 export default function CartPage() {
   const router = useRouter()
   const [items, setItems] = useState<CartItem[]>([])
-  const [livePrices, setLivePrices] = useState<Record<number, number>>({})
+  const [loaded, setLoaded] = useState(false)
+  const [linePrices, setLinePrices] = useState<Record<number, CartLinePrice>>({})
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     const stored = getCartItems()
+    fetchLivePrices(stored).then(setLinePrices)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(stored)
-    fetchLivePrices(stored).then(setLivePrices)
+    setLoaded(true)
   }, [])
 
   const handleRemove = (index: number) => {
     removeCartItem(index)
     setItems(getCartItems())
+    setLinePrices((prev) => dropLinePrice(prev, index))
   }
 
   const handleUpdateQuantity = (index: number, newQty: number) => {
@@ -42,278 +185,128 @@ export default function CartPage() {
     setItems(updated)
   }
 
-  const effectivePrice = (item: CartItem, index: number) =>
-    livePrices[index] !== undefined ? livePrices[index] : item.unitPrice
-  const subtotal = items.reduce((sum, item, i) => sum + effectivePrice(item, i) * item.quantity, 0)
-  const fmtVND = (n: number) => n.toLocaleString('vi-VN') + 'đ'
+  const linePrice = (item: CartItem, index: number) => linePrices[index]?.price ?? item.unitPrice
+  const subtotal = items.reduce((sum, item, i) => sum + linePrice(item, i) * item.quantity, 0)
 
   const emptyState = (
-    <div style={{ padding: '80px 30px', textAlign: 'center' }}>
-      <svg width={64} height={64} viewBox="0 0 24 24" fill="none" stroke="var(--border)" strokeWidth="1.2" style={{ margin: '0 auto 14px' }}>
+    <div className="flex flex-col items-center px-6 py-16 text-center md:py-20">
+      <svg width={64} height={64} viewBox="0 0 24 24" fill="none" stroke="var(--border)" strokeWidth="1.2" className="mb-4" aria-hidden="true">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
         <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
       </svg>
-      <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>Giỏ hàng trống</div>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
-        Khám phá bộ sưu tập tranh đồng và đỉnh đồng truyền thống.
-      </div>
-      <button
-        type="button"
-        onClick={() => router.push('/')}
-        style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '13px 24px', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 14, cursor: 'pointer' }}
+      <h1 className="font-heading text-[26px] font-semibold leading-[1.15] text-[var(--text-primary)] md:text-[30px]">{CART_COPY.emptyTitle}</h1>
+      <p className="mb-6 mt-2.5 max-w-[420px] text-[15px] leading-[1.6] text-[var(--text-muted-strong)]">{CART_COPY.emptyBody}</p>
+      <Link
+        href="/"
+        className="inline-flex h-[50px] items-center justify-center rounded-[6px] bg-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-white no-underline"
       >
-        Tiếp tục mua sắm
-      </button>
+        {CART_COPY.emptyCta}
+      </Link>
     </div>
   )
 
   return (
-    <div suppressHydrationWarning className="pb-24 md:pb-0" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)'}}>
+    <div className="flex min-h-screen flex-col bg-[var(--bg-page)] pb-24 md:pb-0">
       <DeskHeader />
       <TopBar
-        title="Giỏ Hàng"
+        title={CART_COPY.title}
         onMenu={() => setIsMenuOpen(true)}
         onOpenSaved={() => router.push('/saved')}
       />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <Container>
-        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giỏ hàng' }]} />
+        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: CART_COPY.title }]} />
 
-        {items.length === 0 ? emptyState : (
+        {!loaded ? null : items.length === 0 ? (
+          emptyState
+        ) : (
           <>
-          <div
-            className="mt-4 mb-3.5 md:mt-6 md:mb-6"
-            style={{ fontFamily: 'var(--font-lora), serif', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)' }}
-          >
-            Giỏ hàng{' '}
-            <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 400 }}>
-              ({items.length} sản phẩm)
-            </span>
-          </div>
-          <div className="flex flex-col gap-px lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-10" style={{ padding: '0 16px 16px' }}>
+            <h1 className="mb-5 mt-4 font-heading text-[26px] font-semibold leading-[1.1] text-[var(--text-primary)] md:mb-6 md:mt-6 md:text-[30px] lg:mb-7 lg:text-[34px] xl:mb-8 xl:text-[36px]">
+              {CART_COPY.title}{' '}
+              <span className="font-body text-[15px] font-normal text-[var(--text-muted-strong)] md:text-[18px]">
+                ({items.length} {CART_COPY.countSuffix})
+              </span>
+            </h1>
 
-          {/* Left column: items list */}
-          <div className="lg:min-w-0" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-            {/* Desktop column header */}
-            <div
-              className="label-mono hidden lg:grid xl:grid-cols-[minmax(0,1fr)_140px_150px_40px]"
-              style={{ gridTemplateColumns: 'minmax(0,1fr) 120px 130px 28px', gap: 20, padding: '14px 24px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 12 }}
-            >
-              <span>Sản phẩm</span>
-              <span>Số lượng</span>
-              <span style={{ textAlign: 'right' }}>Thành tiền</span>
-              <span />
-            </div>
-
-            {/* Items */}
-            {items.map((item, index) => (
-            <div key={index}>
-              {/* Mobile / tablet card */}
-              <div
-                className="grid lg:hidden"
-                style={{
-                  borderBottom: '1px solid var(--border-soft)',
-                  padding: '14px 16px',
-                  gridTemplateColumns: '80px 1fr',
-                  gap: 12,
-                }}
+            <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-10">
+              <section
+                aria-label={CART_COPY.listLabel}
+                className="flex min-w-0 flex-col gap-3 md:gap-4 lg:gap-0 lg:overflow-hidden lg:rounded-[10px] lg:border lg:border-[var(--border)] lg:bg-[var(--bg-card)]"
               >
-                {/* Thumbnail */}
-                <div style={{ background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
-                  <ArtPiece
-                    bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
-                    frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
-                    label=""
-                    pad={4}
-                    aspect="1/1"
+                <div className="label-mono hidden border-b border-[var(--border)] px-6 py-3.5 text-[var(--text-muted-strong)] lg:grid lg:grid-cols-[minmax(0,1fr)_120px_130px_28px] lg:gap-5 xl:grid-cols-[minmax(0,1fr)_140px_150px_40px]">
+                  <span>{CART_COPY.colProduct}</span>
+                  <span>{CART_COPY.colQty}</span>
+                  <span className="text-right">{CART_COPY.colTotal}</span>
+                  <span />
+                </div>
+
+                {items.map((item, index) => (
+                  <CartLine
+                    key={`${item.productId}-${item.sizeId ?? ''}-${index}`}
+                    item={item}
+                    index={index}
+                    line={linePrices[index]}
+                    onRemove={() => handleRemove(index)}
+                    onQuantity={(next) => handleUpdateQuantity(index, next)}
                   />
-                </div>
+                ))}
 
-                {/* Content */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, position: 'relative' }}>
-                  {/* Remove button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(index)}
-                    style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    ×
-                  </button>
-
-                  <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, paddingRight: 24 }}>
-                    {item.productTitle || item.productId}
-                  </div>
-
-                  {(item.sizeLabel || (item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0)) && (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 6 }}>
-                      {[item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])].filter(Boolean).join(' · ')}
-                    </div>
-                  )}
-                  <Link href={`/products/${item.productId}`} style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>Đổi tùy chọn</Link>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                    {/* Qty stepper */}
-                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
-                      <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity - 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>−</button>
-                      <div style={{ width: 28, textAlign: 'center', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-primary)' }}>{item.quantity}</div>
-                      <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity + 1)} style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>+</button>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                      {livePrices[index] !== undefined && livePrices[index] !== item.unitPrice && (
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
-                          {fmtVND(item.unitPrice * item.quantity)}
-                        </div>
-                      )}
-                      <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 15, color: livePrices[index] !== undefined && livePrices[index] !== item.unitPrice ? 'var(--accent)' : 'var(--text-primary)' }}>
-                        {fmtVND(effectivePrice(item, index) * item.quantity)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Desktop row */}
-              <div
-                className="hidden lg:grid xl:grid-cols-[minmax(0,1fr)_140px_150px_40px]"
-                style={{ gridTemplateColumns: 'minmax(0,1fr) 120px 130px 28px', gap: 20, padding: 24, alignItems: 'center', borderBottom: '1px solid var(--border-soft)' }}
-              >
-                <div style={{ display: 'flex', gap: 18, alignItems: 'center', minWidth: 0 }}>
-                  <div style={{ width: 96, flexShrink: 0, background: 'var(--bg-surface)', borderRadius: 8, overflow: 'hidden', padding: 6 }}>
-                    <ArtPiece
-                      bg={(item.selectedAttrs?.['bg_tone'] as 'gold' | 'red' | 'bronze' | 'dark' | undefined) ?? 'gold'}
-                      frame={(item.selectedAttrs?.['frame'] as 'bronze' | 'gold' | 'dark' | 'carved' | undefined) ?? 'bronze'}
-                      label=""
-                      pad={5}
-                      aspect="4/3"
-                    />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 18, fontWeight: 600, lineHeight: 1.25, color: 'var(--text-primary)' }}>
-                      {item.productTitle || item.productId}
-                    </div>
-                    {(item.sizeLabel || (item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0)) && (
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, marginBottom: 8 }}>
-                        {[item.sizeLabel, ...(item.selectedAttrs ? Object.values(item.selectedAttrs) : [])].filter(Boolean).join(' · ')}
-                      </div>
-                    )}
-                    <Link href={`/products/${item.productId}`} style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}>Đổi tùy chọn</Link>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', width: 'fit-content' }}>
-                  <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity - 1)} style={{ width: 30, height: 30, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>−</button>
-                  <div style={{ width: 30, textAlign: 'center', fontFamily: 'var(--font-be-vietnam), sans-serif', fontSize: 13, color: 'var(--text-primary)' }}>{item.quantity}</div>
-                  <button type="button" onClick={() => handleUpdateQuantity(index, item.quantity + 1)} style={{ width: 30, height: 30, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontSize: 16 }}>+</button>
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  {livePrices[index] !== undefined && livePrices[index] !== item.unitPrice && (
-                    <div style={{ fontSize: 12.5, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
-                      {fmtVND(item.unitPrice * item.quantity)}
-                    </div>
-                  )}
-                  <div
-                    className="price-num"
-                    style={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color: livePrices[index] !== undefined && livePrices[index] !== item.unitPrice ? 'var(--accent)' : 'var(--text-primary)' }}
-                  >
-                    {fmtVND(effectivePrice(item, index) * item.quantity)}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  aria-label="Xóa"
-                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            ))}
-
-            <Link
-              href="/"
-              className="hidden lg:block"
-              style={{ padding: '18px 24px', fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', color: 'var(--accent)', fontSize: 15, textDecoration: 'none' }}
-            >
-              ← Tiếp tục mua sắm
-            </Link>
-          </div>
-
-          {/* Right column: summary + trust row */}
-          <div className="lg:sticky lg:top-[92px]">
-            {/* Summary box — light cream */}
-            <div className="p-5 lg:p-7" style={{ marginTop: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text-primary)' }}>
-              <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 20, fontWeight: 600, marginBottom: 14 }}>Tóm tắt đơn hàng</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
-                  <span>Tạm tính</span><span>{fmtVND(subtotal)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
-                  <span>Phí giao hàng</span><span>Miễn phí</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
-                  <span>Lắp đặt</span><span>Miễn phí nội thành HN</span>
-                </div>
-              </div>
-              <div style={{ height: 1, background: 'rgba(42,31,26,0.14)', marginBottom: 12 }} />
-              <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 10, letterSpacing: '0.15em', color: 'var(--bronze)', textTransform: 'uppercase', marginBottom: 4 }}>Tổng cộng</div>
-              <div style={{ fontFamily: 'var(--font-lora), serif', fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--accent)', marginBottom: 16 }}>
-                {fmtVND(subtotal)}
-              </div>
-
-              {/* Mobile uses the sticky BottomActionBar instead */}
-              <div className="hidden md:block">
                 <Link
-                  href="/checkout"
-                  style={{
-                    display: 'block', width: '100%', marginTop: 16,
-                    background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6,
-                    padding: '13px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
-                    fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center',
-                    textDecoration: 'none', boxSizing: 'border-box',
-                  }}
+                  href="/"
+                  className="block px-1 py-3 font-body text-[15px] italic text-[var(--accent)] no-underline lg:px-6 lg:py-[18px]"
                 >
-                  Tiến hành đặt hàng →
+                  {CART_COPY.continueShopping}
                 </Link>
-              </div>
-              <button
-                type="button"
-                onClick={() => router.push('/')}
-                className="block lg:hidden"
-                style={{
-                  width: '100%', marginTop: 8,
-                  background: 'transparent', color: 'var(--text-primary)',
-                  border: '1px solid rgba(42,31,26,0.14)', borderRadius: 6,
-                  padding: '12px 20px', fontFamily: 'var(--font-be-vietnam), sans-serif',
-                  fontSize: 13.5, cursor: 'pointer', textAlign: 'center', boxSizing: 'border-box',
-                }}
-              >
-                Tiếp tục mua sắm
-              </button>
-              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5, marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(42,31,26,0.14)' }}>
-                Nhân viên sẽ gọi xác nhận đơn trong 30 phút (giờ hành chính).
-              </div>
-            </div>
+              </section>
 
-          </div>
-        </div>
-        </>
-      )}
+              <aside className="lg:sticky lg:top-[92px]">
+                <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] p-5 text-[var(--text-primary)] md:p-6 xl:p-7">
+                  <h2 className="font-body text-[18px] font-semibold xl:text-[20px]">{CART_COPY.summaryTitle}</h2>
+                  <dl className="flex flex-col gap-2.5 text-[14px]">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[var(--text-muted-strong)]">{CART_COPY.subtotal}</dt>
+                      <dd className="tabular-nums">{formatVnd(subtotal)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[var(--text-muted-strong)]">{CART_COPY.shipping}</dt>
+                      <dd>{CART_COPY.shippingValue}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[var(--text-muted-strong)]">{CART_COPY.installation}</dt>
+                      <dd className="text-right">{CART_COPY.installationValue}</dd>
+                    </div>
+                  </dl>
+                  <div className="h-px bg-[var(--border-soft)]" />
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="font-body text-[16px] font-semibold">{CART_COPY.total}</span>
+                    <span className="price-num text-[24px] md:text-[26px]">{formatVnd(subtotal)}</span>
+                  </div>
+                  {/* Below md the BottomActionBar carries the CTA */}
+                  <div className="hidden md:block">
+                    <Link href="/checkout" className={CTA_LINK_CLASS}>
+                      {CART_COPY.checkout}
+                    </Link>
+                  </div>
+                  <p className="border-t border-[var(--border-soft)] pt-3 text-[13px] leading-[1.5] text-[var(--text-muted-strong)]">
+                    {CART_COPY.staffNote}
+                  </p>
+                </div>
+              </aside>
+            </div>
+          </>
+        )}
       </Container>
 
-      <StoreLocationsSection />
+      <VisitBlock />
 
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
       <Footer />
 
-      {items.length > 0 && (
+      {loaded && items.length > 0 && (
         <BottomActionBar
-          totalLabel="Tổng cộng"
-          totalValue={fmtVND(subtotal)}
-          ctaLabel="Tiến hành đặt hàng"
+          totalLabel={CART_COPY.total}
+          totalValue={formatVnd(subtotal)}
+          ctaLabel={CART_COPY.checkout}
           ctaHref="/checkout"
         />
       )}

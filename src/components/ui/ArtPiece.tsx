@@ -117,7 +117,7 @@ export const ArtPiece = memo(function ArtPiece({
               left: 8,
               bottom: 6,
               fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: 9,
+              fontSize: 12,
               color: 'rgba(255,220,140,0.7)',
               letterSpacing: '0.08em',
             }}

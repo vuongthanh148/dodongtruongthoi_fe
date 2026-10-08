@@ -18,8 +18,8 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
               style={{
                 marginBottom: 6,
                 fontFamily: 'var(--font-jetbrains), monospace',
-                fontSize: 10,
-                letterSpacing: '0.2em',
+                fontSize: 12,
+                letterSpacing: '0.15em',
                 textTransform: 'uppercase',
                 color: 'var(--bronze)',
               }}

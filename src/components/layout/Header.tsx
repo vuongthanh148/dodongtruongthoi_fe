@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import useSWR from 'swr'
-import { DrumMark, IconBox, IconCart, IconChevron, IconHeart, IconSearch } from '@/components/icons'
+import { IconBox, IconCart, IconChevron, IconHeart, IconSearch } from '@/components/icons'
 import { Container } from '@/components/layout/Container'
+import { Logo } from '@/components/layout/Logo'
 import { MegaMenu } from '@/components/layout/MegaMenu'
 import { SearchResultsDropdown } from '@/components/ui/SearchResultsDropdown'
-import { SITE_NAME } from '@/lib/constants'
 import { DESK_NAV_LINKS } from '@/lib/desktop-nav'
 import { getCartItems, getSavedProducts } from '@/lib/storage'
 import { fetchProducts } from '@/lib/storefront-api'
@@ -52,27 +52,11 @@ function IconBtnLink({
       {typeof count === 'number' && count > 0 && (
         <span
           suppressHydrationWarning
-          className="absolute top-0.5 right-0 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-bold leading-none text-white"
+          className="absolute top-[3px] right-[1px] grid h-4 min-w-4 place-items-center rounded-full bg-[var(--accent)] px-1 text-[12px] font-bold leading-none text-white"
         >
           {count}
         </span>
       )}
-    </Link>
-  )
-}
-
-function Logo() {
-  return (
-    <Link href="/" className="flex min-w-0 items-center gap-2.5">
-      <DrumMark size={40} />
-      <span className="min-w-0">
-        <span className="block whitespace-nowrap font-[family-name:var(--font-lora)] text-[17px] leading-none font-semibold tracking-[0.02em] text-[var(--accent)] xl:text-[20px]">
-          {SITE_NAME}
-        </span>
-        <span className="mt-[3px] hidden font-[family-name:var(--font-lora)] text-[11.5px] italic tracking-[0.08em] text-[var(--bronze)] xl:block">
-          tinh hoa làng nghề Việt
-        </span>
-      </span>
     </Link>
   )
 }
@@ -147,12 +131,12 @@ export function DeskHeader() {
 
   return (
     <header ref={headerRef} className="sticky top-0 z-40 hidden border-b border-[var(--border)] bg-[var(--bg-page)] lg:block">
-      <Container className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch gap-4 xl:gap-6" style={{ height: 76 }}>
+      <Container className="relative grid h-[76px] grid-cols-[auto_minmax(0,1fr)_auto] items-stretch gap-5 xl:gap-9">
         <div className="flex items-center">
-          <Logo />
+          <Logo size="lg" tagline="xl" />
         </div>
 
-        <nav className="flex min-w-0 items-stretch gap-3 overflow-hidden pl-2 xl:gap-4 xl:pl-4">
+        <nav className="flex min-w-0 items-stretch gap-5 overflow-hidden pl-2 xl:gap-7 xl:pl-6">
           {DESK_NAV_LINKS.map((link) => {
             const active = link.hasDropdown ? isProductsActive || megaOpen : pathname === link.href
             if (link.hasDropdown) {
@@ -166,7 +150,7 @@ export function DeskHeader() {
                   onMouseEnter={openMega}
                   onMouseLeave={scheduleClose}
                   onClick={() => (megaOpen ? closeMegaNow(false) : openMega())}
-                  className="desk-nav-link -mb-px flex items-center gap-1 whitespace-nowrap border-b-2 font-[family-name:var(--font-lora)] text-sm cursor-pointer xl:text-[15px]"
+                  className="desk-nav-link -mb-px flex items-center gap-1 whitespace-nowrap border-b-2 font-body text-sm font-medium cursor-pointer xl:text-[15px]"
                   style={{
                     color: active ? 'var(--accent)' : 'var(--text-primary)',
                     borderBottomColor: active ? 'var(--accent)' : 'transparent',
@@ -192,7 +176,7 @@ export function DeskHeader() {
               <Link
                 key={link.id}
                 href={link.href}
-                className="desk-nav-link -mb-px flex items-center whitespace-nowrap border-b-2 font-[family-name:var(--font-lora)] text-sm xl:text-[15px]"
+                className="desk-nav-link -mb-px flex items-center whitespace-nowrap border-b-2 font-body text-sm font-medium xl:text-[15px]"
                 style={{
                   color: active ? 'var(--accent)' : 'var(--text-primary)',
                   borderBottomColor: active ? 'var(--accent)' : 'transparent',
@@ -210,12 +194,12 @@ export function DeskHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2 lg:gap-2 xl:gap-3">
+        <div className="flex items-center gap-2 xl:gap-3">
           <form onSubmit={handleSearchSubmit} className="relative hidden lg:block">
             <label className="sr-only" htmlFor="desk-search">
               Tìm kiếm sản phẩm
             </label>
-            <div className="brand-focus flex h-10 min-w-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-card)] px-3.5 lg:w-[240px] xl:w-[320px]">
+            <div className="brand-focus flex h-10 w-[170px] min-w-0 items-center gap-2 rounded-[20px] border border-[var(--border)] bg-[var(--bg-card)] px-3.5 xl:w-[220px]">
               <IconSearch size={16} color="var(--text-muted)" />
               <input
                 id="desk-search"
@@ -252,7 +236,7 @@ export function DeskHeader() {
             }}
           >
             <IconBox size={18} />
-            <span className="hidden text-[13px] font-medium xl:inline">Tra cứu đơn</span>
+            <span className="hidden font-body text-[13px] font-medium xl:inline">Tra cứu đơn</span>
           </Link>
           <IconBtnLink href="/saved" Icon={IconHeart} count={savedCount} label="Sản phẩm đã lưu" />
           <IconBtnLink href="/cart" Icon={IconCart} count={cartCount} label="Giỏ hàng" />

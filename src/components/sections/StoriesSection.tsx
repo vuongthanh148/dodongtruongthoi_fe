@@ -63,8 +63,8 @@ export function StoriesSection({
         <div
           style={{
             fontFamily: 'var(--font-jetbrains), monospace',
-            fontSize: 9.5,
-            letterSpacing: '0.28em',
+            fontSize: 12,
+            letterSpacing: '0.2em',
             textTransform: 'uppercase',
             color: 'var(--gold)',
           }}

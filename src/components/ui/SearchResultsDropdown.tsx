@@ -5,6 +5,7 @@ import Link from 'next/link'
 import useSWR from 'swr'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Price } from '@/components/ui/Price'
+import { SearchNoResults } from '@/components/ui/SearchNoResults'
 import { fetchProducts } from '@/lib/storefront-api'
 import { SWR_KEYS } from '@/lib/swr-keys'
 
@@ -113,9 +114,7 @@ export function SearchResultsDropdown({ query, open, onNavigate }: SearchResults
           </Link>
         </>
       ) : (
-        <div style={{ padding: '16px 12px', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
-          Không tìm thấy sản phẩm phù hợp
-        </div>
+        <SearchNoResults compact query={query.trim()} onNavigate={onNavigate} />
       )}
     </div>
   )

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 interface BottomActionBarProps {
   totalLabel: string
@@ -10,27 +11,19 @@ interface BottomActionBarProps {
   /** Id of a form outside this bar that the submit button should submit. */
   ctaForm?: string
   ctaDisabled?: boolean
+  /** Plain button handler for the CTA (no form or link). */
+  onCtaClick?: () => void
+  /** Extra controls rendered before the CTA (for example a secondary button or a save toggle). */
+  extraActions?: React.ReactNode
 }
 
-const ctaStyle: React.CSSProperties = {
-  flexShrink: 0,
-  height: 46,
-  padding: '0 18px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  whiteSpace: 'nowrap',
-  background: 'var(--accent)',
-  color: 'white',
-  border: 'none',
-  borderRadius: 6,
-  fontFamily: 'var(--font-be-vietnam), sans-serif',
-  fontWeight: 500,
-  fontSize: 14,
-  textDecoration: 'none',
-}
+const CTA_CLASS =
+  'flex h-[46px] shrink-0 items-center justify-center whitespace-nowrap rounded-[6px] bg-[var(--accent)] px-[18px] font-body text-[15px] font-semibold text-white no-underline'
 
-/** Sticky order bar for mobile (below md). Parent page must add bottom padding. */
+/**
+ * Sticky order bar for mobile (sm only; md and up put the CTA in the buy box or
+ * summary). Parent page must add bottom padding.
+ */
 export function BottomActionBar({
   totalLabel,
   totalValue,
@@ -39,52 +32,39 @@ export function BottomActionBar({
   ctaType = 'button',
   ctaForm,
   ctaDisabled = false,
+  onCtaClick,
+  extraActions,
 }: BottomActionBarProps) {
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 bg-[var(--bg-page)] md:hidden"
       style={{
-        background: 'var(--bg-card)',
-        borderTop: '1px solid var(--border-soft)',
+        borderTop: '1px solid var(--border)',
         boxShadow: '0 -8px 20px -12px rgba(0,0,0,0.25)',
         padding: '10px 16px calc(10px + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.3 }}>{totalLabel}</div>
-        <div
-          style={{
-            fontFamily: 'var(--font-lora), serif',
-            fontWeight: 700,
-            fontSize: 18,
-            fontVariantNumeric: 'tabular-nums',
-            color: 'var(--accent)',
-            lineHeight: 1.2,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {totalValue}
-        </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[12px] leading-[1.3] text-[var(--text-muted-strong)]">{totalLabel}</div>
+        <div className="price-num truncate text-[18px] leading-[1.2]">{totalValue}</div>
       </div>
+      {extraActions}
       {ctaHref ? (
-        <Link href={ctaHref} style={ctaStyle}>
+        <Link href={ctaHref} className={CTA_CLASS}>
           {ctaLabel}
         </Link>
       ) : (
-        <button
-          type={ctaType}
-          form={ctaForm}
-          disabled={ctaDisabled}
-          style={{
-            ...ctaStyle,
-            cursor: ctaDisabled ? 'not-allowed' : 'pointer',
-            opacity: ctaDisabled ? 0.7 : 1,
-          }}
-        >
-          {ctaLabel}
-        </button>
+        <>
+          <button
+            type={ctaType}
+            form={ctaForm}
+            onClick={onCtaClick}
+            disabled={ctaDisabled}
+            className={cn(CTA_CLASS, ctaDisabled && 'cursor-not-allowed opacity-70')}
+          >
+            {ctaLabel}
+          </button>
+        </>
       )}
     </div>
   )

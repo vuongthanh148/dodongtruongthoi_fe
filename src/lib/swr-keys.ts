@@ -9,6 +9,7 @@ export const SWR_KEYS = {
   campaigns: 'campaigns',
   customerPhotos: 'customerPhotos',
   settings: 'settings',
+  bankSettings: 'bank-settings',
   orders: (phone: string) => `orders:${phone}`,
   order: (id: string) => `order:${id}`,
 } as const

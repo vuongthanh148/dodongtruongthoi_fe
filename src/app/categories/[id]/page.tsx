@@ -8,7 +8,7 @@ import { IconFilter, IconGrid, IconList, IconStar } from '@/components/icons'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
 import { Footer } from '@/components/layout/Footer'
-import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
+import { VisitBlock } from '@/components/sections/VisitBlock'
 import { DeskHeader } from '@/components/layout/Header'
 import { TopBar } from '@/components/layout/TopBar'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
@@ -58,7 +58,7 @@ function CatListRow({ product, categories, onOpen }: { product: Product; categor
       </div>
       <div style={{ padding: '12px 14px 12px 10px', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
         {catName ? (
-          <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 9, letterSpacing: '0.12em', color: 'var(--bronze)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 12, letterSpacing: '0.1em', color: 'var(--bronze)', textTransform: 'uppercase' }}>
             {catName}
           </div>
         ) : null}
@@ -644,7 +644,7 @@ export default function CategoryPage() {
         </div>
       </BottomSheet>
 
-      <StoreLocationsSection />
+      <VisitBlock />
 
       <Footer />
     </div>

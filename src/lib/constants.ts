@@ -26,6 +26,8 @@ export const STORES = [
 // Derived from the single STORES entry so the rest of the app doesn't hand-retype these.
 export const HOTLINE = STORES[0].phone
 export const SHOP_ADDRESS = STORES[0].address
+// International dial format for tel: links (HOTLINE is the local 10-digit form).
+export const HOTLINE_TEL = `tel:+84${HOTLINE.slice(1)}`
 
 export const SOCIAL_LINKS = {
   zalo: 'https://zalo.me/0899012288',

@@ -134,13 +134,13 @@ export async function adminPost<T>(path: string, body: unknown): Promise<T | nul
   }
 }
 
-// Like adminPost, but surfaces the server's `message` on failure (backend returns {success:false,message}).
-export async function adminPostResult<T>(
+async function adminMutateResult<T>(
+  method: 'POST' | 'PUT',
   path: string,
   body: unknown
 ): Promise<{ data: T } | { error: string }> {
   try {
-    const response = await adminFetch(path, { method: 'POST', body: JSON.stringify(body) })
+    const response = await adminFetch(path, { method, body: JSON.stringify(body) })
     const json = (await response.json().catch(() => null)) as {
       data?: T
       message?: string
@@ -154,12 +154,22 @@ export async function adminPostResult<T>(
   }
 }
 
+// Like adminPost, but surfaces the server's `message` on failure (backend returns {success:false,message}).
+export async function adminPostResult<T>(path: string, body: unknown): Promise<{ data: T } | { error: string }> {
+  return adminMutateResult<T>('POST', path, body)
+}
+
 export async function adminPut<T>(path: string, body: unknown): Promise<T | null> {
   try {
     return await unwrap<T>(await adminFetch(path, { method: 'PUT', body: JSON.stringify(body) }))
   } catch {
     return null
   }
+}
+
+// Like adminPut, but surfaces the server's `message` on failure (used where the reason must be shown per row).
+export async function adminPutResult<T>(path: string, body: unknown): Promise<{ data: T } | { error: string }> {
+  return adminMutateResult<T>('PUT', path, body)
 }
 
 export async function adminDelete(path: string): Promise<boolean> {

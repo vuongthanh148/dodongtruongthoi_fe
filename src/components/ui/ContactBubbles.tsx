@@ -40,7 +40,7 @@ export function ContactBubbles() {
             >
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 12,
                   color: 'var(--text-on-dark)',
                   background: 'rgba(20,14,9,0.76)',
                   backdropFilter: 'blur(8px)',

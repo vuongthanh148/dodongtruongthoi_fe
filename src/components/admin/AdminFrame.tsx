@@ -3,74 +3,179 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { LogOut, Menu, X } from 'lucide-react'
 import { clearAdminToken } from '@/lib/admin-auth'
+import { ADMIN_COPY } from '@/lib/content-data'
+import { DrumMark } from '@/components/icons/DrumMark'
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/products', label: 'Products' },
-  { href: '/admin/images', label: 'Images' },
-  { href: '/admin/categories', label: 'Categories' },
-  { href: '/admin/banners', label: 'Banners' },
-  { href: '/admin/customer-photos', label: 'Customer Photos' },
-  { href: '/admin/contacts', label: 'Contacts' },
-  { href: '/admin/campaigns', label: 'Campaigns' },
-  { href: '/admin/orders', label: 'Orders' },
-  { href: '/admin/reviews', label: 'Reviews' },
-  { href: '/admin/contact-messages', label: 'Tin nhắn liên hệ' },
-  { href: '/admin/settings', label: 'Settings' },
+  { href: '/admin', label: ADMIN_COPY.nav.dashboard },
+  { href: '/admin/orders', label: ADMIN_COPY.nav.orders },
+  { href: '/admin/products', label: ADMIN_COPY.nav.products },
+  { href: '/admin/campaigns', label: ADMIN_COPY.nav.campaigns },
+  { href: '/admin/categories', label: ADMIN_COPY.nav.categories },
+  { href: '/admin/images', label: ADMIN_COPY.nav.images },
+  { href: '/admin/banners', label: ADMIN_COPY.nav.banners },
+  { href: '/admin/customer-photos', label: ADMIN_COPY.nav.customerPhotos },
+  { href: '/admin/contacts', label: ADMIN_COPY.nav.contacts },
+  { href: '/admin/contact-messages', label: ADMIN_COPY.nav.contactMessages },
+  { href: '/admin/audit-log', label: ADMIN_COPY.nav.auditLog },
+  { href: '/admin/reviews', label: ADMIN_COPY.nav.reviews },
+  { href: '/admin/settings', label: ADMIN_COPY.nav.settings },
 ]
 
 interface AdminFrameProps {
   title: string
   subtitle?: string
   children: React.ReactNode
+  /** Kept for existing callers. The shell now collapses to a top bar below lg at every page. */
   mobileHideSidebar?: boolean
 }
 
-export function AdminFrame({ title, subtitle, children, mobileHideSidebar = false }: AdminFrameProps) {
+export function AdminFrame({ title, subtitle, children }: AdminFrameProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [isMobile, setIsMobile] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+    if (!menuOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
     }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [menuOpen])
 
-    checkMobile()
-    const resizeListener = () => checkMobile()
-    window.addEventListener('resize', resizeListener)
-    return () => window.removeEventListener('resize', resizeListener)
-  }, [])
+  function logout() {
+    clearAdminToken()
+    router.push('/admin/login')
+  }
 
-  const showMobileMenu = mobileHideSidebar && isMobile
+  const nav = (
+    <AdminNav
+      pathname={pathname}
+      onNavigate={() => setMenuOpen(false)}
+      onLogout={logout}
+    />
+  )
 
-  const sidebarContent = (
-    <>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>DDTT Admin</div>
-        <div style={{ fontSize: 12, opacity: 0.7 }}>Content Management</div>
+  return (
+    <div className="adm min-h-screen lg:grid lg:grid-cols-[232px_minmax(0,1fr)]" style={{ background: 'var(--admin-bg)' }}>
+      <aside
+        className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto"
+        style={{ background: 'var(--admin-sidebar-bg)', color: 'var(--admin-sidebar-ink)' }}
+      >
+        {nav}
+      </aside>
+
+      <div className="flex min-w-0 flex-col">
+        <header
+          className="sticky top-0 z-20 flex h-14 items-center gap-2 px-2 lg:hidden"
+          style={{ background: 'var(--admin-surface)', borderBottom: '1px solid var(--admin-border)' }}
+        >
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label={ADMIN_COPY.menuOpen}
+            aria-expanded={menuOpen}
+            aria-controls="admin-mobile-nav"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-md"
+            style={{ color: 'var(--admin-ink)' }}
+          >
+            <Menu size={22} aria-hidden />
+          </button>
+          <h1
+            className="font-heading min-w-0 flex-1 truncate text-[18px] font-semibold"
+            style={{ color: 'var(--admin-ink)' }}
+          >
+            {title}
+          </h1>
+        </header>
+
+        <main className="min-w-0 flex-1 px-4 py-5 md:px-6 lg:py-6 xl:px-8">
+          <div className="mb-5 lg:mb-6">
+            <h1
+              className="font-heading hidden text-[26px] leading-[1.1] font-semibold lg:block"
+              style={{ color: 'var(--admin-ink)' }}
+            >
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="mt-1 text-[14px] leading-normal" style={{ color: 'var(--admin-muted)' }}>
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+          {children}
+        </main>
+      </div>
+
+      {menuOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label={ADMIN_COPY.menuClose}
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 z-40 bg-admin-ink/50 lg:hidden"
+          />
+          <aside
+            id="admin-mobile-nav"
+            className="fixed inset-y-0 left-0 z-50 flex w-[260px] max-w-[85vw] flex-col overflow-y-auto lg:hidden"
+            style={{ background: 'var(--admin-sidebar-bg)', color: 'var(--admin-sidebar-ink)' }}
+          >
+            <div className="flex justify-end p-2">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                aria-label={ADMIN_COPY.menuClose}
+                className="grid h-11 w-11 place-items-center rounded-md"
+                style={{ color: 'var(--admin-sidebar-ink)' }}
+              >
+                <X size={20} aria-hidden />
+              </button>
+            </div>
+            {nav}
+          </aside>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+function AdminNav({
+  pathname,
+  onNavigate,
+  onLogout,
+}: {
+  pathname: string
+  onNavigate: () => void
+  onLogout: () => void
+}) {
+  return (
+    <nav aria-label="Quản trị" className="flex flex-1 flex-col gap-0.5 px-3 pb-4 pt-1 lg:pt-4">
+      <div className="flex items-center gap-2.5 px-2 pb-5">
+        <DrumMark size={30} color="var(--gold)" />
+        <div className="min-w-0">
+          <div className="font-heading text-[16px] font-semibold text-white">{ADMIN_COPY.brandName}</div>
+          <div className="text-[12px] opacity-70">{ADMIN_COPY.brandSub}</div>
+        </div>
       </div>
 
       {navItems.map((item) => {
-        // Exact match or starts with href + slash (but not dashboard which is /admin)
-        const isExactMatch = pathname === item.href
-        const isSubRoute = pathname.startsWith(`${item.href}/`)
-        const active = item.href === '/admin' ? isExactMatch : (isExactMatch || isSubRoute)
+        // Dashboard matches only /admin; other items also match their sub-routes.
+        const active =
+          item.href === '/admin' ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
         return (
           <Link
             key={item.href}
             href={item.href}
-            onClick={() => setSidebarOpen(false)}
+            onClick={onNavigate}
+            aria-current={active ? 'page' : undefined}
+            className="flex h-10 items-center rounded-md px-2.5 text-[14px] no-underline transition-colors hover:bg-admin-sidebar-line/40"
             style={{
-              textDecoration: 'none',
-              color: active ? 'white' : '#d1d5db',
-              background: active ? '#7f1d1d' : 'transparent',
-              padding: '9px 10px',
-              borderRadius: 6,
-              fontSize: 14,
+              color: active ? '#fff' : 'var(--admin-sidebar-ink)',
+              background: active ? 'var(--admin-primary)' : undefined,
+              fontWeight: active ? 600 : 400,
             }}
           >
             {item.label}
@@ -80,106 +185,18 @@ export function AdminFrame({ title, subtitle, children, mobileHideSidebar = fals
 
       <button
         type="button"
-        onClick={() => {
-          clearAdminToken()
-          router.push('/admin/login')
-        }}
+        onClick={onLogout}
+        className="mt-auto flex h-10 items-center gap-2 rounded-md px-2.5 text-left text-[14px]"
         style={{
-          marginTop: 'auto',
-          border: '1px solid #991b1b',
+          border: '1px solid var(--admin-sidebar-line)',
+          color: 'var(--admin-sidebar-ink)',
           background: 'transparent',
-          color: '#fecaca',
-          padding: '8px 10px',
-          borderRadius: 6,
-          textAlign: 'left',
           cursor: 'pointer',
         }}
       >
-        Logout
+        <LogOut size={16} aria-hidden />
+        {ADMIN_COPY.logout}
       </button>
-    </>
-  )
-
-  const gridCols = showMobileMenu ? '1fr' : '220px 1fr'
-
-  return (
-    <>
-      <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: gridCols, background: '#f5f6f8' }}>
-        {/* Always render sidebar on initial load to prevent hydration mismatch */}
-        {!showMobileMenu && (
-          <aside style={{ background: '#111827', color: '#e5e7eb', padding: 16, display: 'flex', flexDirection: 'column', gap: 6, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
-            {sidebarContent}
-          </aside>
-        )}
-
-        <main style={{ padding: 20 }}>
-          { showMobileMenu && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                style={{
-                  border: 'none',
-                  background: '#111827',
-                  color: 'white',
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 18,
-                }}
-              >
-                ☰
-              </button>
-              <div>
-                <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>{title}</h1>
-              </div>
-            </div>
-          )}
-
-          {!showMobileMenu ? (
-            <div style={{ marginBottom: 16 }}>
-              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: '#111827' }}>{title}</h1>
-              {subtitle ? <p style={{ margin: '4px 0 0', color: '#6b7280' }}>{subtitle}</p> : null}
-            </div>
-          ) : null}
-
-          {children}
-        </main>
-      </div>
-
-      {/* Mobile sidebar overlay */}
-      { showMobileMenu && sidebarOpen && (
-        <>
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.5)',
-              zIndex: 999,
-            }}
-            onClick={() => setSidebarOpen(false)}
-          />
-          <aside
-            style={{
-              position: 'fixed',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 220,
-              background: '#111827',
-              color: '#e5e7eb',
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              zIndex: 1000,
-              overflowY: 'auto',
-            }}
-          >
-            {sidebarContent}
-          </aside>
-        </>
-      )}
-    </>
+    </nav>
   )
 }

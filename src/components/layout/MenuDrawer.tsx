@@ -138,7 +138,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
                 style={{
                   fontFamily: 'var(--font-lora), serif',
                   fontStyle: 'italic',
-                  fontSize: 11,
+                  fontSize: 12,
                   color: 'var(--gold)',
                   marginTop: 3,
                 }}
@@ -201,7 +201,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
                       background: 'var(--accent)',
                       color: 'white',
                       borderRadius: 8,
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: 700,
                       display: 'flex',
                       alignItems: 'center',
@@ -225,10 +225,9 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
               style={{
                 padding: '0 16px 10px',
                 fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 10,
-                letterSpacing: '0.2em',
+                fontSize: 12,
+                fontWeight: 600,
                 color: 'var(--bronze)',
-                textTransform: 'uppercase',
               }}
             >
               Danh mục
@@ -276,7 +275,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
                       {cat.name}
                     </div>
                     {(cat.productCount ?? 0) > 0 && (
-                      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                         {cat.productCount} sản phẩm
                       </div>
                     )}
@@ -296,10 +295,9 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
               style={{
                 padding: '0 16px 10px',
                 fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 10,
-                letterSpacing: '0.2em',
+                fontSize: 12,
+                fontWeight: 600,
                 color: 'var(--bronze)',
-                textTransform: 'uppercase',
               }}
             >
               Tìm hiểu thêm
@@ -348,10 +346,9 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
             <div
               style={{
                 fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontSize: 9.5,
-                letterSpacing: '0.2em',
+                fontSize: 12,
+                fontWeight: 600,
                 color: 'var(--gold)',
-                textTransform: 'uppercase',
                 marginBottom: 12,
               }}
             >
@@ -393,7 +390,7 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
             >
               {HOTLINE}
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(244,237,224,0.55)', marginTop: 3 }}>
+            <div style={{ fontSize: 12, color: 'rgba(244,237,224,0.55)', marginTop: 3 }}>
               {SHOP_ADDRESS}
             </div>
           </div>

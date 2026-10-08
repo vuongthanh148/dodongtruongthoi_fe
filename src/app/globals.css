@@ -9,6 +9,7 @@
 
   --primitive-ink-900: #2a1f1a;
   --primitive-ink-700: #4a3a2e;
+  --primitive-ink-600: #6b5a46;
   --primitive-ink-500: #8a7761;
   --primitive-ink-300: #c4b49e;
 
@@ -38,20 +39,26 @@
   --primitive-line-strong: rgba(42, 31, 26, 0.14);
   --primitive-line-soft: rgba(42, 31, 26, 0.08);
   --primitive-success: #3a6b3a;
+  --primitive-white: #ffffff;
 
   /* Layer 2: brand semantic tokens */
   --bg-page: var(--primitive-ivory-100);
   --bg-card: var(--primitive-ivory-50);
   --bg-surface: var(--bg-card);
   --bg-surface-alt: var(--primitive-ivory-200);
+  --bg-surface-sunk: var(--primitive-ivory-300);
   --bg-dark: var(--primitive-ink-900);
+  --bg-dark-warm: #1e140a;
+  --bg-hero: radial-gradient(ellipse at 70% 40%, #3a2614 0%, #1e140a 55%, #140d06 100%);
   --bg-overlay: rgba(20, 14, 9, 0.75);
 
   --text-primary: var(--primitive-ink-900);
   --text-secondary: var(--primitive-ink-700);
   --text-muted: var(--primitive-ink-500);
+  --text-muted-strong: var(--primitive-ink-600);
   --text-on-dark: var(--primitive-ivory-100);
   --text-on-dark-muted: rgba(244, 237, 224, 0.65);
+  --text-on-dark-subtle: rgba(244, 237, 224, 0.45);
 
   --accent: var(--primitive-crimson-500);
   --accent-hover: var(--primitive-crimson-700);
@@ -67,11 +74,20 @@
   --border: var(--primitive-line-strong);
   --border-soft: var(--primitive-line-soft);
   --border-accent: var(--primitive-crimson-500);
+  --border-on-dark: rgba(244, 237, 224, 0.15);
+  --border-gold: rgba(201, 169, 97, 0.25);
 
   --color-success: var(--primitive-success);
+  --color-success-subtle: rgba(58, 107, 58, 0.1);
+  --color-success-on-dark: #9fd49f;
   --color-warning: var(--primitive-gold-500);
   --color-error: var(--primitive-crimson-500);
   --color-info: var(--primitive-bronze-700);
+
+  /* Share buttons */
+  --brand-zalo: #0068ff;
+  --brand-facebook: #1877f2;
+  --brand-messenger: #0084ff;
 
   /* Compatibility tokens */
   --background: var(--bg-page);
@@ -82,11 +98,48 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* Admin */
+  /* Fonts: one role per token. Next font variables are set on <html> in layout.tsx */
+  --font-heading: var(--font-playfair), 'Playfair Display', serif;
+  --font-body: var(--font-be-vietnam), 'Be Vietnam Pro', sans-serif;
+  --font-accent: var(--font-lora), Lora, serif;
+
+  /* Admin (CMS) */
   --admin-sidebar-bg: #111827;
   --admin-primary: #7f1d1d;
   --admin-border: #e5e7eb;
   --admin-muted: #6b7280;
+  --admin-bg: #f5f6f8;
+  --admin-surface: #ffffff;
+  --admin-border-soft: #f3f4f6;
+  --admin-ink: #111827;
+  --admin-ink-2: #374151;
+  --admin-sidebar-ink: #d1d5db;
+  --admin-primary-subtle: #fef2f2;
+  --admin-border-strong: #c4c8cf;
+  --admin-sidebar-line: #4b5563;
+  --admin-ok-on-dark: #86efac;
+  --admin-danger-on-dark: #fca5a5;
+  --admin-skel-a: #eceef1;
+  --admin-skel-b: #f6f7f9;
+  --admin-primary-line: #f3c7c7;
+  --admin-danger: #b91c1c;
+  --admin-warn: #92400e;
+  --admin-warn-bg: #fef3c7;
+  --admin-info: #1e40af;
+  --admin-info-bg: #dbeafe;
+  --admin-indigo: #3730a3;
+  --admin-indigo-bg: #e0e7ff;
+  --admin-violet: #5b21b6;
+  --admin-violet-bg: #ede9fe;
+  --admin-ok: #166534;
+  --admin-ok-bg: #dcfce7;
+  --admin-neutral-bg: #f3f4f6;
+
+  /* Print (invoice, A4 monochrome) */
+  --print-ink: #111111;
+  --print-ink-2: #333333;
+  --print-muted: #5c5c5c;
+  --print-line: #d9d9d9;
 }
 
 [data-theme='tet'] {
@@ -118,18 +171,23 @@
 
   --font-sans: var(--font-body);
   --font-mono: var(--font-jetbrains);
-  --font-heading: var(--font-lora);
+  --font-heading: var(--font-playfair);
   --font-body: var(--font-be-vietnam);
   --font-accent: var(--font-lora);
 
   --color-bg-page: var(--bg-page);
   --color-bg-surface: var(--bg-surface);
   --color-bg-surface-alt: var(--bg-surface-alt);
+  --color-bg-surface-sunk: var(--bg-surface-sunk);
   --color-bg-dark: var(--bg-dark);
+  --color-bg-dark-warm: var(--bg-dark-warm);
+  --background-image-hero: var(--bg-hero);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+  --color-text-muted-strong: var(--text-muted-strong);
   --color-text-on-dark: var(--text-on-dark);
+  --color-text-on-dark-subtle: var(--text-on-dark-subtle);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-subtle: var(--accent-subtle);
@@ -140,6 +198,50 @@
   --color-border: var(--border);
   --color-border-soft: var(--border-soft);
   --color-border-accent: var(--border-accent);
+  --color-border-on-dark: var(--border-on-dark);
+  --color-border-gold: var(--border-gold);
+  /* Theme keys differ from token names: a same-name key would self-reference. */
+  --color-success-soft: var(--color-success-subtle);
+  --color-success-light: var(--color-success-on-dark);
+  --color-brand-zalo: var(--brand-zalo);
+  --color-brand-facebook: var(--brand-facebook);
+  --color-brand-messenger: var(--brand-messenger);
+
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-border: var(--admin-border);
+  --color-admin-border-soft: var(--admin-border-soft);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-primary: var(--admin-primary);
+  --color-admin-sidebar-bg: var(--admin-sidebar-bg);
+  --color-admin-ink: var(--admin-ink);
+  --color-admin-ink-2: var(--admin-ink-2);
+  --color-admin-sidebar-ink: var(--admin-sidebar-ink);
+  --color-admin-primary-subtle: var(--admin-primary-subtle);
+  --color-admin-border-strong: var(--admin-border-strong);
+  --color-admin-sidebar-line: var(--admin-sidebar-line);
+  --color-admin-ok-on-dark: var(--admin-ok-on-dark);
+  --color-admin-danger-on-dark: var(--admin-danger-on-dark);
+  --color-admin-skel-a: var(--admin-skel-a);
+  --color-admin-skel-b: var(--admin-skel-b);
+  --color-admin-primary-line: var(--admin-primary-line);
+  --color-admin-danger: var(--admin-danger);
+  --color-admin-warn: var(--admin-warn);
+  --color-admin-warn-bg: var(--admin-warn-bg);
+  --color-admin-info: var(--admin-info);
+  --color-admin-info-bg: var(--admin-info-bg);
+  --color-admin-indigo: var(--admin-indigo);
+  --color-admin-indigo-bg: var(--admin-indigo-bg);
+  --color-admin-violet: var(--admin-violet);
+  --color-admin-violet-bg: var(--admin-violet-bg);
+  --color-admin-ok: var(--admin-ok);
+  --color-admin-ok-bg: var(--admin-ok-bg);
+  --color-admin-neutral-bg: var(--admin-neutral-bg);
+
+  --color-print-ink: var(--print-ink);
+  --color-print-ink-2: var(--print-ink-2);
+  --color-print-muted: var(--print-muted);
+  --color-print-line: var(--print-line);
 }
 
 body {
@@ -258,18 +360,36 @@ body {
   scrollbar-width: none;
 }
 
+/* Labels: body font, sentence case (no uppercase, no tracking). Eyebrows use .eyebrow. */
 .label-mono {
-  font-family: var(--font-jetbrains), monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .price-num {
-  font-family: var(--font-lora), serif;
+  font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  color: var(--accent);
+}
+
+/* Eyebrow: 15px body 500 bronze, preceded by a 24px rule */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--bronze);
+}
+.eyebrow::before {
+  content: '';
+  flex: none;
+  width: 24px;
+  height: 1px;
+  background: currentColor;
 }
 
 .desk-nav-link {
@@ -324,6 +444,105 @@ body {
 }
 .mm-tile:hover .mm-img {
   transform: scale(1.05);
+}
+
+/* Headings: Playfair via --font-heading. Base layer so Tailwind utilities still win. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    line-height: 1.05;
+  }
+}
+
+/* Shared storefront classes (from docs/handoff/app/storefront.css) */
+.art-frame {
+  padding: var(--p, 10px);
+  border-radius: 4px;
+}
+.grow-on .g {
+  outline: 1.5px dashed #2b6fd6;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+@keyframes lmFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lm-fade {
+  animation: lmFade 220ms ease both;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes skel {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.skel-s,
+.skel-a {
+  background-size: 200% 100%;
+  animation: skel 1.3s linear infinite;
+}
+.skel-s {
+  background-image: linear-gradient(90deg, var(--bg-surface-sunk) 0, var(--bg-surface-alt) 50%, var(--bg-surface-sunk) 100%);
+}
+.skel-a {
+  background-image: linear-gradient(90deg, var(--admin-skel-a) 0, var(--admin-skel-b) 50%, var(--admin-skel-a) 100%);
+}
+@keyframes sheetIn {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+.sheet-in {
+  animation: sheetIn 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+.sh-row:hover {
+  background: var(--bg-surface-alt) !important;
+}
+.paper button:disabled,
+.adm button:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+/* Admin (CMS) scope. Use .adm on the admin root; tokens are --admin-* above. */
+.adm {
+  font-family: var(--font-body);
+  color: var(--admin-ink);
+}
+.adm button:focus-visible,
+.adm a:focus-visible {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
+}
+.adm-row:hover {
+  background: #fafafa !important;
 }
 
 .brand-focus:focus-visible {

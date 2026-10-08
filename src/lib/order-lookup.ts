@@ -17,6 +17,58 @@ export function maskPhone(phone: string): string {
   return `${digits.slice(0, 4)} ••• ${digits.slice(-3)}`
 }
 
+// Verified detail only. The board masks house-number tokens in the first comma segment and keeps
+// the street, ward, district and city: "12 ngõ 34 Láng Hạ, Đống Đa, Hà Nội" → "•• ngõ •• Láng Hạ, Đống Đa, Hà Nội".
+export function maskAddress(address: string): string {
+  const [first, ...rest] = address.split(',')
+  const maskedFirst = first
+    .split(/\s+/)
+    .map((word) => (/\d/.test(word) ? '••' : word))
+    .join(' ')
+  return [maskedFirst, ...rest].join(',')
+}
+
+// Recipient name on the verified detail: "Nguyễn Văn An" → "N. V. An" (board rule).
+export function maskName(name: string): string {
+  const words = name.trim().split(/\s+/)
+  if (words.length === 1) return words[0] ? `${words[0][0]}.` : ''
+  return words.map((w, i) => (i === words.length - 1 ? w : `${w[0]}.`)).join(' ')
+}
+
+// Lock is server-issued (429 locked_until). We keep that timestamp for this tab's session only, so a
+// reload keeps showing the lock; the server still decides on the next attempt.
+const LOCK_KEY_PREFIX = 'ddtt_lookup_lock_'
+
+export function readStoredLock(phone: string): number | null {
+  try {
+    const raw = window.sessionStorage.getItem(LOCK_KEY_PREFIX + phone)
+    const until = raw ? Number(raw) : NaN
+    if (!Number.isFinite(until) || until <= Date.now()) {
+      window.sessionStorage.removeItem(LOCK_KEY_PREFIX + phone)
+      return null
+    }
+    return until
+  } catch {
+    return null
+  }
+}
+
+export function writeStoredLock(phone: string, lockedUntil: number): void {
+  try {
+    window.sessionStorage.setItem(LOCK_KEY_PREFIX + phone, String(lockedUntil))
+  } catch {
+    // storage unavailable; the server lock still applies
+  }
+}
+
+export function clearStoredLock(phone: string): void {
+  try {
+    window.sessionStorage.removeItem(LOCK_KEY_PREFIX + phone)
+  } catch {
+    // storage unavailable
+  }
+}
+
 export type StoredOrderToken = { token: string; expiresAt: number }
 
 const TOKEN_KEY_PREFIX = 'ddtt_order_token_'

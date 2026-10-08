@@ -60,7 +60,7 @@ export function MegaMenu({ id, open, featuredProducts, onMouseEnter, onMouseLeav
                 {group.title}
               </span>
               {group.badge && (
-                <span className="shrink-0 cursor-default rounded-[8px] bg-[var(--accent-subtle)] px-1.5 py-0.5 text-[10px] leading-none font-semibold whitespace-nowrap text-[var(--accent)]">
+                <span className="shrink-0 cursor-default rounded-[8px] bg-[var(--accent-subtle)] px-1.5 py-0.5 text-[12px] leading-none font-semibold whitespace-nowrap text-[var(--accent)]">
                   {group.badge}
                 </span>
               )}
@@ -69,7 +69,7 @@ export function MegaMenu({ id, open, featuredProducts, onMouseEnter, onMouseLeav
               <Link
                 key={item.label}
                 href={item.href}
-                className="mm-link py-1.5 font-[family-name:var(--font-lora)] text-[15px] font-medium text-[var(--text-primary)]"
+                className="mm-link py-1.5 font-body text-[15px] font-medium text-[var(--text-primary)]"
               >
                 {item.label}
               </Link>
@@ -109,7 +109,7 @@ export function MegaMenu({ id, open, featuredProducts, onMouseEnter, onMouseLeav
                       />
                     </div>
                   </div>
-                  <span className="overflow-hidden font-[family-name:var(--font-lora)] text-sm font-semibold text-ellipsis whitespace-nowrap">
+                  <span className="overflow-hidden font-body text-sm font-semibold text-ellipsis whitespace-nowrap">
                     {p.title}
                   </span>
                   <span className="price-num -mt-1 flex items-center gap-1 text-[13px] text-[var(--accent)]">

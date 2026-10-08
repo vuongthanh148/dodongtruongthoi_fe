@@ -8,6 +8,7 @@ import { Btn } from '@/components/ui/Btn'
 import { Heading } from '@/components/ui/Heading'
 import { Label } from '@/components/ui/Label'
 import { Price } from '@/components/ui/Price'
+import { SearchNoResults } from '@/components/ui/SearchNoResults'
 import type { Category, Product } from '@/lib/types'
 
 interface SearchOverlayProps {
@@ -231,33 +232,9 @@ export function SearchOverlay({ open, onClose, categories, initialProducts }: Se
               </Link>
             ))}
           </div>
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12,
-              paddingTop: 40,
-              color: 'var(--text-muted)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 14, lineHeight: 1.6 }}>Không tìm thấy sản phẩm phù hợp</div>
-            <Btn
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setQuery('')}
-              style={{
-                color: 'var(--text-secondary)',
-              }}
-            >
-              Xóa tìm kiếm
-            </Btn>
-          </div>
-        )}
+        ) : query.trim() ? (
+          <SearchNoResults query={query.trim()} onNavigate={onClose} />
+        ) : null}
       </div>
     </div>
   )

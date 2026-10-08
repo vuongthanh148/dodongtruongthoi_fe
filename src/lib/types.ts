@@ -64,6 +64,7 @@ export interface Product {
   reviewCount: number
   price: number
   discountPrice?: number
+  campaignId?: string
   discountLabel?: string
   variantOptions: VariantOption[]
   defaultVariant: Record<string, string>
@@ -257,9 +258,11 @@ export interface AdminOrder {
   id: string
   phone: string
   customer_name: string | null
+  address?: string | null
   note: string | null
   status: OrderStatus
   admin_note: string | null
+  payment_method?: string | null
   total_amount: number
   created_at: string
   items: AdminOrderItem[]
@@ -301,6 +304,7 @@ export interface CreateOrderRequest {
   customerName?: string
   address?: string
   note?: string
+  paymentMethod?: string
   items: Array<{
     productId: string
     productTitle: string

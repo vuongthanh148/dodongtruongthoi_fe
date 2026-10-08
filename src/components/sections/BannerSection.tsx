@@ -208,10 +208,10 @@ export function BannerSection({ banners }: BannerSectionProps) {
                     <div className="max-w-[220px] md:max-w-[340px] lg:max-w-[440px]" style={{ color: 'var(--text-on-dark)' }}>
                       <div style={{
                         marginBottom: 8,
-                        fontFamily: 'var(--font-jetbrains), monospace',
-                        fontSize: 9,
-                        letterSpacing: '0.28em',
-                        textTransform: 'uppercase',
+                        fontFamily: 'var(--font-body)',
+                        fontWeight: 500,
+                        fontSize: 15,
+                        letterSpacing: '0.04em',
                         color: 'var(--gold)',
                       }}>
                         Tuyển chọn tinh hoa

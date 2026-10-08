@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Be_Vietnam_Pro, JetBrains_Mono, Lora } from 'next/font/google'
+import { Be_Vietnam_Pro, JetBrains_Mono, Lora, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/constants'
 import type { ThemeId } from '@/lib/themes'
@@ -18,6 +18,14 @@ const lora = Lora({
   variable: '--font-lora',
 })
 
+const playfair = Playfair_Display({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-playfair',
+})
+
+// Kept for inline font-family styles still in components (not for headings or labels).
 const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400'],
@@ -65,8 +73,12 @@ export default async function RootLayout({
   const activeTheme = await getActiveTheme()
 
   return (
-    <html lang="vi" data-theme={activeTheme}>
-      <body suppressHydrationWarning className={`${beVietnam.variable} ${lora.variable} ${jetbrains.variable} antialiased`}>
+    <html
+      lang="vi"
+      data-theme={activeTheme}
+      className={`${beVietnam.variable} ${lora.variable} ${playfair.variable} ${jetbrains.variable}`}
+    >
+      <body suppressHydrationWarning className="antialiased">
         <SWRProvider>
           <main>{children}</main>
         </SWRProvider>

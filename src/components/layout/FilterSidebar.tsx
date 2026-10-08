@@ -4,7 +4,7 @@ import type { Category } from '@/lib/types'
 
 export type PriceRangeId = 'all' | 'under-1m' | '1m-3m' | '3m-5m' | 'over-5m'
 
-const PRICE_RANGES: { id: PriceRangeId; label: string }[] = [
+export const PRICE_RANGES: { id: PriceRangeId; label: string }[] = [
   { id: 'all', label: 'Tất cả' },
   { id: 'under-1m', label: 'Dưới 1 triệu' },
   { id: '1m-3m', label: '1 – 3 triệu' },
@@ -28,7 +28,7 @@ interface FilterSidebarProps {
 
 function GroupHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="label-mono mb-3" style={{ color: 'var(--bronze)', fontSize: 10.5 }}>
+    <div className="eyebrow mb-3" style={{ color: 'var(--bronze)' }}>
       {children}
     </div>
   )
@@ -50,7 +50,7 @@ export function FilterSidebar({
   return (
     <aside className="sticky top-[92px] hidden w-[216px] shrink-0 lg:block xl:w-[248px]">
       <div className="flex items-center justify-between pb-1.5">
-        <span className="font-[family-name:var(--font-lora)] text-lg font-semibold">Bộ lọc</span>
+        <span className="font-heading text-[20px] font-medium">Bộ lọc</span>
         <button type="button" onClick={onClearAll} className="text-[13px]" style={{ color: 'var(--accent)' }}>
           Xóa tất cả
         </button>

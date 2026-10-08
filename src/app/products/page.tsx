@@ -1,13 +1,14 @@
 'use client'
 
-import { IconFilter, IconGrid, IconList } from '@/components/icons'
+import Link from 'next/link'
+import { IconClose, IconFilter, IconGrid, IconList } from '@/components/icons'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Footer } from '@/components/layout/Footer'
-import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
+import { VisitBlock } from '@/components/sections/VisitBlock'
 import { DeskHeader } from '@/components/layout/Header'
 import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { TopBar } from '@/components/layout/TopBar'
-import { FilterSidebar } from '@/components/layout/FilterSidebar'
+import { FilterSidebar, PRICE_RANGES } from '@/components/layout/FilterSidebar'
 import { Container } from '@/components/layout/Container'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Price } from '@/components/ui/Price'
@@ -18,7 +19,9 @@ import { Heading } from '@/components/ui/Heading'
 import { SortSelect } from '@/components/ui/SortSelect'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
 import { BG_TONES } from '@/lib/data'
-import { fetchCategories, fetchProducts } from '@/lib/storefront-api'
+import { LISTING_CHIP_COPY, LISTING_COPY, SEARCH_EMPTY_COPY } from '@/lib/content-data'
+import { HOTLINE_TEL } from '@/lib/constants'
+import { fetchCategories, loadProducts } from '@/lib/storefront-api'
 import { SWR_KEYS } from '@/lib/swr-keys'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useMemo, useState } from 'react'
@@ -58,7 +61,7 @@ function ProductsListRow({ product, categories, onOpen }: { product: Product; ca
       </div>
       <div style={{ padding: '12px 14px 12px 10px', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
         {catName ? (
-          <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 9, letterSpacing: '0.12em', color: 'var(--bronze)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--bronze)' }}>
             {catName}
           </div>
         ) : null}
@@ -103,9 +106,12 @@ function ProductsPageInner() {
   const [pendingBgTone, setPendingBgTone] = useState<string | null>(null)
   const [expanded, setExpanded] = useState({ key: '', count: PAGE_SIZE })
 
-  const { data: allProducts = [], isLoading } = useSWR(SWR_KEYS.products, () =>
-    fetchProducts({ limit: 100 })
+  const { data: productsData, error: productsError, isLoading, mutate: retryProducts } = useSWR(
+    SWR_KEYS.products,
+    () => loadProducts({ limit: 100 })
   )
+  const allProducts = useMemo(() => productsData ?? [], [productsData])
+  const listFailed = !!productsError && !productsData
 
   const { data: categories = [] } = useSWR(SWR_KEYS.categories, fetchCategories)
 
@@ -127,6 +133,13 @@ function ProductsPageInner() {
     if (bgTone !== null) count++
     return count
   }, [priceRange, sizeFilter, bgTone])
+
+  const clearAllFilters = () => {
+    setActiveCategoryId('all')
+    setPriceRange('all')
+    setSizeFilter(null)
+    setBgTone(null)
+  }
 
   // Category/search-scoped base list, before price/size/bg-tone filtering — also used to
   // derive the dynamic size filter options.
@@ -153,6 +166,40 @@ function ProductsPageInner() {
     }
     return Array.from(byCode, ([code, name]) => ({ code, name }))
   }, [scopedProducts])
+
+  // Active filters as removable chips (board: list-a-*). Search text is not a filter chip.
+  const activeChips = (() => {
+    const chips: { key: string; label: string; onRemove: () => void }[] = []
+    if (activeCategoryId !== 'all') {
+      chips.push({
+        key: 'category',
+        label: categories.find((c) => c.id === activeCategoryId)?.name ?? activeCategoryId,
+        onRemove: () => setActiveCategoryId('all'),
+      })
+    }
+    if (priceRange !== 'all') {
+      chips.push({
+        key: 'price',
+        label: PRICE_RANGES.find((r) => r.id === priceRange)?.label ?? priceRange,
+        onRemove: () => setPriceRange('all'),
+      })
+    }
+    if (sizeFilter !== null) {
+      chips.push({
+        key: 'size',
+        label: sizeOptions.find((s) => s.code === sizeFilter)?.name ?? sizeFilter,
+        onRemove: () => setSizeFilter(null),
+      })
+    }
+    if (bgTone !== null) {
+      chips.push({
+        key: 'tone',
+        label: LISTING_CHIP_COPY.tones[bgTone] ?? bgTone,
+        onRemove: () => setBgTone(null),
+      })
+    }
+    return chips
+  })()
 
   const allVisibleProducts = useMemo(() => {
     const filtered = scopedProducts.filter((product) => {
@@ -335,30 +382,20 @@ function ProductsPageInner() {
           type="button"
           onClick={() => { setPendingPriceRange(priceRange); setPendingSizeFilter(sizeFilter); setPendingBgTone(bgTone); setFilterSheetOpen(true) }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-            padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 4,
-            background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'var(--text-primary)',
-            position: 'relative',
+            display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+            height: 40, padding: '0 14px', border: '1px solid var(--border)', borderRadius: 6,
+            background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--text-primary)',
           }}
         >
-          <IconFilter size={13} />
-          Lọc
-          {activeFilterCount > 0 && (
-            <span style={{
-              position: 'absolute', top: -6, right: -6,
-              background: 'var(--accent)', color: 'white',
-              width: 16, height: 16, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, fontWeight: 700,
-            }}>{activeFilterCount}</span>
-          )}
+          <IconFilter size={14} />
+          {activeFilterCount > 0 ? `Bộ lọc (${activeFilterCount})` : 'Bộ lọc'}
         </button>
         <button
           type="button"
           onClick={() => setSortSheetOpen(true)}
           style={{
-            padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 4,
-            background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'var(--text-primary)',
+            height: 40, padding: '0 14px', border: '1px solid var(--border)', borderRadius: 6,
+            background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--text-primary)',
             flexShrink: 0,
           }}
         >
@@ -401,33 +438,56 @@ function ProductsPageInner() {
             onSizeFilterChange={setSizeFilter}
             bgTone={bgTone}
             onBgToneChange={setBgTone}
-            onClearAll={() => {
-              setActiveCategoryId('all')
-              setPriceRange('all')
-              setSizeFilter(null)
-              setBgTone(null)
-            }}
+            onClearAll={clearAllFilters}
           />
           <div>
+            {!isLoading && activeChips.length > 0 ? (
+              <ActiveFilterChips chips={activeChips} onClearAll={clearAllFilters} />
+            ) : null}
             {isLoading ? (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
                 {[0, 1, 2, 3, 4, 5].map((i) => (
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
+            ) : listFailed ? (
+              <ListingStateBox
+                title={LISTING_COPY.error.title}
+                body={LISTING_COPY.error.body}
+                primary={{ label: LISTING_COPY.error.retry, onClick: () => retryProducts() }}
+                secondary={{ label: LISTING_COPY.error.call, href: HOTLINE_TEL }}
+              />
             ) : visibleProducts.length === 0 ? (
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 10, padding: '22px 14px', margin: 16,
-                border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
-              }}>
-                <div style={{ width: 170 }}>
-                  <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
-                </div>
-                <Btn type="button" variant="outline" onClick={() => { setPriceRange('all'); setSizeFilter(null); setBgTone(null); setActiveCategoryId('all') }}>
-                  Xem tất cả
-                </Btn>
-              </div>
+              allProducts.length === 0 ? (
+                <ListingStateBox
+                  title={LISTING_COPY.empty.title}
+                  body={LISTING_COPY.empty.body}
+                  primary={{ label: LISTING_COPY.empty.primary, href: '/categories' }}
+                  secondary={{ label: LISTING_COPY.empty.secondary, href: '/products' }}
+                />
+              ) : qParam ? (
+                <ListingStateBox
+                  title={SEARCH_EMPTY_COPY.title}
+                  body={SEARCH_EMPTY_COPY.body(qParam)}
+                  primary={{ label: SEARCH_EMPTY_COPY.suggestions[0].label, href: SEARCH_EMPTY_COPY.suggestions[0].href }}
+                  secondary={{ label: SEARCH_EMPTY_COPY.suggestions[1].label, href: SEARCH_EMPTY_COPY.suggestions[1].href }}
+                />
+              ) : (
+                <ListingStateBox
+                  title={LISTING_COPY.filtered.title}
+                  body={LISTING_COPY.filtered.body}
+                  primary={{
+                    label: LISTING_COPY.filtered.primary,
+                    onClick: () => {
+                      setPriceRange('all')
+                      setSizeFilter(null)
+                      setBgTone(null)
+                      setActiveCategoryId('all')
+                    },
+                  }}
+                  secondary={{ label: LISTING_COPY.filtered.secondary, href: HOTLINE_TEL }}
+                />
+              )
             ) : view === 'grid' ? (
               <>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
@@ -643,9 +703,94 @@ function ProductsPageInner() {
         </div>
       </BottomSheet>
 
-      <StoreLocationsSection />
+      <VisitBlock />
 
       <Footer />
+    </div>
+  )
+}
+
+// Removable chips for the active filters, with "Xóa tất cả" (board: list-a-*, st-list-filtered-*).
+function ActiveFilterChips({
+  chips,
+  onClearAll,
+}: {
+  chips: { key: string; label: string; onRemove: () => void }[]
+  onClearAll: () => void
+}) {
+  return (
+    <div className="noscroll mb-5 flex items-center gap-2 overflow-x-auto md:mb-6 xl:mb-6" style={{ paddingBottom: 2 }}>
+      {chips.map((chip) => (
+        <span
+          key={chip.key}
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[16px] border px-2.5 py-1.5 text-[13px]"
+          style={{ background: 'var(--bg-surface-alt)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+        >
+          {chip.label}
+          <button
+            type="button"
+            onClick={chip.onRemove}
+            aria-label={`${LISTING_CHIP_COPY.remove} ${chip.label}`}
+            className="grid h-4 w-4 place-items-center rounded-full bg-transparent p-0"
+            style={{ color: 'var(--text-muted-strong)', cursor: 'pointer', border: 'none' }}
+          >
+            <IconClose size={12} />
+          </button>
+        </span>
+      ))}
+      <button
+        type="button"
+        onClick={onClearAll}
+        className="ml-1 shrink-0 whitespace-nowrap bg-transparent text-[13px]"
+        style={{ color: 'var(--accent)', cursor: 'pointer', border: 'none' }}
+      >
+        {LISTING_CHIP_COPY.clearAll}
+      </button>
+    </div>
+  )
+}
+
+// Empty, filtered-empty, search-empty and error states for the listing (st-list-*, st-search-*).
+function ListingStateBox({
+  title,
+  body,
+  primary,
+  secondary,
+}: {
+  title: string
+  body: string
+  primary: { label: string; onClick?: () => void; href?: string }
+  secondary?: { label: string; href: string }
+}) {
+  const buttonBase =
+    'inline-flex h-[50px] items-center justify-center rounded-[6px] px-[22px] text-[15px] font-semibold no-underline'
+  return (
+    <div
+      className="my-4 flex flex-col items-center gap-3 rounded-[10px] border border-dashed px-6 py-12 text-center"
+      style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}
+    >
+      <h2 className="font-heading m-0 text-[22px] font-medium md:text-[26px]" style={{ color: 'var(--text-primary)' }}>
+        {title}
+      </h2>
+      <p className="m-0 max-w-[520px] text-[15px] leading-[1.6]" style={{ color: 'var(--text-muted-strong)' }}>
+        {body}
+      </p>
+      <div className="mt-2 flex flex-col gap-2.5 sm:flex-row">
+        {primary.href ? (
+          <Link href={primary.href} className={buttonBase} style={{ background: 'var(--accent)', color: '#fff' }}>
+            {primary.label}
+          </Link>
+        ) : (
+          <button type="button" onClick={primary.onClick} className={buttonBase} style={{ background: 'var(--accent)', color: '#fff' }}>
+            {primary.label}
+          </button>
+        )}
+        {secondary ? (
+          <a href={secondary.href} className={buttonBase} style={{ border: '1.5px solid var(--accent)', color: 'var(--accent)' }}>
+            {secondary.label}
+          </a>
+        ) : null}
+      </div>
     </div>
   )
 }

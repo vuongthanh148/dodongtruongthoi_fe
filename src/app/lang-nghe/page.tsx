@@ -1,213 +1,111 @@
 'use client'
 
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import Link from 'next/link'
 import { Container } from '@/components/layout/Container'
-import { Footer } from '@/components/layout/Footer'
-import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
-import { DeskHeader } from '@/components/layout/Header'
-import { MenuDrawer } from '@/components/layout/MenuDrawer'
-import { TopBar } from '@/components/layout/TopBar'
+import { ContentPageShell } from '@/components/content/ContentPageShell'
 import { ArtPiece } from '@/components/ui/ArtPiece'
-import { useState } from 'react'
-
-const stories = [
-  {
-    label: 'Lịch sử',
-    title: 'Trên 1000 năm nghề đúc đồng',
-    body: 'Đại Bái là một trong những làng nghề đúc đồng lâu đời ở Bắc Ninh. Từ vật dụng thờ cúng đến tác phẩm nghệ thuật trang trí, mỗi sản phẩm đều là kết tinh của kinh nghiệm truyền đời và tinh thần gìn giữ nghề cổ.',
-    bg: 'bronze' as const,
-    frame: 'gold' as const,
-  },
-  {
-    label: 'Nghề thủ công',
-    title: 'Bàn tay nghệ nhân và lửa lò',
-    body: 'Người thợ làm đồng trải qua nhiều công đoạn: tạo mẫu, nấu đồng, đổ khuôn, gò chạm, xử lý bề mặt và hoàn thiện. Mỗi đường nét đều đòi hỏi sự kiên nhẫn và đôi tay chắc nghề.',
-    bg: 'gold' as const,
-    frame: 'bronze' as const,
-  },
-  {
-    label: 'Di sản',
-    title: 'Mang văn hoá Việt vào không gian sống',
-    body: 'Chúng tôi mong muốn mỗi tác phẩm không chỉ đẹp trong không gian sống, mà còn mang theo câu chuyện văn hóa Việt: sự bền bỉ, tinh tế và lòng tự hào với nghề truyền thống.',
-    bg: 'dark' as const,
-    frame: 'carved' as const,
-  },
-]
+import {
+  CONTENT_PAGE_META,
+  CRAFT_DETAIL_COPY,
+  CRAFT_PAGE_COPY,
+  CRAFT_STEPS,
+  CRAFT_STORIES,
+} from '@/lib/content-data'
 
 export default function CraftVillagePage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        background: 'var(--bg-page)',
-      }}
-    >
-      <DeskHeader />
-      <TopBar title="Giới thiệu" onMenu={() => setIsMenuOpen(true)} />
-      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-
-      {/* Breadcrumb above hero on page background */}
-      <Container>
-        <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Giới thiệu' }]} />
-      </Container>
-
-      {/* Full-bleed hero image area */}
-      <div
-        style={{
-          position: 'relative',
-          height: 420,
-          overflow: 'hidden',
-          background: 'var(--bg-dark)',
-          margin: '0 0 0 0',
-        }}
-      >
-        <ArtPiece
-          bg="bronze"
-          frame="carved"
-          label=""
-          pad={0}
-          aspect="auto"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-        />
-        {/* Gradient overlay */}
+    <ContentPageShell topTitle={CONTENT_PAGE_META.craft.topTitle} crumbs={CONTENT_PAGE_META.craft.crumbs}>
+      {/* Full-bleed hero */}
+      <div className="relative w-full overflow-hidden h-[320px] md:h-[380px] lg:h-[420px] xl:h-[480px]" style={{ background: 'var(--bg-dark)' }}>
+        <ArtPiece bg="bronze" frame="carved" label="" pad={0} aspect="auto" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'linear-gradient(180deg, rgba(20,14,9,0.1) 0%, rgba(20,14,9,0.9) 100%)',
-          }}
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(0deg, rgba(20,14,9,0.9) 5%, rgba(20,14,9,0.1) 75%)' }}
         />
-        {/* Text overlay at bottom-left */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 40px 56px' }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-be-vietnam), sans-serif',
-              fontSize: 10,
-              letterSpacing: '0.2em',
-              color: 'var(--gold)',
-              textTransform: 'uppercase',
-              marginBottom: 10,
-            }}
-          >
-            Làng Đại Bái · Bắc Ninh
+        <Container className="absolute inset-x-0 bottom-0 flex h-full items-end">
+          <div className="max-w-[720px] pb-10 md:pb-14" style={{ color: 'var(--text-on-dark)' }}>
+            <div className="eyebrow" style={{ color: 'var(--gold)', fontSize: 15 }}>
+              {CRAFT_PAGE_COPY.eyebrow}
+            </div>
+            <h1
+              className="mt-2.5 text-[28px] md:text-[40px] lg:text-[44px] xl:text-[52px]"
+              style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, lineHeight: 1.1, margin: '10px 0 0', textWrap: 'balance' }}
+            >
+              {CRAFT_PAGE_COPY.title}
+            </h1>
           </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-lora), serif',
-              fontWeight: 600,
-              fontSize: 44,
-              color: 'var(--text-on-dark)',
-              lineHeight: 1.1,
-              maxWidth: 720,
-            }}
-          >
-            Hành trình của lửa, búa và bàn tay người thợ
-          </div>
-        </div>
+        </Container>
       </div>
 
-      <Container>
-        <div style={{ paddingTop: 56, paddingBottom: 56, display: 'flex', flexDirection: 'column', gap: 72 }}>
-          {/* Story sections - flat on page background */}
-          {stories.map((story, index) => (
-            <section
-              key={story.label}
-              className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-center md:gap-16"
-            >
-              {/* Artwork - stacked above text on mobile, alternating side at md+ */}
-              <div
-                className={index % 2 === 1 ? 'w-full md:order-2' : 'w-full'}
-                style={{ background: 'var(--bg-surface)', borderRadius: 12, overflow: 'hidden' }}
-              >
-                <ArtPiece bg={story.bg} frame={story.frame} label="" pad={0} aspect="4/3" />
-              </div>
-              {/* Text content */}
-              <div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-be-vietnam), sans-serif',
-                    fontSize: 10,
-                    letterSpacing: '0.18em',
-                    color: 'var(--bronze)',
-                    textTransform: 'uppercase',
-                    marginBottom: 10,
-                  }}
-                >
-                  {String(index + 1).padStart(2, '0')} · {story.label}
-                </div>
-                <p
-                  style={{
-                    fontFamily: 'var(--font-lora), serif',
-                    fontWeight: 600,
-                    fontSize: 20,
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  {story.body}
-                </p>
-              </div>
-            </section>
-          ))}
-
-          {/* Divider and footer CTA */}
-          <div
-            style={{
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 16,
-              paddingTop: 24,
-              borderTop: '1px solid var(--border-soft)',
-            }}
-          >
+      <Container className="flex w-full flex-col gap-12 pb-10 pt-10 md:gap-14 md:pb-14 md:pt-14 lg:gap-16 lg:pb-16 lg:pt-16 xl:gap-[72px] xl:pb-[72px] xl:pt-[72px]">
+        {/* Story rows: image and text side by side at md+, alternating; stacked below md. */}
+        {CRAFT_STORIES.map((story, index) => (
+          <section key={story.label} className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-center md:gap-10 lg:gap-16">
             <div
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontSize: 26,
-                fontWeight: 600,
-                marginTop: 16,
-              }}
+              className={index % 2 === 1 ? 'w-full md:order-2' : 'w-full'}
+              style={{ background: 'var(--bg-surface)', borderRadius: 12, overflow: 'hidden' }}
             >
-              Ghé xưởng tại làng Đại Bái
+              <ArtPiece bg={story.bg} frame={story.frame} label="" pad={0} aspect="4/3" />
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-              Làng Đại Bái, Bắc Ninh · Mở cửa hàng ngày
+            <div style={{ minWidth: 0 }}>
+              <div className="eyebrow">
+                {String(index + 1).padStart(2, '0')} · {story.label}
+              </div>
+              <p
+                className="mt-3 text-[17px] md:text-[19px] lg:text-[20px]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 400, lineHeight: 1.7, color: 'var(--text-primary)', margin: '12px 0 0', textWrap: 'pretty' }}
+              >
+                {story.body}
+              </p>
             </div>
-            <a
-              href="tel:0899012288"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '11px 22px',
-                background: 'var(--accent)',
-                border: 'none',
-                borderRadius: 100,
-                color: 'white',
-                textDecoration: 'none',
-                fontFamily: 'var(--font-be-vietnam), sans-serif',
-                fontWeight: 500,
-                fontSize: 13,
-              }}
-            >
-              Xem sản phẩm
-            </a>
+          </section>
+        ))}
+
+        {/* Craft steps, list A */}
+        <section>
+          <div className="eyebrow">
+            {CRAFT_DETAIL_COPY.eyebrow}
           </div>
+          <h2
+            className="mt-2 mb-5 text-[22px] md:mb-6 md:text-[26px] lg:mb-7"
+            style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, lineHeight: 1.2, margin: '8px 0 20px' }}
+          >
+            {CRAFT_DETAIL_COPY.stepsTitle}
+          </h2>
+          <ol className="grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 md:grid-cols-3 md:gap-4 lg:gap-5" style={{ margin: 0 }}>
+            {CRAFT_STEPS.map((step, index) => (
+              <li
+                key={step.title}
+                className="flex flex-col gap-1.5 rounded-[10px] p-4 md:p-5"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+              >
+                <span className="text-gold" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15 }}>
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 17, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                  {step.title}
+                </span>
+                <span style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{step.body}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* Visit CTA */}
+        <div className="flex flex-col items-center gap-4 pt-8 text-center md:gap-4" style={{ borderTop: '1px solid var(--border-soft)' }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 24, fontWeight: 600, lineHeight: 1.2, marginTop: 8 }}>
+            {CRAFT_PAGE_COPY.visitTitle}
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{CRAFT_PAGE_COPY.visitMeta}</div>
+          <Link
+            href="/products"
+            className="flex h-[50px] w-full items-center justify-center rounded-[6px] px-[22px] sm:w-auto"
+            style={{ background: 'var(--accent)', color: 'var(--primitive-white)', fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}
+          >
+            {CRAFT_PAGE_COPY.visitCta}
+          </Link>
         </div>
       </Container>
-
-      <StoreLocationsSection />
-
-      <div style={{ flex: 1 }} />
-      <Footer />
-    </div>
+    </ContentPageShell>
   )
 }

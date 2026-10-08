@@ -29,9 +29,9 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <nav
         aria-label="Breadcrumb"
-        className="mx-auto hidden w-full max-w-[1344px] px-4 py-4 md:block md:px-6 md:py-4 lg:px-8 lg:py-5"
+        className="mx-auto hidden w-full max-w-[1344px] px-6 py-4 md:block lg:px-8 lg:py-5"
       >
-        <ol className="flex flex-wrap items-center gap-2 text-[13px] text-[var(--text-muted)]">
+        <ol className="flex flex-wrap items-center gap-2 text-[13px] text-[var(--text-muted-strong)]">
           {items.map((item, i) => {
             const isLast = i === items.length - 1
             return (

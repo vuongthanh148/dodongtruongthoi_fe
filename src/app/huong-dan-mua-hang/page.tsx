@@ -1,161 +1,63 @@
 'use client'
 
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Container } from '@/components/layout/Container'
-import { Footer } from '@/components/layout/Footer'
-import { StoreLocationsSection } from '@/components/sections/StoreLocationsSection'
-import { DeskHeader } from '@/components/layout/Header'
-import { MenuDrawer } from '@/components/layout/MenuDrawer'
 import { ReadColumn } from '@/components/layout/ReadColumn'
-import { TopBar } from '@/components/layout/TopBar'
-import { useState } from 'react'
-
-const steps = [
-  {
-    n: 1,
-    title: 'Chọn kích thước phù hợp',
-    subtitle: 'Dựa trên diện tích tường và không gian',
-    body: 'Với phòng khách nhỏ, ưu tiên khổ vừa để tạo điểm nhấn tinh tế. Với không gian lớn, bạn có thể chọn tác phẩm khổ lớn hoặc bộ đôi cân xứng.',
-  },
-  {
-    n: 2,
-    title: 'Chọn nền tranh và khung',
-    subtitle: 'Tư vấn theo ánh sáng và màu nội thất',
-    body: 'Nền vàng hợp không gian ấm, nền đỏ nổi bật cho phòng thờ/trang trọng, nền đen cổ tạo chiều sâu hiện đại. Nhân viên sẽ tư vấn theo ánh sáng và màu nội thất.',
-  },
-  {
-    n: 3,
-    title: 'Xác nhận đơn và thông tin giao nhận',
-    subtitle: 'Qua hotline hoặc Zalo',
-    body: 'Liên hệ qua hotline hoặc Zalo để xác nhận biến thể, giá, thời gian hoàn thiện và địa chỉ giao hàng. Đơn hàng được xác nhận qua điện thoại.',
-  },
-  {
-    n: 4,
-    title: 'Thanh toán',
-    subtitle: 'Chuyển khoản hoặc theo tư vấn',
-    body: 'Chuyển khoản hoặc theo hình thức được tư vấn. Không thu thêm phụ phí. Thông tin thanh toán được gửi sau khi xác nhận đơn.',
-  },
-  {
-    n: 5,
-    title: 'Nhận hàng và lắp đặt',
-    subtitle: 'Hỗ trợ lắp đặt tận nơi',
-    body: 'Kiểm tra kỹ khi nhận hàng. Đội ngũ hỗ trợ lắp đặt và bảo hành định kỳ. Liên hệ hotline trong 48 giờ nếu có vấn đề sau khi nhận.',
-  },
-]
+import { ContentPageShell } from '@/components/content/ContentPageShell'
+import { CONTENT_PAGE_META, GUIDE_COPY, GUIDE_STEPS } from '@/lib/content-data'
 
 export default function BuyGuidePage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        background: 'var(--bg-page)',
-      }}
-    >
-      <DeskHeader />
-      <TopBar title="Hướng Dẫn Mua Hàng" onMenu={() => setIsMenuOpen(true)} />
-      <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Hướng dẫn mua hàng' }]} />
-
-      <Container>
-        <ReadColumn className="flex flex-col gap-4 pt-4">
-          {/* Title and subtitle */}
-          <div style={{ marginBottom: 20 }}>
+    <ContentPageShell topTitle={CONTENT_PAGE_META.guide.topTitle} crumbs={CONTENT_PAGE_META.guide.crumbs}>
+      <Container className="w-full pb-10 pt-4 md:pb-14 md:pt-6 lg:pb-16 xl:pb-[72px]">
+        <ReadColumn>
+          <div className="mb-5 md:mb-6 lg:mb-7 xl:mb-8">
             <h1
-              style={{
-                fontFamily: 'var(--font-lora), serif',
-                fontWeight: 600,
-                fontSize: 32,
-                margin: 0,
-                marginBottom: 8,
-                lineHeight: 1.2,
-              }}
+              className="text-[26px] md:text-[30px] lg:text-[34px] xl:text-[36px]"
+              style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, lineHeight: 1.15, margin: 0, color: 'var(--text-primary)', textWrap: 'balance' }}
             >
-              Hướng dẫn mua hàng
+              {GUIDE_COPY.title}
             </h1>
-            <div
-              style={{
-                fontSize: 15,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.6,
-              }}
-            >
-              Năm bước để chọn đúng tác phẩm cho không gian của bạn.
-            </div>
+            <p className="mt-1.5 text-sm md:text-[15px]" style={{ color: 'var(--text-muted)', lineHeight: 1.6, margin: '6px 0 0' }}>
+              {GUIDE_COPY.sub}
+            </p>
           </div>
 
-          {/* Steps - flat numbered list */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {steps.map((step, idx) => (
-              <div
+          <ol className="m-0 flex list-none flex-col p-0">
+            {GUIDE_STEPS.map((step, index) => (
+              <li
                 key={step.n}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '60px 1fr',
-                  gap: 24,
-                  padding: '24px 0',
-                  borderTop: idx > 0 ? '1px solid var(--border-soft)' : 'none',
-                }}
+                className="grid grid-cols-[40px_minmax(0,1fr)] gap-4 py-5 md:grid-cols-[56px_minmax(0,1fr)] md:gap-5 md:py-7"
+                style={{ borderTop: index > 0 ? '1px solid var(--border)' : 'none' }}
               >
-                {/* Large plain numeral */}
-                <div
-                  style={{
-                    fontFamily: 'var(--font-lora), serif',
-                    fontSize: 48,
-                    fontWeight: 600,
-                    color: 'var(--accent)',
-                    lineHeight: 1,
-                    paddingTop: 2,
-                  }}
+                <span
+                  className="text-gold text-[28px] md:text-[36px]"
+                  style={{ fontFamily: 'var(--font-body)', fontWeight: 600, lineHeight: 1 }}
                 >
                   {step.n}
-                </div>
-                {/* Content */}
-                <div>
+                </span>
+                <div style={{ minWidth: 0 }}>
                   <h2
-                    style={{
-                      fontFamily: 'var(--font-lora), serif',
-                      fontWeight: 600,
-                      fontSize: 20,
-                      color: 'var(--text-primary)',
-                      lineHeight: 1.3,
-                      margin: 0,
-                      marginBottom: step.subtitle ? 4 : 0,
-                    }}
+                    className="text-[19px] md:text-[22px]"
+                    style={{ fontFamily: 'var(--font-body)', fontWeight: 600, lineHeight: 1.3, margin: 0, color: 'var(--text-primary)' }}
                   >
                     {step.title}
                   </h2>
-                  {step.subtitle && (
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: 'var(--bronze)',
-                        marginBottom: 8,
-                        lineHeight: 1.3,
-                      }}
-                    >
+                  {step.subtitle ? (
+                    <div className="mt-1" style={{ fontSize: 14, color: 'var(--bronze)', lineHeight: 1.4 }}>
                       {step.subtitle}
                     </div>
-                  )}
-                  {step.body && (
-                    <div style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                  ) : null}
+                  {step.body ? (
+                    <p className="mb-0 mt-2.5 text-[15px] md:text-base" style={{ lineHeight: 1.75, color: 'var(--text-secondary)', textWrap: 'pretty' }}>
                       {step.body}
-                    </div>
-                  )}
+                    </p>
+                  ) : null}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </ReadColumn>
       </Container>
-
-      <StoreLocationsSection />
-
-      <div style={{ flex: 1 }} />
-      <Footer />
-    </div>
+    </ContentPageShell>
   )
 }

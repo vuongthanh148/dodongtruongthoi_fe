@@ -73,6 +73,7 @@ interface AdminProduct {
   base_price: number
   price?: number
   discount_price?: number
+  campaign_id?: string
   description: string | null
   meaning: string | null
   variant_options: import('@/lib/types').VariantOption[]
@@ -223,6 +224,7 @@ function normalizeProduct(raw: AdminProduct): Product {
     reviewCount: raw.review_count || 0,
     price: raw.price ?? raw.base_price,
     discountPrice: raw.discount_price,
+  campaignId: raw.campaign_id,
     variantOptions: raw.variant_options || [],
     defaultVariant: raw.default_variant || {},
     description: raw.description || '',
@@ -252,16 +254,17 @@ function normalizeProduct(raw: AdminProduct): Product {
   }
 }
 
+/** Throws on network or HTTP failure, so SWR can show an error state. */
+export async function loadCategories(): Promise<Category[]> {
+  const res = await apiFetch(`${API_BASE}/categories`)
+  if (!res.ok) throw new Error(`categories ${res.status}`)
+  const data = (await res.json()) as { data?: AdminCategory[] } | AdminCategory[]
+  const categories = Array.isArray(data) ? data : data.data || []
+  return categories.map(normalizeCategory)
+}
+
 export async function fetchCategories(): Promise<Category[]> {
-  try {
-    const res = await apiFetch(`${API_BASE}/categories`)
-    if (!res.ok) return []
-    const data = (await res.json()) as { data?: AdminCategory[] } | AdminCategory[]
-    const categories = Array.isArray(data) ? data : data.data || []
-    return categories.map(normalizeCategory)
-  } catch {
-    return []
-  }
+  return loadCategories().catch(() => [])
 }
 
 export async function fetchCategory(id: string): Promise<Category | null> {
@@ -279,28 +282,31 @@ export async function fetchCategory(id: string): Promise<Category | null> {
   }
 }
 
-export async function fetchProducts(params?: {
+type ProductListParams = {
   category?: string
   sort?: string
   limit?: number
   offset?: number
-}): Promise<Product[]> {
-  try {
-    const qs = new URLSearchParams()
-    if (params?.category) qs.set('category', params.category)
-    if (params?.sort) qs.set('sort', params.sort)
-    if (params?.limit) qs.set('limit', params.limit.toString())
-    if (params?.offset) qs.set('offset', params.offset.toString())
-    const suffix = qs.toString() ? `?${qs.toString()}` : ''
+}
 
-    const res = await apiFetch(`${API_BASE}/products${suffix}`)
-    if (!res.ok) return []
-    const data = (await res.json()) as { data?: AdminProduct[] } | AdminProduct[]
-    const products = Array.isArray(data) ? data : data.data || []
-    return products.map(normalizeProduct)
-  } catch {
-    return []
-  }
+/** Throws on network or HTTP failure, so SWR can show an error state. */
+export async function loadProducts(params?: ProductListParams): Promise<Product[]> {
+  const qs = new URLSearchParams()
+  if (params?.category) qs.set('category', params.category)
+  if (params?.sort) qs.set('sort', params.sort)
+  if (params?.limit) qs.set('limit', params.limit.toString())
+  if (params?.offset) qs.set('offset', params.offset.toString())
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+
+  const res = await apiFetch(`${API_BASE}/products${suffix}`)
+  if (!res.ok) throw new Error(`products ${res.status}`)
+  const data = (await res.json()) as { data?: AdminProduct[] } | AdminProduct[]
+  const products = Array.isArray(data) ? data : data.data || []
+  return products.map(normalizeProduct)
+}
+
+export async function fetchProducts(params?: ProductListParams): Promise<Product[]> {
+  return loadProducts(params).catch(() => [])
 }
 
 export async function fetchProduct(id: string): Promise<Product | null> {
@@ -467,6 +473,15 @@ export async function fetchCustomerPhotos(): Promise<CustomerPhoto[]> {
   }
 }
 
+/** Throws on network or HTTP failure, so SWR can show an error state. */
+export async function loadSettings(): Promise<Record<string, string>> {
+  const res = await apiFetch(`${API_BASE}/settings`, { cache: 'no-store' })
+  if (!res.ok) throw new Error(`settings ${res.status}`)
+  const data = (await res.json()) as ApiDataEnvelope<Record<string, string>>
+  const settings = unwrapData(data)
+  return settings && typeof settings === 'object' ? settings : {}
+}
+
 export async function fetchSettings(): Promise<Record<string, string>> {
   try {
     const res = await apiFetch(`${API_BASE}/settings`)
@@ -543,6 +558,7 @@ export async function createOrder(
         customerName: req.customerName || null,
         address: req.address || null,
         note: req.note || null,
+        paymentMethod: req.paymentMethod || null,
         items: (req.items || []).map((item) => ({
           productId: item.productId,
           productTitle: item.productTitle,
@@ -585,19 +601,28 @@ function normalizeOrderSummary(raw: RawOrderSummary): OrderSummary {
   }
 }
 
+export type OrderListResult =
+  | { kind: 'ok'; orders: OrderSummary[] }
+  | { kind: 'offline' }
+  | { kind: 'error' }
+
 // Summaries only (no address, name, note, phone or prices). Ids here are not secret
 // by themselves; the detail still needs a verified token.
-export async function getOrdersByPhone(phone: string): Promise<OrderSummary[]> {
+// 'offline' means the request never reached the server (network failure), so the page can
+// offer a retry. An empty list is a real answer and is returned as kind 'ok'.
+export async function getOrdersByPhone(phone: string): Promise<OrderListResult> {
+  let res: Response
   try {
-    const res = await apiFetch(`${API_BASE}/orders?phone=${encodeURIComponent(phone)}`, {
+    res = await apiFetch(`${API_BASE}/orders?phone=${encodeURIComponent(phone)}`, {
       cache: 'no-store',
     })
-    if (!res.ok) return []
-    const data = (await res.json()) as { data?: RawOrderSummary[] }
-    return (data.data || []).map(normalizeOrderSummary)
   } catch {
-    return []
+    return { kind: 'offline' }
   }
+  if (!res.ok) return { kind: 'error' }
+  const data = (await res.json().catch(() => null)) as { data?: RawOrderSummary[] } | null
+  if (!data) return { kind: 'error' }
+  return { kind: 'ok', orders: (data.data || []).map(normalizeOrderSummary) }
 }
 
 // Timestamps may arrive as ISO strings or epoch numbers (seconds or ms).
@@ -618,17 +643,23 @@ export type VerifyOrderResult =
   | { kind: 'ok'; token: string; expiresAt: number; orderId: string }
   | { kind: 'invalid'; remainingAttempts: number | null }
   | { kind: 'locked'; lockedUntil: number | null }
+  | { kind: 'offline' }
   | { kind: 'error' }
 
 // Server decides everything: wrong code (401), lock (429) and success (200) all come from here.
 export async function verifyOrderLookup(phone: string, code: string): Promise<VerifyOrderResult> {
+  let res: Response
   try {
-    const res = await apiFetch(`${API_BASE}/orders/verify`, {
+    res = await apiFetch(`${API_BASE}/orders/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, code }),
       cache: 'no-store',
     })
+  } catch {
+    return { kind: 'offline' }
+  }
+  try {
     const body = (await res.json().catch(() => null)) as { data?: Record<string, unknown> } | null
     const data = body?.data ?? {}
 
@@ -662,15 +693,21 @@ export async function verifyOrderLookup(phone: string, code: string): Promise<Ve
 export type OrderDetailResult =
   | { kind: 'ok'; order: Order }
   | { kind: 'unauthorized' }
+  | { kind: 'offline' }
   | { kind: 'error' }
 
 // Sends X-Order-Token. 401 means no token, an expired token, or a token for a different order.
 export async function fetchOrderDetail(id: string, token: string): Promise<OrderDetailResult> {
+  let res: Response
   try {
-    const res = await apiFetch(`${API_BASE}/orders/${encodeURIComponent(id)}`, {
+    res = await apiFetch(`${API_BASE}/orders/${encodeURIComponent(id)}`, {
       headers: { 'X-Order-Token': token },
       cache: 'no-store',
     })
+  } catch {
+    return { kind: 'offline' }
+  }
+  try {
     if (res.status === 401) return { kind: 'unauthorized' }
     if (!res.ok) return { kind: 'error' }
     const data = (await res.json()) as { data?: RawOrder }
