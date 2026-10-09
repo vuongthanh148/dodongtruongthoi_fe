@@ -5,13 +5,11 @@ import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Btn } from '@/components/ui/Btn'
 import { Carousel } from '@/components/ui/Carousel'
 import type { Banner } from '@/lib/storefront-api'
-import type { Product } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 interface BannerSectionProps {
   banners: Banner[]
-  products?: Product[]
 }
 
 const bannerThemes = [
@@ -99,7 +97,7 @@ function SideTile({ banner, theme }: { banner: Banner; theme: (typeof bannerThem
   )
 }
 
-export function BannerSection({ banners, products = [] }: BannerSectionProps) {
+export function BannerSection({ banners }: BannerSectionProps) {
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
   const hasBanners = banners.length > 0
@@ -149,7 +147,6 @@ export function BannerSection({ banners, products = [] }: BannerSectionProps) {
             scrollContainerStyle={{ height: '100%', touchAction: 'pan-y' }}
             renderItem={(banner, idx) => {
               const theme = bannerThemes[idx % bannerThemes.length]
-              const featuredProduct = products.length > 0 ? products[idx % products.length] : undefined
               return (
                 <div
                   style={{
@@ -191,10 +188,9 @@ export function BannerSection({ banners, products = [] }: BannerSectionProps) {
                     <ArtPiece
                       bg={theme.artBg}
                       frame={theme.artFrame}
-                      label={featuredProduct?.title || banner.title || 'Đồ đồng'}
+                      label={banner.title || 'Đồ đồng'}
                       pad={10}
                       aspect="4 / 5"
-                      imgSrc={featuredProduct?.images?.[0]?.url}
                     />
                   </div>
                   {/* Copy */}

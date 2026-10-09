@@ -377,9 +377,12 @@ export interface OccasionCard {
   tag?: string
   dark?: boolean
   href: string
-  imageUrl?: string
 }
 
+// No imageUrl here on purpose: the only real product photos we have are
+// raw shop snapshots with a phone number baked into the image itself, so
+// these stay the flat tone-color tile the design calls for until clean
+// product photography exists.
 export const HOME_OCCASIONS: OccasionCard[] = [
   {
     id: 'bieu',
@@ -390,7 +393,6 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     tag: 'Kèm hộp quà và thiệp',
     dark: true,
     href: '/categories',
-    imageUrl: 'https://res.cloudinary.com/dodongtruongthoi/image/upload/f_auto,q_auto,w_600/library/ghebbfu6xwvsjdt8g6nf.png',
   },
   {
     id: 'bome',
@@ -399,7 +401,6 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     picks: 'Cội Nguồn Quê Hương · Đỉnh đồng',
     fromPrice: 2500000,
     href: '/categories',
-    imageUrl: 'https://res.cloudinary.com/dodongtruongthoi/image/upload/f_auto,q_auto,w_600/library/bjzr9rhkaed3qcpose5v.png',
   },
   {
     id: 'tangia',
@@ -408,7 +409,6 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     picks: 'Tranh Núi Nước · Tranh Hoa Tím',
     fromPrice: 1800000,
     href: '/categories',
-    imageUrl: 'https://res.cloudinary.com/dodongtruongthoi/image/upload/f_auto,q_auto,w_600/library/ej0tytmaunujw2vdqrhx.png',
   },
   {
     id: 'nha',
@@ -417,7 +417,6 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     picks: 'Đỉnh đồng 3 chân · Bộ tam sự',
     fromPrice: 4500000,
     href: '/categories',
-    imageUrl: 'https://res.cloudinary.com/dodongtruongthoi/image/upload/f_auto,q_auto,w_600/library/jwkbkqjw7edq4cfa8wbm.png',
   },
 ]
 

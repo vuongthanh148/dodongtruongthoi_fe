@@ -63,7 +63,7 @@ export default function Home() {
         onSearch={() => setIsSearchOpen(!isSearchOpen)}
       />
 
-      <BannerSection banners={banners} products={featuredProducts} />
+      <BannerSection banners={banners} />
 
       <SearchOverlay
         open={isSearchOpen}
