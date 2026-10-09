@@ -4,9 +4,17 @@ import { AdminGuard } from '@/components/admin/AdminGuard'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { adminGet, adminPut } from '@/lib/admin-api'
 import { ADMIN_COPY } from '@/lib/content-data'
-import { useCallback, useEffect, useState } from 'react'
-import { Phone } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Phone, Search } from 'lucide-react'
 import { toast } from 'sonner'
+
+// Zalo's open-chat-by-phone deep link needs international format (84…,
+// no leading 0, no spaces/dashes).
+function zaloHref(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  const intl = digits.startsWith('0') ? `84${digits.slice(1)}` : digits
+  return `https://zalo.me/${intl}`
+}
 
 type ContactMessage = {
   id: string
@@ -39,6 +47,7 @@ export default function AdminContactMessagesPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [toastId, setToastId] = useState<string | null>(null)
   const [loadToken, setLoadToken] = useState(0)
+  const [search, setSearch] = useState('')
 
   const loadMessages = useCallback(async () => {
     setLoading(true)
@@ -86,11 +95,15 @@ export default function AdminContactMessagesPage() {
   }
 
   const allMessages = rows
-  const filteredMessages = allMessages.filter((m) => {
-    if (filter === 'unhandled') return !m.handled
-    if (filter === 'handled') return m.handled
-    return true
-  })
+  const filteredMessages = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return allMessages.filter((m) => {
+      if (filter === 'unhandled' && m.handled) return false
+      if (filter === 'handled' && !m.handled) return false
+      if (!q) return true
+      return m.name.toLowerCase().includes(q) || m.phone.includes(q) || m.message.toLowerCase().includes(q)
+    })
+  }, [allMessages, filter, search])
 
   const counts = {
     unhandled: allMessages.filter((m) => !m.handled).length,
@@ -105,6 +118,22 @@ export default function AdminContactMessagesPage() {
         subtitle={ADMIN_COPY.inbox.subtitle}
         mobileHideSidebar
       >
+        {/* Search */}
+        <label
+          className="adm mb-4 flex h-10 max-w-[360px] items-center gap-2 rounded-md border px-3"
+          style={{ borderColor: 'var(--admin-border)', background: '#fff', color: 'var(--admin-muted)' }}
+        >
+          <Search size={16} aria-hidden />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={ADMIN_COPY.inbox.searchPlaceholder}
+            className="adm min-w-0 flex-1 bg-transparent text-sm outline-none"
+            style={{ color: 'var(--admin-ink)' }}
+          />
+        </label>
+
         {/* Filter tabs */}
         <div
           role="tablist"
@@ -294,6 +323,23 @@ function MessageCard({ message, busy, onToggle, toast }: MessageCardProps) {
         >
           <Phone size={16} />
           <span>{ADMIN_COPY.inbox.call}</span>
+        </a>
+
+        <a
+          href={zaloHref(message.phone)}
+          target="_blank"
+          rel="noreferrer"
+          className="adm inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors"
+          style={{
+            background: '#fff',
+            color: 'var(--admin-ink)',
+            border: '1px solid',
+            borderColor: 'var(--admin-border)',
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <span>{ADMIN_COPY.inbox.zalo}</span>
         </a>
 
         <button

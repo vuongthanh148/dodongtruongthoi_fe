@@ -1129,6 +1129,8 @@ export const ADMIN_COPY = {
     unhandled: 'Chưa xử lý',
     handled: 'Đã xử lý',
     call: 'Gọi',
+    zalo: 'Nhắn Zalo',
+    searchPlaceholder: 'Tìm theo tên, số điện thoại hoặc nội dung',
     markHandled: 'Đánh dấu đã xử lý',
     undo: 'Hoàn tác',
     marking: 'Đang lưu…',
