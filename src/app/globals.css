@@ -292,6 +292,13 @@ body {
     radial-gradient(ellipse at 30% 20%, rgba(255, 220, 140, 0.25), transparent 55%),
     radial-gradient(ellipse at 70% 80%, rgba(80, 40, 10, 0.5), transparent 60%),
     linear-gradient(135deg, #a87a3a 0%, #8a5a2a 40%, #6a3f18 100%);
+}
+
+/* Only act as its own positioning context when not already positioned by a
+   utility class (e.g. `absolute`) — same specificity as that utility, so
+   without this guard source order decides and can silently collapse an
+   `absolute inset-0` fill to 0 height. */
+.bronze-art:not(.absolute) {
   position: relative;
 }
 
