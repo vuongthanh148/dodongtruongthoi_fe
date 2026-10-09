@@ -197,14 +197,25 @@ export function StoriesSection({
       <Container>
         <SectionHeading eyebrow="Câu chuyện" title="Từ làng nghề Đại Bái" />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {storiesForDesktop.map((s, i) => (
+          {storiesForDesktop.map((s, i) => {
+            const cardImageUrl =
+              i === 0 ? customerPhotos[s.imageSourceIndex]?.imageUrl : banners[s.imageSourceIndex]?.imageUrl
+            return (
             <Link
               key={s.title}
               href="/lang-nghe"
               className="grid grid-cols-[150px_minmax(0,1fr)] overflow-hidden rounded-[10px] border xl:grid-cols-[220px_minmax(0,1fr)]"
               style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
             >
-              <div className={`bronze-art${i % 2 === 1 ? ' dark' : ''}`} style={{ minHeight: 180 }} />
+              <div
+                className={`bronze-art${i % 2 === 1 ? ' dark' : ''}`}
+                style={{
+                  minHeight: 180,
+                  ...(cardImageUrl
+                    ? { backgroundImage: `url(${cardImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : {}),
+                }}
+              />
               <div className="flex flex-col justify-center gap-2 p-7">
                 <div className="label-mono" style={{ color: 'var(--bronze)', fontSize: 10 }}>
                   {s.eyebrow}
@@ -220,7 +231,8 @@ export function StoriesSection({
                 </div>
               </div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       </Container>
     </section>

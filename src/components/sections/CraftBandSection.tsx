@@ -8,7 +8,10 @@ export function CraftBandSection() {
     <section className="mt-10 md:mt-14 lg:mt-16 xl:mt-[72px]" style={{ background: 'var(--bg-dark-warm)', color: 'var(--text-on-dark)' }}>
       <Container>
         <div className="grid grid-cols-1 items-center gap-7 py-10 md:py-12 lg:grid-cols-2 lg:gap-16 xl:py-16">
-          <div className="bronze-art dark relative aspect-[16/10] overflow-hidden rounded-[10px] lg:aspect-[4/5]" />
+          <div
+            className="bronze-art dark relative aspect-[16/10] overflow-hidden rounded-[10px] lg:aspect-[4/5]"
+            style={{ backgroundImage: `url(${CRAFT_BAND_COPY.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          />
           <div className="flex flex-col gap-4 md:gap-5">
             <span className="eyebrow" style={{ color: 'var(--gold)' }}>
               {CRAFT_BAND_COPY.eyebrow}

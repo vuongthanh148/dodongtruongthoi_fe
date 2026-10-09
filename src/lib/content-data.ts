@@ -436,7 +436,6 @@ export const CRAFT_DETAIL_COPY = {
   title: 'Nhìn gần từng đường chạm',
   stepsTitle: '6 công đoạn thủ công cho mỗi sản phẩm',
   note: 'Kích thước, độ dày đồng, chất liệu khung và thời gian chế tác ghi riêng trên trang từng sản phẩm.',
-  photoCaption: 'Ảnh xưởng · thay bằng ảnh thật',
 }
 
 export const CRAFT_BAND_COPY = {
@@ -444,7 +443,8 @@ export const CRAFT_BAND_COPY = {
   title: 'Hành trình của lửa, búa và bàn tay người thợ',
   body: 'Người thợ đồng làm việc qua nhiều công đoạn: vẽ mẫu, chọn đồng, gò nổi, chạm chi tiết, xử lý màu và hoàn thiện. Mỗi đường nét đều đòi hỏi sự kiên nhẫn và đôi tay chắc nghề.',
   link: 'Câu chuyện làng nghề →',
-  photoCaption: 'Ảnh xưởng · thay bằng ảnh thật',
+  photoCaption: 'Người thợ gò chạm bên lò lửa',
+  imageUrl: 'https://images.unsplash.com/photo-1787422929310-a1b3d31d6b56?w=1200&h=1400&fit=crop&q=80',
 }
 
 export const GIFT_SERVICE_COPY = {
@@ -459,6 +459,7 @@ export const GIFT_SERVICE_COPY = {
   ],
   photoCaption: 'Ảnh chụp hộp quà mở nắp: tranh, thiệp và giấy chứng nhận',
   primaryCta: 'Tư vấn quà biếu',
+  imageUrl: 'https://plus.unsplash.com/premium_photo-1664274132514-198bf52809d6?w=900&h=1100&fit=crop&q=80',
 }
 
 export const CATEGORY_INDEX_COPY = {

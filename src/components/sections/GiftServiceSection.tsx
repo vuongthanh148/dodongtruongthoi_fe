@@ -16,7 +16,10 @@ export function GiftServiceSection() {
             className="relative aspect-[16/10] overflow-hidden rounded-[10px] lg:aspect-[5/6]"
             style={{ border: '1px dashed rgba(107,68,35,0.35)' }}
           >
-            <div className="bronze-art absolute inset-0" />
+            <div
+              className="bronze-art absolute inset-0"
+              style={{ backgroundImage: `url(${GIFT_SERVICE_COPY.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            />
           </div>
           <div className="flex flex-col gap-5 md:gap-6">
             <span className="eyebrow">{GIFT_SERVICE_COPY.eyebrow}</span>
