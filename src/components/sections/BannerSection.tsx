@@ -12,24 +12,30 @@ interface BannerSectionProps {
   banners: Banner[]
 }
 
+// artImg: a clean (no-watermark) stock photo standing in for a featured
+// piece until real product photography exists — our only real product
+// photos are raw shop snapshots with a phone number baked into the image.
 const bannerThemes = [
   {
     background:
       'radial-gradient(circle at 18% 18%, rgba(255,220,140,0.16) 0, transparent 36%), linear-gradient(135deg, #2f2014 0%, #160f0a 100%)',
     artBg: 'bronze' as const,
     artFrame: 'bronze' as const,
+    artImg: 'https://images.unsplash.com/photo-1638517317391-af4c18e4c96a?w=800&q=80',
   },
   {
     background:
       'radial-gradient(circle at 78% 22%, rgba(201,169,97,0.14) 0, transparent 34%), linear-gradient(135deg, #6b1f16 0%, #26110c 100%)',
     artBg: 'red' as const,
     artFrame: 'gold' as const,
+    artImg: 'https://images.unsplash.com/photo-1612704057720-e8f66bade6ca?w=800&q=80',
   },
   {
     background:
       'radial-gradient(circle at 70% 18%, rgba(255,220,140,0.18) 0, transparent 34%), linear-gradient(135deg, #4a3018 0%, #15100b 100%)',
     artBg: 'gold' as const,
     artFrame: 'carved' as const,
+    artImg: 'https://images.unsplash.com/photo-1651085410796-e663860b2b08?w=800&q=80',
   },
 ]
 
@@ -191,6 +197,7 @@ export function BannerSection({ banners }: BannerSectionProps) {
                       label={banner.title || 'Đồ đồng'}
                       pad={10}
                       aspect="4 / 5"
+                      imgSrc={theme.artImg}
                     />
                   </div>
                   {/* Copy */}
