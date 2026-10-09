@@ -4,24 +4,52 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LogOut, Menu, X } from 'lucide-react'
+import { adminGet } from '@/lib/admin-api'
 import { clearAdminToken } from '@/lib/admin-auth'
 import { ADMIN_COPY } from '@/lib/content-data'
 import { DrumMark } from '@/components/icons/DrumMark'
 
-const navItems = [
-  { href: '/admin', label: ADMIN_COPY.nav.dashboard },
-  { href: '/admin/orders', label: ADMIN_COPY.nav.orders },
-  { href: '/admin/products', label: ADMIN_COPY.nav.products },
-  { href: '/admin/campaigns', label: ADMIN_COPY.nav.campaigns },
-  { href: '/admin/categories', label: ADMIN_COPY.nav.categories },
-  { href: '/admin/images', label: ADMIN_COPY.nav.images },
-  { href: '/admin/banners', label: ADMIN_COPY.nav.banners },
-  { href: '/admin/customer-photos', label: ADMIN_COPY.nav.customerPhotos },
-  { href: '/admin/contacts', label: ADMIN_COPY.nav.contacts },
-  { href: '/admin/contact-messages', label: ADMIN_COPY.nav.contactMessages },
-  { href: '/admin/audit-log', label: ADMIN_COPY.nav.auditLog },
-  { href: '/admin/reviews', label: ADMIN_COPY.nav.reviews },
-  { href: '/admin/settings', label: ADMIN_COPY.nav.settings },
+interface NavItem {
+  href: string
+  label: string
+  countKey?: 'orders' | 'contactMessages' | 'reviews'
+}
+
+// null group = ungrouped items shown at the top (just the dashboard).
+const navGroups: { label: string | null; items: NavItem[] }[] = [
+  { label: null, items: [{ href: '/admin', label: ADMIN_COPY.nav.dashboard }] },
+  {
+    label: ADMIN_COPY.navGroups.sales,
+    items: [
+      { href: '/admin/orders', label: ADMIN_COPY.nav.orders, countKey: 'orders' },
+      { href: '/admin/contact-messages', label: ADMIN_COPY.nav.contactMessages, countKey: 'contactMessages' },
+      { href: '/admin/reviews', label: ADMIN_COPY.nav.reviews, countKey: 'reviews' },
+    ],
+  },
+  {
+    label: ADMIN_COPY.navGroups.catalog,
+    items: [
+      { href: '/admin/products', label: ADMIN_COPY.nav.products },
+      { href: '/admin/categories', label: ADMIN_COPY.nav.categories },
+      { href: '/admin/images', label: ADMIN_COPY.nav.images },
+    ],
+  },
+  {
+    label: ADMIN_COPY.navGroups.marketing,
+    items: [
+      { href: '/admin/campaigns', label: ADMIN_COPY.nav.campaigns },
+      { href: '/admin/banners', label: ADMIN_COPY.nav.banners },
+      { href: '/admin/customer-photos', label: ADMIN_COPY.nav.customerPhotos },
+    ],
+  },
+  {
+    label: ADMIN_COPY.navGroups.system,
+    items: [
+      { href: '/admin/contacts', label: ADMIN_COPY.nav.contacts },
+      { href: '/admin/audit-log', label: ADMIN_COPY.nav.auditLog },
+      { href: '/admin/settings', label: ADMIN_COPY.nav.settings },
+    ],
+  },
 ]
 
 interface AdminFrameProps {
@@ -32,10 +60,38 @@ interface AdminFrameProps {
   mobileHideSidebar?: boolean
 }
 
+type NavCounts = Partial<Record<'orders' | 'contactMessages' | 'reviews', number>>
+
+function useNavCounts(): NavCounts {
+  const [counts, setCounts] = useState<NavCounts>({})
+
+  useEffect(() => {
+    let active = true
+    const countOf = (path: string) =>
+      adminGet<unknown[]>(path).then((rows) => (Array.isArray(rows) ? rows.length : undefined))
+
+    Promise.all([
+      countOf('/orders?status=pending_confirm'),
+      countOf('/contact-messages?handled=false'),
+      countOf('/reviews?approved=false'),
+    ]).then(([orders, contactMessages, reviews]) => {
+      if (!active) return
+      setCounts({ orders, contactMessages, reviews })
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return counts
+}
+
 export function AdminFrame({ title, subtitle, children }: AdminFrameProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const counts = useNavCounts()
 
   useEffect(() => {
     if (!menuOpen) return
@@ -54,6 +110,7 @@ export function AdminFrame({ title, subtitle, children }: AdminFrameProps) {
   const nav = (
     <AdminNav
       pathname={pathname}
+      counts={counts}
       onNavigate={() => setMenuOpen(false)}
       onLogout={logout}
     />
@@ -144,10 +201,12 @@ export function AdminFrame({ title, subtitle, children }: AdminFrameProps) {
 
 function AdminNav({
   pathname,
+  counts,
   onNavigate,
   onLogout,
 }: {
   pathname: string
+  counts: NavCounts
   onNavigate: () => void
   onLogout: () => void
 }) {
@@ -161,27 +220,52 @@ function AdminNav({
         </div>
       </div>
 
-      {navItems.map((item) => {
-        // Dashboard matches only /admin; other items also match their sub-routes.
-        const active =
-          item.href === '/admin' ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? 'page' : undefined}
-            className="flex h-10 items-center rounded-md px-2.5 text-[14px] no-underline transition-colors hover:bg-admin-sidebar-line/40"
-            style={{
-              color: active ? '#fff' : 'var(--admin-sidebar-ink)',
-              background: active ? 'var(--admin-primary)' : undefined,
-              fontWeight: active ? 600 : 400,
-            }}
-          >
-            {item.label}
-          </Link>
-        )
-      })}
+      {navGroups.map((group, gi) => (
+        <div key={group.label ?? gi} className="flex flex-col gap-0.5" style={{ marginTop: group.label ? 14 : 0 }}>
+          {group.label ? (
+            <div
+              className="px-2.5 pb-1 text-[12px] font-semibold uppercase tracking-[0.08em] opacity-50"
+            >
+              {group.label}
+            </div>
+          ) : null}
+          {group.items.map((item) => {
+            // Dashboard matches only /admin; other items also match their sub-routes.
+            const active =
+              item.href === '/admin'
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const count = item.countKey ? counts[item.countKey] : undefined
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                aria-current={active ? 'page' : undefined}
+                className="flex h-10 items-center justify-between gap-2 rounded-md px-2.5 text-[14px] no-underline transition-colors hover:bg-admin-sidebar-line/40"
+                style={{
+                  color: active ? '#fff' : 'var(--admin-sidebar-ink)',
+                  background: active ? 'var(--admin-primary)' : undefined,
+                  fontWeight: active ? 600 : 400,
+                }}
+              >
+                {item.label}
+                {count ? (
+                  <span
+                    className="grid min-w-[20px] place-items-center rounded-full px-1.5 text-[12px] font-semibold"
+                    style={{
+                      height: 20,
+                      background: active ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
+                    }}
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
 
       <button
         type="button"

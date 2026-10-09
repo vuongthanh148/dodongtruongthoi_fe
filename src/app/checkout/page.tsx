@@ -18,6 +18,7 @@ import { getCartItems, clearCart } from '@/lib/storage'
 import { createOrder } from '@/lib/storefront-api'
 import { formatVnd } from '@/lib/format'
 import { CART_COPY, CHECKOUT_COPY, CONFIRM_COPY } from '@/lib/content-data'
+import { maskPhone } from '@/lib/order-lookup'
 import type { CartItem } from '@/lib/types'
 
 type PaymentMethod = 'cod' | 'transfer' | 'showroom'
@@ -207,15 +208,29 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <div className={`${CARD_CLASS} flex flex-col gap-2`}>
-          <div className="text-[14px] text-[var(--text-muted-strong)]">{CONFIRM_COPY.codeLabel}</div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-body text-[28px] font-bold tracking-[0.12em] text-[var(--accent)] tabular-nums md:text-[32px]">
-              {lookupCode}
-            </span>
-            {lookupCode && <CopyButton text={lookupCode} label={CONFIRM_COPY.codeLabel} />}
+        <div className={`${CARD_CLASS} flex flex-col gap-3.5`}>
+          <div className="eyebrow m-0">{CONFIRM_COPY.trackEyebrow}</div>
+          <p className="m-0 text-[14px] leading-[1.5] text-[var(--text-secondary)]">{CONFIRM_COPY.trackBody}</p>
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between gap-3 border-t border-[var(--border-soft)] py-2.5">
+              <span className="text-[13px] text-[var(--text-muted)]">{CONFIRM_COPY.phoneRowLabel}</span>
+              <b className="tabular-nums">{maskPhone(phone)}</b>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-[var(--border-soft)] py-2.5">
+              <span className="text-[13px] text-[var(--text-muted)]">{CONFIRM_COPY.codeRowLabel}</span>
+              <span className="flex items-center gap-2.5">
+                <b className="tabular-nums text-[var(--accent)]">{lookupCode}</b>
+                {lookupCode && <CopyButton text={lookupCode} label={CONFIRM_COPY.codeRowLabel} />}
+              </span>
+            </div>
           </div>
-          <p className="text-[13px] leading-[1.5] text-[var(--text-muted-strong)]">{CONFIRM_COPY.codeHint}</p>
+          <Link
+            href="/orders"
+            className="inline-flex h-[48px] items-center justify-center gap-2 rounded-[6px] bg-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-white no-underline"
+          >
+            {CONFIRM_COPY.track} →
+          </Link>
+          <p className="m-0 text-[12.5px] leading-[1.5] text-[var(--text-muted)]">{CONFIRM_COPY.trackHint}</p>
         </div>
 
         {paymentMethod === 'transfer' && <BankTransferPanel mode="confirm" amount={subtotal} memo={lookupCode} />}
@@ -225,20 +240,12 @@ export default function CheckoutPage() {
           <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">{CONFIRM_COPY.nextBody}</p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/orders"
-            className="inline-flex h-[50px] flex-1 items-center justify-center rounded-[6px] bg-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-white no-underline"
-          >
-            {CONFIRM_COPY.track}
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex h-[50px] flex-1 items-center justify-center rounded-[6px] border-[1.5px] border-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-[var(--accent)] no-underline"
-          >
-            {CONFIRM_COPY.continueShopping}
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="inline-flex h-[50px] items-center justify-center rounded-[6px] border-[1.5px] border-[var(--accent)] px-[22px] font-body text-[15px] font-semibold text-[var(--accent)] no-underline"
+        >
+          {CONFIRM_COPY.continueShopping}
+        </Link>
       </section>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-[92px]">

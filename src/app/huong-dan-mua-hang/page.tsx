@@ -52,6 +52,16 @@ export default function BuyGuidePage() {
                       {step.body}
                     </p>
                   ) : null}
+                  {step.steps && step.steps.length > 0 ? (
+                    <ol
+                      className="m-0 mt-3 flex flex-col gap-2 pl-5 text-[15px] md:text-base"
+                      style={{ lineHeight: 1.6, color: 'var(--text-secondary)' }}
+                    >
+                      {step.steps.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                    </ol>
+                  ) : null}
                 </div>
               </li>
             ))}

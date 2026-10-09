@@ -1057,9 +1057,21 @@ function ProductDetailPageInner() {
         {/* Related products: 4 / 3 / 2 columns */}
         {(relatedLoading || relatedProducts.length > 0) && (
           <section className="mt-10 md:mt-14 lg:mt-16 xl:mt-[72px]">
-            <div className="mb-5 md:mb-6">
-              <p className="eyebrow m-0">{PDP_COPY.relatedEyebrow}</p>
-              <h2 className="m-0 mt-2 text-[24px] leading-[1.1] font-semibold md:text-[28px]">{PDP_COPY.relatedTitle}</h2>
+            <div className="mb-5 flex items-end justify-between gap-4 md:mb-6">
+              <div>
+                <p className="eyebrow m-0">{PDP_COPY.relatedEyebrow}</p>
+                <h2 className="m-0 mt-2 text-[24px] leading-[1.1] font-semibold md:text-[28px]">{PDP_COPY.relatedTitle}</h2>
+              </div>
+              {product?.categoryId ? (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/categories/${product.categoryId}`)}
+                  className="hidden whitespace-nowrap pb-1.5 text-base font-medium md:inline-block"
+                  style={{ color: 'var(--accent)', background: 'none', border: 'none', borderBottom: '1px solid currentColor', cursor: 'pointer', padding: 0 }}
+                >
+                  Xem thêm
+                </button>
+              ) : null}
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4 xl:gap-6">
               {relatedLoading

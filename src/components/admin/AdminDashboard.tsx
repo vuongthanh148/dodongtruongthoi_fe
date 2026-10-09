@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle2, ChevronRight, Inbox } from 'lucide-react'
 import { adminGet } from '@/lib/admin-api'
 import { ADMIN_COPY } from '@/lib/content-data'
 import { formatVnd } from '@/lib/format'
-import type { AdminCampaign, AdminCategory, AdminOrder, AdminProduct, AdminReview } from '@/lib/types'
+import type { AdminOrder, AdminReview } from '@/lib/types'
 
 type Status = 'loading' | 'ready' | 'error'
 
@@ -25,10 +25,7 @@ function list<T>(path: string): () => Promise<T[] | null> {
 }
 
 const loaders = {
-  products: list<AdminProduct>('/products'),
-  categories: list<AdminCategory>('/categories'),
   pendingOrders: list<AdminOrder>('/orders?status=pending_confirm'),
-  campaigns: list<AdminCampaign>('/campaigns'),
   recentOrders: list<AdminOrder>('/orders'),
   unhandledMessages: list<ContactMessageRow>('/contact-messages?handled=false'),
   pendingReviews: list<AdminReview>('/reviews?approved=false'),
@@ -98,54 +95,62 @@ const retryClass =
 
 export function AdminDashboard() {
   const copy = ADMIN_COPY.dashboard
-  const products = useResource(loaders.products)
-  const categories = useResource(loaders.categories)
   const pendingOrders = useResource(loaders.pendingOrders)
-  const campaigns = useResource(loaders.campaigns)
   const recentOrders = useResource(loaders.recentOrders)
   const messages = useResource(loaders.unhandledMessages)
   const reviews = useResource(loaders.pendingReviews)
 
-  const activeCampaigns = campaigns.data.filter((campaign) => campaign.is_active).length
   const queueSettled = [pendingOrders, messages, reviews].every((r) => r.status === 'ready')
+  const bankTransferPending = pendingOrders.data.filter((order) => order.payment_method === 'transfer')
   const queueClear =
-    queueSettled && pendingOrders.data.length + messages.data.length + reviews.data.length === 0
+    queueSettled &&
+    pendingOrders.data.length + messages.data.length + reviews.data.length + bankTransferPending.length === 0
   const recent = [...recentOrders.data]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 5)
 
+  const cutoff = recentOrders.loadedAt - 30 * 24 * 3_600_000
+  const ordersInWindow = recentOrders.data.filter((o) => Date.parse(o.created_at) >= cutoff)
+  const completedInWindow = ordersInWindow.filter((o) => o.status === 'completed')
+  const revenue = completedInWindow.reduce((sum, o) => sum + o.total_amount, 0)
+  const aov = completedInWindow.length > 0 ? Math.round(revenue / completedInWindow.length) : 0
+
   const kpis = [
     {
-      key: 'products',
-      label: copy.kpi.products,
-      hint: copy.kpiHint.products,
-      href: '/admin/products',
-      res: products,
-      value: products.data.length,
-    },
-    {
-      key: 'categories',
-      label: copy.kpi.categories,
-      hint: copy.kpiHint.categories,
-      href: '/admin/categories',
-      res: categories,
-      value: categories.data.length,
-    },
-    {
-      key: 'pendingOrders',
-      label: copy.kpi.pendingOrders,
-      hint: copy.kpiHint.pendingOrders,
+      key: 'revenue',
+      label: copy.kpi.revenue,
+      hint: copy.kpiHint.revenue,
       href: '/admin/orders',
-      res: pendingOrders,
-      value: pendingOrders.data.length,
+      res: recentOrders,
+      value: revenue,
+      money: true,
     },
     {
-      key: 'activeCampaigns',
-      label: copy.kpi.activeCampaigns,
-      hint: copy.kpiHint.activeCampaigns,
-      href: '/admin/campaigns',
-      res: campaigns,
-      value: activeCampaigns,
+      key: 'newOrders',
+      label: copy.kpi.newOrders,
+      hint: copy.kpiHint.newOrders,
+      href: '/admin/orders',
+      res: recentOrders,
+      value: ordersInWindow.length,
+      money: false,
+    },
+    {
+      key: 'aov',
+      label: copy.kpi.aov,
+      hint: copy.kpiHint.aov,
+      href: '/admin/orders',
+      res: recentOrders,
+      value: aov,
+      money: true,
+    },
+    {
+      key: 'messages',
+      label: copy.kpi.messages,
+      hint: copy.kpiHint.messages,
+      href: '/admin/contact-messages',
+      res: messages,
+      value: messages.data.length,
+      money: false,
     },
   ]
 
@@ -155,6 +160,7 @@ export function AdminDashboard() {
       label: copy.queue.pendingOrders,
       href: '/admin/orders',
       res: pendingOrders,
+      hintRows: pendingOrders.data,
       count: pendingOrders.data.length,
       warn: true,
     },
@@ -163,6 +169,7 @@ export function AdminDashboard() {
       label: copy.queue.unhandled,
       href: '/admin/contact-messages',
       res: messages,
+      hintRows: messages.data,
       count: messages.data.length,
       warn: false,
     },
@@ -171,7 +178,17 @@ export function AdminDashboard() {
       label: copy.queue.pendingReviews,
       href: '/admin/reviews',
       res: reviews,
+      hintRows: reviews.data,
       count: reviews.data.length,
+      warn: false,
+    },
+    {
+      key: 'bankTransfer',
+      label: copy.queue.bankTransfer,
+      href: '/admin/orders',
+      res: pendingOrders,
+      hintRows: bankTransferPending,
+      count: bankTransferPending.length,
       warn: false,
     },
   ]
@@ -202,7 +219,7 @@ export function AdminDashboard() {
                   </span>
                 ) : (
                   <span className="text-[22px] leading-none font-bold tabular-nums lg:text-[26px]">
-                    {kpi.value}
+                    {kpi.money ? formatVnd(kpi.value) : kpi.value}
                   </span>
                 )}
                 <span className="text-[12.5px] leading-snug text-admin-muted">{kpi.hint}</span>
@@ -322,7 +339,7 @@ export function AdminDashboard() {
                 const failed = item.res.status === 'error'
                 const hint = failed
                   ? copy.loadError
-                  : oldestHint(item.res.data, item.res.loadedAt)
+                  : oldestHint(item.hintRows, item.res.loadedAt)
                 const badgeTone = item.warn
                   ? { background: 'var(--admin-warn-bg)', color: 'var(--admin-warn)' }
                   : { background: 'var(--admin-primary-subtle)', color: 'var(--admin-primary)' }

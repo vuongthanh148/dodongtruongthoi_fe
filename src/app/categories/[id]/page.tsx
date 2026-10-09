@@ -260,7 +260,7 @@ export default function CategoryPage() {
       <DeskHeader />
       <TopBar title={category?.name ?? 'Danh mục'} onMenu={() => setIsMenuOpen(true)} />
       <MenuDrawer open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Sản phẩm', href: '/products' }, { label: category?.name ?? 'Danh mục' }]} />
+      <Breadcrumbs items={[{ label: 'Trang chủ', href: '/' }, { label: 'Danh mục', href: '/categories' }, { label: category?.name ?? 'Danh mục' }]} />
 
       {/* Desktop heading row — hidden below lg */}
       <Container className="hidden lg:flex" style={{ alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: 20 }}>

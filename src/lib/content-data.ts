@@ -121,12 +121,17 @@ export const GUIDE_COPY = {
   sub: 'Năm bước để chọn đúng tác phẩm cho không gian của bạn.',
 }
 
-export const GUIDE_STEPS: { n: number; title: string; subtitle: string; body: string }[] = [
+export const GUIDE_STEPS: { n: number; title: string; subtitle: string; body: string; steps?: string[] }[] = [
   {
     n: 1,
     title: 'Chọn kích thước phù hợp',
     subtitle: 'Dựa trên diện tích tường và không gian',
     body: 'Với phòng khách nhỏ, ưu tiên khổ vừa để tạo điểm nhấn tinh tế. Với không gian lớn, bạn có thể chọn tác phẩm khổ lớn hoặc bộ đôi cân xứng.',
+    steps: [
+      'Đo chiều rộng bức tường định treo, trừ hao hai bên để tranh không chạm cạnh.',
+      'Ướm thử tỉ lệ: tranh nên chiếm khoảng 60–75% chiều rộng khoảng tường trống.',
+      'Phòng trần thấp nên chọn khổ ngang; hành lang, cầu thang hợp khổ đứng.',
+    ],
   },
   {
     n: 2,
@@ -151,6 +156,11 @@ export const GUIDE_STEPS: { n: number; title: string; subtitle: string; body: st
     title: 'Nhận hàng và lắp đặt',
     subtitle: 'Hỗ trợ lắp đặt tận nơi',
     body: 'Kiểm tra kỹ khi nhận hàng. Đội ngũ hỗ trợ lắp đặt và bảo hành định kỳ. Liên hệ hotline trong 48 giờ nếu có vấn đề sau khi nhận.',
+    steps: [
+      'Kiểm tra mặt tranh, khung và góc cạnh trước khi ký nhận.',
+      'Đối chiếu kích thước và biến thể với đơn đã xác nhận.',
+      'Giữ giấy chứng nhận chế tác đi kèm để bảo hành sau này.',
+    ],
   },
 ]
 
@@ -753,8 +763,11 @@ export const BANK_COPY = {
 export const CONFIRM_COPY = {
   title: 'Đặt hàng thành công',
   body: (phone: string) => `Đơn của bạn đã được ghi nhận. Chúng tôi sẽ gọi ${phone} để xác nhận.`,
-  codeLabel: 'Mã đơn hàng',
-  codeHint: 'Dùng mã này cùng số điện thoại để tra cứu đơn hàng.',
+  trackEyebrow: 'Theo dõi đơn hàng',
+  trackBody: 'Xem tiến độ chế tác và giao hàng bất cứ lúc nào.',
+  phoneRowLabel: 'Số điện thoại',
+  codeRowLabel: 'Mã tra cứu',
+  trackHint: 'Mã tra cứu là mã đơn. Nhập cùng số điện thoại để xem đơn, không cần OTP.',
   nextTitle: 'Điều gì tiếp theo?',
   nextBody: 'Nhân viên sẽ gọi xác nhận đơn trong 30 phút, trong giờ hành chính.',
   track: 'Theo dõi đơn hàng',
@@ -907,6 +920,12 @@ export const ADMIN_COPY = {
     reviews: 'Đánh giá',
     settings: 'Cài đặt',
   },
+  navGroups: {
+    sales: 'Bán hàng',
+    catalog: 'Sản phẩm',
+    marketing: 'Tiếp thị',
+    system: 'Hệ thống',
+  },
   menuOpen: 'Mở menu',
   menuClose: 'Đóng menu',
   logout: 'Đăng xuất',
@@ -918,22 +937,23 @@ export const ADMIN_COPY = {
     retry: 'Thử lại',
     viewList: 'Xem danh sách',
     kpi: {
-      products: 'Sản phẩm',
-      categories: 'Danh mục',
-      pendingOrders: 'Đơn chờ xác nhận',
-      activeCampaigns: 'Khuyến mãi đang chạy',
+      revenue: 'Doanh thu',
+      newOrders: 'Đơn mới',
+      aov: 'Giá trị TB / đơn',
+      messages: 'Tin nhắn liên hệ',
     },
     kpiHint: {
-      products: 'Tổng số sản phẩm',
-      categories: 'Tổng số danh mục',
-      pendingOrders: 'Cần xác nhận với khách',
-      activeCampaigns: 'Đang áp dụng trên cửa hàng',
+      revenue: 'Đơn hoàn thành + đã nhận tiền, 30 ngày qua',
+      newOrders: '30 ngày qua',
+      aov: 'Trung bình trên mỗi đơn, 30 ngày qua',
+      messages: 'Chưa xử lý',
     },
     queueTitle: 'Việc cần làm',
     queue: {
       pendingOrders: 'Đơn chờ xác nhận',
       unhandled: 'Tin nhắn chưa xử lý',
       pendingReviews: 'Đánh giá chờ duyệt',
+      bankTransfer: 'Chuyển khoản chưa đối soát',
     },
     oldestLessThanHour: 'Cũ nhất: dưới 1 giờ trước',
     oldestHours: (n: number) => `Cũ nhất: ${n} giờ trước`,
