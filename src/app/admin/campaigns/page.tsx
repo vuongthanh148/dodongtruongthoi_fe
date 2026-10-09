@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdminFrame } from '@/components/admin/AdminFrame'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 import { adminGet, adminPost, adminPut } from '@/lib/admin-api'
+import { discountPercent, salePrice } from '@/lib/campaign-price'
 import { formatVnd } from '@/lib/format'
-import type { AdminCampaign } from '@/lib/types'
+import type { AdminCampaign, AdminProduct } from '@/lib/types'
 
 const emptyForm = {
   id: '',
@@ -19,17 +21,102 @@ const emptyForm = {
   is_active: true,
 }
 
+type FieldState = 'default' | 'warn' | 'err'
+
+const fieldBorder: Record<FieldState, string> = {
+  default: 'var(--admin-border)',
+  warn: 'var(--admin-warn)',
+  err: 'var(--admin-danger)',
+}
+
+const fieldBg: Record<FieldState, string> = {
+  default: '#fff',
+  warn: 'var(--admin-warn-bg)',
+  err: '#fff',
+}
+
+function Field({
+  label,
+  hint,
+  warn,
+  err,
+  required,
+  children,
+}: {
+  label: string
+  hint?: string
+  warn?: string
+  err?: string
+  required?: boolean
+  children: ReactNode
+}) {
+  const message = err || warn || hint
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--admin-ink-2)' }}>
+        {label}
+        {required && <span style={{ color: 'var(--admin-danger)' }}> *</span>}
+      </span>
+      {children}
+      {message ? (
+        <span
+          style={{
+            fontSize: 12.5,
+            lineHeight: 1.45,
+            display: 'flex',
+            gap: 6,
+            alignItems: 'flex-start',
+            color: err ? 'var(--admin-danger)' : warn ? 'var(--admin-warn)' : 'var(--admin-muted)',
+          }}
+        >
+          {(err || warn) && <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />}
+          {message}
+        </span>
+      ) : null}
+    </label>
+  )
+}
+
+function fieldInputStyle(state: FieldState = 'default'): React.CSSProperties {
+  return {
+    width: '100%',
+    height: 40,
+    padding: '0 12px',
+    border: `1px solid ${fieldBorder[state]}`,
+    borderRadius: 6,
+    fontSize: 14,
+    fontFamily: 'inherit',
+    background: fieldBg[state],
+    boxSizing: 'border-box',
+  }
+}
+
+const sectionCardStyle: React.CSSProperties = {
+  background: 'var(--admin-surface)',
+  border: '1px solid var(--admin-border)',
+  borderRadius: 8,
+  padding: 20,
+  display: 'grid',
+  gap: 16,
+}
+
 export default function AdminCampaignsPage() {
   const [campaigns, setCampaigns] = useState<AdminCampaign[]>([])
+  const [sampleProduct, setSampleProduct] = useState<AdminProduct | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState<string>('')
-  const [formWarn, setFormWarn] = useState<string>('')
+  const [nameError, setNameError] = useState('')
+  const [valueError, setValueError] = useState('')
+  const [dateError, setDateError] = useState('')
+  const [dateWarn, setDateWarn] = useState('')
 
   useEffect(() => {
     loadCampaigns()
+    adminGet<AdminProduct[]>('/products').then((rows) => {
+      if (rows && rows.length > 0) setSampleProduct(rows[0])
+    })
   }, [])
 
   async function loadCampaigns() {
@@ -42,11 +129,17 @@ export default function AdminCampaignsPage() {
     }
   }
 
+  function clearFieldErrors() {
+    setNameError('')
+    setValueError('')
+    setDateError('')
+    setDateWarn('')
+  }
+
   function startCreate() {
     setEditingId(null)
     setForm(emptyForm)
-    setFormError('')
-    setFormWarn('')
+    clearFieldErrors()
   }
 
   function startEdit(campaign: AdminCampaign) {
@@ -61,39 +154,38 @@ export default function AdminCampaignsPage() {
       ends_at: toInputValue(campaign.ends_at),
       is_active: campaign.is_active,
     })
-    setFormError('')
-    setFormWarn('')
+    clearFieldErrors()
   }
 
   function validateForm(): boolean {
-    setFormError('')
-    setFormWarn('')
+    clearFieldErrors()
+    let ok = true
+
+    if (!form.name.trim()) {
+      setNameError('Vui lòng nhập tên chương trình')
+      ok = false
+    }
+
+    const value = Number(form.discount_value)
+    if (value <= 0 || (form.discount_type === 'percentage' && value > 100)) {
+      setValueError('Giá trị giảm giá không hợp lệ')
+      ok = false
+    }
 
     const startDate = form.starts_at ? new Date(form.starts_at) : null
     const endDate = form.ends_at ? new Date(form.ends_at) : null
 
     if (!startDate || !endDate) {
-      setFormError('Vui lòng chọn cả ngày bắt đầu và kết thúc')
-      return false
+      setDateError('Vui lòng chọn cả ngày bắt đầu và kết thúc')
+      ok = false
+    } else if (endDate <= startDate) {
+      setDateError('Ngày kết thúc phải sau ngày bắt đầu')
+      ok = false
+    } else if (startDate < new Date()) {
+      setDateWarn('Ngày bắt đầu đã qua. Chương trình sẽ chạy ngay khi lưu.')
     }
 
-    if (endDate <= startDate) {
-      setFormError('Ngày kết thúc phải sau ngày bắt đầu')
-      return false
-    }
-
-    const now = new Date()
-    if (startDate < now) {
-      setFormWarn('Chương trình bắt đầu từ ngày hôm nay hoặc quá khứ')
-    }
-
-    const value = Number(form.discount_value)
-    if (value <= 0 || (form.discount_type === 'percentage' && value > 100)) {
-      setFormError('Giá trị giảm giá không hợp lệ')
-      return false
-    }
-
-    return true
+    return ok
   }
 
   async function saveCampaign() {
@@ -130,245 +222,242 @@ export default function AdminCampaignsPage() {
   }
 
   const startDate = form.starts_at ? new Date(form.starts_at) : null
-  const now = new Date()
-  const isStartInPast = startDate && startDate < now
+  const isStartInPast = startDate && startDate < new Date()
   const buttonText = isStartInPast ? 'Lưu và chạy ngay' : 'Lưu'
-  const buttonDisabled = saving
+
+  const previewValue = Number(form.discount_value) || 0
+  const previewCampaign = {
+    id: 'preview',
+    name: form.name || 'Xem trước',
+    discountType: form.discount_type,
+    discountValue: previewValue,
+    startsAt: form.starts_at ? toIso(form.starts_at) : new Date().toISOString(),
+    endsAt: form.ends_at ? toIso(form.ends_at) : new Date().toISOString(),
+    isActive: true,
+  }
+  const previewPrice = sampleProduct && previewValue > 0 ? salePrice(sampleProduct.base_price, previewCampaign) : null
+  const previewPercent =
+    sampleProduct && previewValue > 0 ? discountPercent(sampleProduct.base_price, previewCampaign) : null
 
   return (
     <AdminGuard>
       <AdminFrame title="Khuyến mãi" subtitle="Tạo và quản lý chương trình khuyến mãi">
-        {/* Form */}
         <div
           style={{
-            background: 'var(--admin-surface)',
-            border: '1px solid var(--admin-border)',
-            borderRadius: 8,
-            padding: '20px 16px',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)',
+            gap: 20,
+            alignItems: 'start',
             marginBottom: 20,
           }}
+          className="campaign-form-grid"
         >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: 16,
-              marginBottom: 16,
-            }}
-          >
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--admin-muted)', marginBottom: 6 }}>
-                Tên chương trình
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Ví dụ: Tết Nguyên Đán 2026"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--admin-border)',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
+          <div style={{ display: 'grid', gap: 16 }}>
+            <section style={sectionCardStyle}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--admin-ink)' }}>Thông tin</div>
+              <Field label="Tên chương trình" required hint="Hiện trên thẻ sản phẩm và trang chủ." err={nameError}>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ví dụ: Tết Nguyên Đán 2026"
+                  style={fieldInputStyle(nameError ? 'err' : 'default')}
+                />
+              </Field>
+              <Field label="Mô tả ngắn" hint="Tuỳ chọn · 1–2 câu">
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Thêm mô tả (tùy chọn)"
+                  rows={2}
+                  style={{ ...fieldInputStyle(), height: 64, paddingTop: 10, resize: 'vertical' }}
+                />
+              </Field>
+            </section>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--admin-muted)', marginBottom: 6 }}>
-                Loại giảm giá
-              </label>
-              <select
-                value={form.discount_type}
-                onChange={(e) => {
-                  const val = e.target.value as 'percentage' | 'fixed_amount'
-                  setForm((prev) => ({
-                    ...prev,
-                    discount_type: val,
-                  }))
-                }}
+            <section style={sectionCardStyle}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--admin-ink)' }}>Mức giảm</div>
+              <div
                 style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--admin-border)',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  background: '#fff',
-                  cursor: 'pointer',
+                  display: 'flex',
+                  gap: 4,
+                  padding: 3,
+                  background: 'var(--admin-border-soft)',
+                  borderRadius: 8,
+                  width: 'fit-content',
                 }}
               >
-                <option value="percentage">Phần trăm (%)</option>
-                <option value="fixed_amount">Số tiền cố định</option>
-              </select>
-            </div>
+                {([
+                  ['percentage', 'Phần trăm'],
+                  ['fixed_amount', 'Số tiền'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, discount_type: value }))}
+                    style={{
+                      height: 34,
+                      padding: '0 14px',
+                      border: 'none',
+                      borderRadius: 6,
+                      background: form.discount_type === value ? '#fff' : 'transparent',
+                      fontWeight: form.discount_type === value ? 600 : 500,
+                      fontSize: 13.5,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      boxShadow: form.discount_type === value ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <Field
+                label={form.discount_type === 'percentage' ? 'Phần trăm giảm' : 'Số tiền giảm'}
+                required
+                hint={form.discount_type === 'percentage' ? '1–100%' : 'Số tiền giảm trên mỗi sản phẩm, đơn vị đồng'}
+                err={valueError}
+              >
+                <div style={{ ...fieldInputStyle(valueError ? 'err' : 'default'), display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="number"
+                    value={form.discount_value}
+                    onChange={(e) => setForm((prev) => ({ ...prev, discount_value: e.target.value }))}
+                    placeholder="0"
+                    style={{ border: 'none', outline: 'none', flex: 1, fontSize: 14, fontFamily: 'inherit', background: 'transparent' }}
+                  />
+                  {form.discount_type === 'percentage' ? '%' : 'đ'}
+                </div>
+              </Field>
+            </section>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--admin-muted)', marginBottom: 6 }}>
-                Giá trị giảm giá
-              </label>
-              <input
-                type="number"
-                value={form.discount_value}
-                onChange={(e) => setForm((prev) => ({ ...prev, discount_value: e.target.value }))}
-                placeholder="0"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--admin-border)',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
+            <section style={sectionCardStyle}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--admin-ink)' }}>Thời gian</div>
+                <div style={{ fontSize: 13, color: 'var(--admin-muted)', marginTop: 2 }}>
+                  Giờ Việt Nam (GMT+7).
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 12 }} className="campaign-date-grid">
+                <Field label="Ngày bắt đầu" required warn={dateWarn} err={dateError && !form.starts_at ? dateError : undefined}>
+                  <input
+                    type="datetime-local"
+                    value={form.starts_at}
+                    onChange={(e) => setForm((prev) => ({ ...prev, starts_at: e.target.value }))}
+                    style={fieldInputStyle(dateWarn ? 'warn' : dateError && !form.starts_at ? 'err' : 'default')}
+                  />
+                </Field>
+                <Field
+                  label="Ngày kết thúc"
+                  required
+                  err={dateError}
+                  hint={!dateError ? 'Web hiện "kết thúc ngày …". Còn ≤ 3 ngày sẽ hiện "Còn n ngày".' : undefined}
+                >
+                  <input
+                    type="datetime-local"
+                    value={form.ends_at}
+                    onChange={(e) => setForm((prev) => ({ ...prev, ends_at: e.target.value }))}
+                    style={fieldInputStyle(dateError ? 'err' : 'default')}
+                  />
+                </Field>
+              </div>
+            </section>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--admin-muted)', marginBottom: 6 }}>
-                Bắt đầu lúc
-              </label>
-              <input
-                type="datetime-local"
-                value={form.starts_at}
-                onChange={(e) => setForm((prev) => ({ ...prev, starts_at: e.target.value }))}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                onClick={saveCampaign}
+                disabled={saving}
                 style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--admin-border)',
+                  height: 40,
+                  padding: '0 16px',
                   borderRadius: 6,
-                  fontSize: 14,
+                  border: 'none',
+                  background: saving ? 'var(--admin-border)' : 'var(--admin-primary)',
+                  color: saving ? 'var(--admin-muted)' : '#fff',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  cursor: saving ? 'not-allowed' : 'pointer',
                   fontFamily: 'inherit',
-                  boxSizing: 'border-box',
+                  opacity: saving ? 0.7 : 1,
                 }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--admin-muted)', marginBottom: 6 }}>
-                Kết thúc lúc
-              </label>
-              <input
-                type="datetime-local"
-                value={form.ends_at}
-                onChange={(e) => setForm((prev) => ({ ...prev, ends_at: e.target.value }))}
+              >
+                {saving ? 'Đang lưu…' : buttonText}
+              </button>
+              <button
+                onClick={startCreate}
                 style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--admin-border)',
+                  height: 40,
+                  padding: '0 16px',
                   borderRadius: 6,
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--admin-muted)', marginBottom: 6 }}>
-                Mô tả
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Thêm mô tả (tùy chọn)"
-                rows={2}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
                   border: '1px solid var(--admin-border)',
-                  borderRadius: 6,
-                  fontSize: 14,
+                  background: '#fff',
+                  color: 'var(--admin-ink-2)',
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  cursor: 'pointer',
                   fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                  resize: 'vertical',
                 }}
-              />
+              >
+                Tạo mới
+              </button>
+              {editingId && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginLeft: 'auto' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Chương trình này đang chạy
+                </label>
+              )}
             </div>
           </div>
 
-          {formWarn && (
-            <div
-              style={{
-                marginBottom: 16,
-                padding: '10px 12px',
-                background: 'var(--admin-warn-bg)',
-                color: 'var(--admin-warn)',
-                borderRadius: 6,
-                fontSize: 13,
-              }}
-            >
-              ⚠️ {formWarn}
+          {/* Live preview */}
+          <section style={{ ...sectionCardStyle, position: 'sticky', top: 20 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--admin-ink)' }}>Xem trước trên web</div>
+              <div style={{ fontSize: 13, color: 'var(--admin-muted)', marginTop: 2 }}>
+                Giá tính theo sản phẩm mẫu
+              </div>
             </div>
-          )}
-
-          {formError && (
-            <div
-              style={{
-                marginBottom: 16,
-                padding: '10px 12px',
-                background: 'var(--admin-primary-subtle)',
-                color: 'var(--admin-danger)',
-                borderRadius: 6,
-                fontSize: 13,
-              }}
-            >
-              ✕ {formError}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              onClick={saveCampaign}
-              disabled={buttonDisabled}
-              style={{
-                height: 40,
-                padding: '0 16px',
-                borderRadius: 6,
-                border: 'none',
-                background: buttonDisabled ? 'var(--admin-border)' : 'var(--admin-primary)',
-                color: buttonDisabled ? 'var(--admin-muted)' : '#fff',
-                fontWeight: 600,
-                fontSize: 13.5,
-                cursor: buttonDisabled ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-                opacity: saving ? 0.7 : 1,
-              }}
-            >
-              {saving ? 'Đang lưu…' : buttonText}
-            </button>
-            <button
-              onClick={startCreate}
-              style={{
-                height: 40,
-                padding: '0 16px',
-                borderRadius: 6,
-                border: '1px solid var(--admin-border)',
-                background: '#fff',
-                color: 'var(--admin-ink-2)',
-                fontWeight: 600,
-                fontSize: 13.5,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              Tạo mới
-            </button>
-            {editingId && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginLeft: 'auto' }}>
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))}
-                  style={{ cursor: 'pointer' }}
-                />
-                Chương trình này đang chạy
-              </label>
+            {sampleProduct ? (
+              <>
+                <div style={{ ...fieldInputStyle(), display: 'flex', alignItems: 'center' }}>{sampleProduct.title}</div>
+                {previewPrice !== null && previewPercent !== null ? (
+                  <div style={{ display: 'grid', gap: 6, fontSize: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Giá gốc</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatVnd(sampleProduct.base_price)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--admin-ok)' }}>
+                      <span>Giảm {previewPercent}%</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        −{formatVnd(sampleProduct.base_price - previewPrice)}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontWeight: 700,
+                        borderTop: '1px solid var(--admin-border)',
+                        paddingTop: 8,
+                      }}
+                    >
+                      <span>Giá bán</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatVnd(previewPrice)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13.5, color: 'var(--admin-muted)' }}>Nhập mức giảm để xem giá dự kiến.</div>
+                )}
+              </>
+            ) : (
+              <div style={{ fontSize: 13.5, color: 'var(--admin-muted)' }}>Chưa có sản phẩm để xem trước.</div>
             )}
-          </div>
+          </section>
         </div>
 
         {/* Campaigns List */}
@@ -465,6 +554,14 @@ export default function AdminCampaignsPage() {
             </table>
           )}
         </div>
+        <style>{`
+          @media (max-width: 1023px) {
+            .campaign-form-grid { grid-template-columns: minmax(0,1fr) !important; }
+          }
+          @media (max-width: 639px) {
+            .campaign-date-grid { grid-template-columns: minmax(0,1fr) !important; }
+          }
+        `}</style>
       </AdminFrame>
     </AdminGuard>
   )
