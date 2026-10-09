@@ -1,7 +1,6 @@
 'use client'
 
 import { DrumMark, IconChevron } from '@/components/icons'
-import { ArtPiece } from '@/components/ui/ArtPiece'
 import { Btn } from '@/components/ui/Btn'
 import { Carousel } from '@/components/ui/Carousel'
 import type { Banner } from '@/lib/storefront-api'
@@ -12,103 +11,18 @@ interface BannerSectionProps {
   banners: Banner[]
 }
 
-// artImg: a clean (no-watermark) stock photo standing in for a featured
-// piece until real product photography exists — our only real product
-// photos are raw shop snapshots with a phone number baked into the image.
+// Fallback gradient behind a banner's own photo (or in place of one, when
+// a banner has no image yet).
 const bannerThemes = [
-  {
-    background:
-      'radial-gradient(circle at 18% 18%, rgba(255,220,140,0.16) 0, transparent 36%), linear-gradient(135deg, #2f2014 0%, #160f0a 100%)',
-    artBg: 'bronze' as const,
-    artFrame: 'bronze' as const,
-    artImg: 'https://images.unsplash.com/photo-1638517317391-af4c18e4c96a?w=800&q=80',
-  },
-  {
-    background:
-      'radial-gradient(circle at 78% 22%, rgba(201,169,97,0.14) 0, transparent 34%), linear-gradient(135deg, #6b1f16 0%, #26110c 100%)',
-    artBg: 'red' as const,
-    artFrame: 'gold' as const,
-    artImg: 'https://images.unsplash.com/photo-1612704057720-e8f66bade6ca?w=800&q=80',
-  },
-  {
-    background:
-      'radial-gradient(circle at 70% 18%, rgba(255,220,140,0.18) 0, transparent 34%), linear-gradient(135deg, #4a3018 0%, #15100b 100%)',
-    artBg: 'gold' as const,
-    artFrame: 'carved' as const,
-    artImg: 'https://images.unsplash.com/photo-1651085410796-e663860b2b08?w=800&q=80',
-  },
+  'radial-gradient(circle at 18% 18%, rgba(255,220,140,0.16) 0, transparent 36%), linear-gradient(135deg, #2f2014 0%, #160f0a 100%)',
+  'radial-gradient(circle at 78% 22%, rgba(201,169,97,0.14) 0, transparent 34%), linear-gradient(135deg, #6b1f16 0%, #26110c 100%)',
+  'radial-gradient(circle at 70% 18%, rgba(255,220,140,0.18) 0, transparent 34%), linear-gradient(135deg, #4a3018 0%, #15100b 100%)',
 ]
-
-function SideTile({ banner, theme }: { banner: Banner; theme: (typeof bannerThemes)[number] }) {
-  const router = useRouter()
-  const href = banner.linkUrl?.trim()
-  const clickable = !!href && href !== 'null' && href !== 'undefined'
-
-  return (
-    <div
-      role={clickable ? 'button' : undefined}
-      tabIndex={clickable ? 0 : undefined}
-      onClick={clickable ? () => router.push(href!) : undefined}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 12,
-        minHeight: 170,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        padding: 24,
-        cursor: clickable ? 'pointer' : 'default',
-        background: banner.imageUrl ? 'var(--bg-dark)' : theme.background,
-      }}
-    >
-      {banner.imageUrl ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${banner.imageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-      ) : null}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(0deg, rgba(20,14,9,0.78) 0%, rgba(20,14,9,0.15) 65%)',
-        }}
-      />
-      <div style={{ position: 'relative', color: 'var(--text-on-dark)' }}>
-        {banner.title ? (
-          <div
-            style={{
-              fontFamily: 'var(--font-lora), serif',
-              fontSize: 20,
-              fontWeight: 600,
-              lineHeight: 1.2,
-              marginBottom: banner.subtitle ? 4 : 0,
-              textWrap: 'balance',
-            }}
-          >
-            {banner.title}
-          </div>
-        ) : null}
-        {banner.subtitle ? (
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'rgba(244,237,224,0.78)' }}>{banner.subtitle}</div>
-        ) : null}
-      </div>
-    </div>
-  )
-}
 
 export function BannerSection({ banners }: BannerSectionProps) {
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
   const hasBanners = banners.length > 0
-  const sideTiles = banners.slice(1, 3)
-  const showSideTiles = sideTiles.length === 2
 
   const goTo = (idx: number) => {
     const next = ((idx % banners.length) + banners.length) % banners.length
@@ -117,9 +31,6 @@ export function BannerSection({ banners }: BannerSectionProps) {
 
   return (
     <div className="mx-auto w-full lg:max-w-[1344px] lg:px-8 lg:pt-7 mb-4 lg:mb-6">
-    <div
-      className={showSideTiles ? 'lg:grid lg:grid-cols-[2fr_1fr] lg:gap-5' : undefined}
-    >
     <div
       className="hero-wrap lg:rounded-xl"
       style={{
@@ -159,7 +70,7 @@ export function BannerSection({ banners }: BannerSectionProps) {
                     position: 'relative',
                     width: '100%',
                     height: '100%',
-                    background: banner.imageUrl ? 'var(--bg-dark)' : theme.background,
+                    background: banner.imageUrl ? 'var(--bg-dark)' : theme,
                   }}
                 >
                   {banner.imageUrl ? (
@@ -185,20 +96,6 @@ export function BannerSection({ banners }: BannerSectionProps) {
                   {/* DrumMark watermark */}
                   <div style={{ position: 'absolute', right: -40, top: -30, opacity: 0.06, pointerEvents: 'none', zIndex: 0 }}>
                     <DrumMark size={260} color="var(--gold)" />
-                  </div>
-                  {/* Art piece */}
-                  <div
-                    className="right-4 top-20 w-[170px] md:right-10 md:top-14 md:w-[220px] lg:right-14 lg:top-12 lg:w-[260px]"
-                    style={{ position: 'absolute', pointerEvents: 'none', zIndex: 1 }}
-                  >
-                    <ArtPiece
-                      bg={theme.artBg}
-                      frame={theme.artFrame}
-                      label={banner.title || 'Đồ đồng'}
-                      pad={10}
-                      aspect="4 / 5"
-                      imgSrc={theme.artImg}
-                    />
                   </div>
                   {/* Copy */}
                   <div
@@ -418,15 +315,6 @@ export function BannerSection({ banners }: BannerSectionProps) {
           </Btn>
         </div>
       )}
-    </div>
-
-    {showSideTiles ? (
-      <div className="hidden lg:grid lg:grid-rows-2 lg:gap-5">
-        {sideTiles.map((banner, idx) => (
-          <SideTile key={banner.id} banner={banner} theme={bannerThemes[(idx + 1) % bannerThemes.length]} />
-        ))}
-      </div>
-    ) : null}
     </div>
     </div>
   )
