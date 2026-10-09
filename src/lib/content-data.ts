@@ -1149,6 +1149,13 @@ export const ADMIN_COPY = {
     typeOrder: 'Đơn hàng',
     typeProduct: 'Sản phẩm',
     typeCampaign: 'Khuyến mãi',
+    searchPlaceholder: 'Tìm theo người thực hiện, ID hoặc hành động',
+    exportCsv: 'Xuất CSV',
+    dateAll: 'Tất cả thời gian',
+    date7: '7 ngày qua',
+    date30: '30 ngày qua',
+    noResults: 'Không có thay đổi nào khớp với bộ lọc',
+    clearFilters: 'Xoá bộ lọc',
     columns: {
       time: 'Thời gian',
       entity: 'Loại',
