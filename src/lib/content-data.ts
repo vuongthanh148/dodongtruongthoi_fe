@@ -377,12 +377,12 @@ export interface OccasionCard {
   tag?: string
   dark?: boolean
   href: string
+  imageUrl?: string
 }
 
-// No imageUrl here on purpose: the only real product photos we have are
-// raw shop snapshots with a phone number baked into the image itself, so
-// these stay the flat tone-color tile the design calls for until clean
-// product photography exists.
+// imageUrl: clean (no-watermark) stock photos standing in for a featured
+// piece until real product photography exists — our only real product
+// photos are raw shop snapshots with a phone number baked into the image.
 export const HOME_OCCASIONS: OccasionCard[] = [
   {
     id: 'bieu',
@@ -393,6 +393,7 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     tag: 'Kèm hộp quà và thiệp',
     dark: true,
     href: '/categories',
+    imageUrl: 'https://images.unsplash.com/photo-1638517317391-af4c18e4c96a?w=600&h=450&fit=crop&q=80',
   },
   {
     id: 'bome',
@@ -401,6 +402,7 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     picks: 'Cội Nguồn Quê Hương · Đỉnh đồng',
     fromPrice: 2500000,
     href: '/categories',
+    imageUrl: 'https://images.unsplash.com/photo-1612704057720-e8f66bade6ca?w=600&h=450&fit=crop&q=80',
   },
   {
     id: 'tangia',
@@ -409,6 +411,7 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     picks: 'Tranh Núi Nước · Tranh Hoa Tím',
     fromPrice: 1800000,
     href: '/categories',
+    imageUrl: 'https://images.unsplash.com/photo-1771795639001-a084a0d1045e?w=600&h=450&fit=crop&q=80',
   },
   {
     id: 'nha',
@@ -417,6 +420,7 @@ export const HOME_OCCASIONS: OccasionCard[] = [
     picks: 'Đỉnh đồng 3 chân · Bộ tam sự',
     fromPrice: 4500000,
     href: '/categories',
+    imageUrl: 'https://images.unsplash.com/photo-1769647097493-b2b891eb21bb?w=600&h=450&fit=crop&q=80',
   },
 ]
 

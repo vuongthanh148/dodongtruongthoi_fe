@@ -131,12 +131,17 @@ export function CraftDetailSection() {
           <ol className="m-0 grid list-none grid-cols-2 gap-x-3.5 gap-y-[18px] p-0 md:grid-cols-3 md:gap-x-5 md:gap-y-6 xl:grid-cols-6">
             {CRAFT_STEPS.map((step, i) => (
               <li key={step.title} className="flex flex-col gap-1.5">
-                <span
-                  className="grid h-[30px] w-[30px] place-items-center rounded-full border text-[15px]"
-                  style={{ borderColor: 'var(--accent)', color: 'var(--accent)', fontFamily: 'var(--font-body)' }}
-                >
-                  {i + 1}
-                </span>
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border text-[15px]"
+                    style={{ borderColor: 'var(--accent)', color: 'var(--accent)', fontFamily: 'var(--font-body)' }}
+                  >
+                    {i + 1}
+                  </span>
+                  {i < CRAFT_STEPS.length - 1 ? (
+                    <span className="hidden h-px flex-1 xl:block" style={{ background: 'var(--border)' }} />
+                  ) : null}
+                </div>
                 <div className="mt-1 text-[16px] font-semibold" style={{ color: 'var(--text-primary)' }}>
                   {step.title}
                 </div>
