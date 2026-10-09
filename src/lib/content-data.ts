@@ -436,6 +436,27 @@ export const CRAFT_STEPS: { title: string; body: string }[] = [
   { title: 'Hoàn thiện', body: 'Phủ bảo vệ, lắp khung, kiểm tra' },
 ]
 
+export interface CraftDetailHotspot {
+  n: number
+  x: number
+  y: number
+  title: string
+  body: string
+}
+
+// Macro-crop explorer image + its 4 hotspots. x/y are fractions (0–1) of the
+// image's width/height, used both to place the pin and to center the zoomed
+// crop thumbnail (see cropPos in CraftDetailSection.tsx).
+export const CRAFT_DETAIL_IMAGE =
+  'https://images.unsplash.com/photo-1638517317391-af4c18e4c96a?w=1600&q=85'
+
+export const CRAFT_DETAIL_HOTSPOTS: CraftDetailHotspot[] = [
+  { n: 1, x: 0.3, y: 0.2, title: 'Vảy rồng chạm từng lớp', body: 'Mỗi lớp vảy được gò và chạm riêng, tạo độ sâu và ánh sáng khi nhìn nghiêng.' },
+  { n: 2, x: 0.85, y: 0.2, title: 'Móng vuốt sắc nét', body: 'Đường nét móng vuốt uốn lượn, chạm tay tỉ mỉ đến từng khớp ngón.' },
+  { n: 3, x: 0.55, y: 0.5, title: 'Vân mây xoắn ốc', body: 'Hoạ tiết mây truyền thống, mỗi vòng xoắn đều và liền mạch quanh thân rồng.' },
+  { n: 4, x: 0.32, y: 0.88, title: 'Đầu rồng, râu và bờm', body: 'Chi tiết nhỏ nhất ở đầu rồng vẫn rõ từng sợi râu, bờm và vảy quanh mắt.' },
+]
+
 export const CRAFT_DETAIL_COPY = {
   eyebrow: 'Chi tiết thủ công',
   title: 'Nhìn gần từng đường chạm',

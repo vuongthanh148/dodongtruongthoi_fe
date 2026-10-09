@@ -31,7 +31,7 @@ export function StoriesSection({
     customerPhotos[1]?.imageUrl ??
     banners[1]?.imageUrl
 
-  const storiesForDesktop = STORY_CARDS.slice(0, 2)
+  const storiesForDesktop = STORY_CARDS.slice(0, 3)
 
   return (
     <>
@@ -196,10 +196,10 @@ export function StoriesSection({
     <section className="hidden md:block" style={{ margin: '64px 0' }}>
       <Container>
         <SectionHeading eyebrow="Câu chuyện" title="Từ làng nghề Đại Bái" />
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {storiesForDesktop.map((s, i) => {
             const cardImageUrl =
-              i === 0 ? customerPhotos[s.imageSourceIndex]?.imageUrl : banners[s.imageSourceIndex]?.imageUrl
+              i % 2 === 0 ? customerPhotos[s.imageSourceIndex]?.imageUrl : banners[s.imageSourceIndex]?.imageUrl
             return (
             <Link
               key={s.title}
