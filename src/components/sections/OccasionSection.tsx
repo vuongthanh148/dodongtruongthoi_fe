@@ -34,6 +34,11 @@ export function OccasionSection() {
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <div
                     className={`bronze-art absolute inset-0 ${dark ? 'dark' : occasion.id === 'nha' ? 'red' : occasion.id === 'tangia' ? 'gold' : ''}`}
+                    style={
+                      occasion.imageUrl
+                        ? { backgroundImage: `url(${occasion.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                        : undefined
+                    }
                   />
                   {occasion.tag ? (
                     <span
