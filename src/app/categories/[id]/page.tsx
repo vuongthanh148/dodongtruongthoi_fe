@@ -143,7 +143,9 @@ export default function CategoryPage() {
 
   const { data: products = [], isLoading } = useSWR(
     activeCategoryId ? SWR_KEYS.productsByCategory(activeCategoryId) : null,
-    activeCategoryId ? () => fetchProducts({ category: activeCategoryId }) : null
+    activeCategoryId
+      ? () => fetchProducts(activeCategoryId === 'all' ? undefined : { category: activeCategoryId })
+      : null
   )
 
   // Paging resets automatically whenever the filter key changes
