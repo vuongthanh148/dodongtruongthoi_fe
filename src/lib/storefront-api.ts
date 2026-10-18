@@ -584,7 +584,6 @@ type RawOrderSummary = {
   id: string
   status?: OrderStatus
   created_at: string
-  total_amount?: number
   items?: Array<{ product_title: string; quantity: number }>
 }
 
@@ -593,7 +592,6 @@ function normalizeOrderSummary(raw: RawOrderSummary): OrderSummary {
     id: raw.id,
     status: raw.status || 'pending_confirm',
     createdAt: raw.created_at,
-    totalAmount: raw.total_amount || 0,
     items: (raw.items || []).map((item) => ({
       productTitle: item.product_title,
       quantity: item.quantity,
