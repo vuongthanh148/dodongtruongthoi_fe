@@ -63,19 +63,19 @@ export default function AdminImagesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this image from library? It will be detached from all products.')) return
+    if (!confirm('Xóa hình ảnh này khỏi thư viện? Nó sẽ được tách khỏi tất cả sản phẩm.')) return
     await imageApi.delete(id)
     await load()
   }
 
   return (
     <AdminGuard>
-      <AdminFrame title="Image Library" subtitle="Upload once, attach to any product">
+      <AdminFrame title="Thư viện ảnh" subtitle="Tải lên một lần, đính kèm vào bất kỳ sản phẩm nào">
         {/* Upload section */}
         <div
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
             borderRadius: 8,
             padding: 16,
             marginBottom: 20,
@@ -83,7 +83,7 @@ export default function AdminImagesPage() {
             gap: 10,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Upload new image</h2>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Tải lên hình ảnh mới</h2>
           <div
             style={{
               display: 'grid',
@@ -93,8 +93,8 @@ export default function AdminImagesPage() {
             }}
           >
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
-                File
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--admin-muted)', marginBottom: 4 }}>
+                Tệp
               </label>
               <input
                 ref={fileRef}
@@ -104,11 +104,11 @@ export default function AdminImagesPage() {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
-                Name
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--admin-muted)', marginBottom: 4 }}>
+                Tên
               </label>
               <input
-                placeholder="Descriptive name"
+                placeholder="Tên mô tả"
                 value={uploadName}
                 onChange={(e) => setUploadName(e.target.value)}
                 style={inputStyle}
@@ -120,16 +120,16 @@ export default function AdminImagesPage() {
               disabled={!uploadFile || uploading}
               style={primaryBtn}
             >
-              {uploading ? 'Uploading...' : 'Upload'}
+              {uploading ? 'Đang tải lên...' : 'Tải lên'}
             </button>
           </div>
         </div>
 
         {/* Grid */}
         {loading ? (
-          <p style={{ color: '#6b7280' }}>Loading...</p>
+          <p style={{ color: 'var(--admin-muted)' }}>Đang tải...</p>
         ) : images.length === 0 ? (
-          <p style={{ color: '#6b7280' }}>No images yet. Upload one above.</p>
+          <p style={{ color: 'var(--admin-muted)' }}>Chưa có hình ảnh. Tải lên một hình ảnh ở trên.</p>
         ) : (
           <div
             style={{
@@ -142,8 +142,8 @@ export default function AdminImagesPage() {
               <div
                 key={img.id}
                 style={{
-                  background: 'white',
-                  border: '1px solid #e5e7eb',
+                  background: 'var(--admin-surface)',
+                  border: '1px solid var(--admin-border)',
                   borderRadius: 8,
                   overflow: 'hidden',
                 }}
@@ -185,22 +185,22 @@ export default function AdminImagesPage() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: '#374151',
+                        color: 'var(--admin-ink-2)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         cursor: 'pointer',
                       }}
-                      title={`Click to rename: ${img.name}`}
+                      title={`Nhấp để đổi tên: ${img.name}`}
                       onClick={() => {
                         setEditingId(img.id)
                         setEditName(img.name)
                       }}
                     >
-                      {img.name || '(unnamed)'}
+                      {img.name || '(không tên)'}
                     </div>
                   )}
-                  <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 3 }}>
+                  <div style={{ fontSize: 10, color: 'var(--admin-muted)', marginTop: 3 }}>
                     {new Date(img.created_at).toLocaleDateString('vi-VN')}
                   </div>
                   <button
@@ -212,11 +212,11 @@ export default function AdminImagesPage() {
                       width: '100%',
                       fontSize: 12,
                       padding: '4px 0',
-                      color: '#991b1b',
-                      borderColor: '#fca5a5',
+                      color: 'var(--admin-danger)',
+                      borderColor: 'var(--admin-primary-line)',
                     }}
                   >
-                    Delete
+                    Xóa
                   </button>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export default function AdminImagesPage() {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '8px 12px',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--admin-border)',
   borderRadius: 6,
   fontSize: 14,
   outline: 'none',
@@ -240,7 +240,7 @@ const inputStyle: React.CSSProperties = {
 
 const primaryBtn: React.CSSProperties = {
   padding: '10px 20px',
-  background: '#7f1d1d',
+  background: 'var(--admin-primary)',
   color: 'white',
   border: 'none',
   borderRadius: 6,
@@ -251,9 +251,9 @@ const primaryBtn: React.CSSProperties = {
 
 const secondaryBtn: React.CSSProperties = {
   padding: '8px 14px',
-  background: 'white',
-  color: '#374151',
-  border: '1px solid #d1d5db',
+  background: 'var(--admin-surface)',
+  color: 'var(--admin-ink-2)',
+  border: '1px solid var(--admin-border)',
   borderRadius: 6,
   fontSize: 13,
   cursor: 'pointer',

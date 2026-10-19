@@ -57,7 +57,7 @@ export default function AdminCustomerPhotosPage() {
 
   async function uploadPhoto() {
     if (!uploadFile) {
-      toast.error('Please choose an image file first')
+      toast.error('Hãy chọn một tệp hình ảnh trước')
       return
     }
 
@@ -69,14 +69,14 @@ export default function AdminCustomerPhotosPage() {
 
     const uploaded = await adminUpload<AdminCustomerPhoto>('/customer-photos', formData)
     if (uploaded) {
-      toast.success('Photo uploaded')
+      toast.success('Đã tải lên ảnh')
       setUploadFile(null)
       setUploadCaption('')
       setUploadSortOrder('0')
       setUploadActive(true)
       await loadPhotos()
     } else {
-      toast.error('Failed to upload photo')
+      toast.error('Không thể tải lên ảnh')
     }
   }
 
@@ -102,21 +102,21 @@ export default function AdminCustomerPhotosPage() {
 
       const uploaded = await adminUpload<AdminCustomerPhoto>('/customer-photos', replacementData)
       if (!uploaded) {
-        toast.error('Failed to upload replacement image')
+        toast.error('Không thể tải lên ảnh thay thế')
         setSaving(false)
         return
       }
 
       const deleted = await adminDelete(`/customer-photos/${editingPhoto.id}`)
       if (!deleted) {
-        toast.error('Uploaded new image but failed to remove old one')
+        toast.error('Đã tải lên ảnh mới nhưng không thể xóa ảnh cũ')
         await loadPhotos()
         resetEdit()
         setSaving(false)
         return
       }
 
-      toast.success('Photo updated')
+      toast.success('Đã cập nhật ảnh')
       await loadPhotos()
       resetEdit()
       setSaving(false)
@@ -128,11 +128,11 @@ export default function AdminCustomerPhotosPage() {
       payload
     )
     if (updated) {
-      toast.success('Photo updated')
+      toast.success('Đã cập nhật ảnh')
       await loadPhotos()
       resetEdit()
     } else {
-      toast.error('Failed to update photo')
+      toast.error('Không thể cập nhật ảnh')
     }
 
     setSaving(false)
@@ -146,7 +146,7 @@ export default function AdminCustomerPhotosPage() {
     })
 
     if (!updated) {
-      toast.error('Failed to update visibility')
+      toast.error('Không thể cập nhật hiển thị')
       return
     }
 
@@ -156,26 +156,26 @@ export default function AdminCustomerPhotosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Delete this customer photo?')) {
+    if (!window.confirm('Xóa ảnh khách hàng này?')) {
       return
     }
 
     const ok = await adminDelete(`/customer-photos/${id}`)
     if (ok) {
-      toast.success('Photo deleted')
+      toast.success('Đã xóa ảnh')
       await loadPhotos()
     } else {
-      toast.error('Failed to delete photo')
+      toast.error('Không thể xóa ảnh')
     }
   }
 
   return (
     <AdminGuard>
-      <AdminLayout title="Customer Photos" subtitle="Manage real-home photos for homepage gallery">
+      <AdminLayout title="Ảnh khách hàng" subtitle="Quản lý ảnh phòng khách của khách hàng cho thư viện trang chủ">
         <section
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
             borderRadius: 8,
             padding: 12,
             display: 'grid',
@@ -183,11 +183,11 @@ export default function AdminCustomerPhotosPage() {
             marginBottom: 16,
           }}
         >
-          <h3 style={{ margin: 0, fontSize: 16 }}>Upload New Photo</h3>
+          <h3 style={{ margin: 0, fontSize: 16 }}>Tải lên ảnh mới</h3>
           <div
             style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}
           >
-            <Field label="Image file">
+            <Field label="Tệp hình ảnh">
               <input
                 type="file"
                 accept="image/*"
@@ -195,7 +195,7 @@ export default function AdminCustomerPhotosPage() {
                 style={inputStyle}
               />
             </Field>
-            <Field label="Caption (optional)">
+            <Field label="Chú thích (tuỳ chọn)">
               <input
                 value={uploadCaption}
                 onChange={(event) => setUploadCaption(event.target.value)}
@@ -203,7 +203,7 @@ export default function AdminCustomerPhotosPage() {
                 placeholder="Hà Nội · Phòng khách"
               />
             </Field>
-            <Field label="Sort order">
+            <Field label="Thứ tự">
               <input
                 type="number"
                 value={uploadSortOrder}
@@ -219,29 +219,29 @@ export default function AdminCustomerPhotosPage() {
                 checked={uploadActive}
                 onChange={(event) => setUploadActive(event.target.checked)}
               />
-              Active
+              Đang hoạt động
             </label>
           </div>
           <div>
             <button type="button" onClick={uploadPhoto} style={primaryBtn}>
-              Upload to Cloudinary
+              Tải lên lên Cloudinary
             </button>
           </div>
         </section>
 
         <div
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
             borderRadius: 8,
             padding: 12,
             display: 'grid',
             gap: 10,
           }}
         >
-          {loading ? <p style={{ color: '#6b7280', margin: 0 }}>Loading photos...</p> : null}
+          {loading ? <p style={{ color: 'var(--admin-muted)', margin: 0 }}>Đang tải ảnh...</p> : null}
           {!loading && rows.length === 0 ? (
-            <p style={{ color: '#6b7280', margin: 0 }}>No photos found.</p>
+            <p style={{ color: 'var(--admin-muted)', margin: 0 }}>Không tìm thấy ảnh.</p>
           ) : null}
 
           <div
@@ -255,7 +255,7 @@ export default function AdminCustomerPhotosPage() {
               <article
                 key={photo.id}
                 style={{
-                  border: '1px solid #f3f4f6',
+                  border: '1px solid var(--admin-border-soft)',
                   borderRadius: 8,
                   padding: 10,
                   display: 'grid',
@@ -265,7 +265,7 @@ export default function AdminCustomerPhotosPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo.image_url}
-                  alt={photo.caption || 'Customer photo'}
+                  alt={photo.caption || 'Ảnh khách hàng'}
                   style={{
                     width: '100%',
                     aspectRatio: '4 / 3',
@@ -275,8 +275,8 @@ export default function AdminCustomerPhotosPage() {
                 />
 
                 <div style={{ display: 'grid', gap: 2 }}>
-                  <strong style={{ fontSize: 13 }}>{photo.caption || 'No caption'}</strong>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>Sort: {photo.sort_order}</span>
+                  <strong style={{ fontSize: 13 }}>{photo.caption || 'Không có chú thích'}</strong>
+                  <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>Thứ tự: {photo.sort_order}</span>
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
@@ -285,15 +285,15 @@ export default function AdminCustomerPhotosPage() {
                     checked={photo.is_active}
                     onChange={(event) => toggleVisibility(photo, event.target.checked)}
                   />
-                  Show
+                  Hiển thị
                 </label>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                   <button type="button" onClick={() => startEdit(photo)} style={actionBtn}>
-                    Edit
+                    Chỉnh sửa
                   </button>
                   <button type="button" onClick={() => handleDelete(photo.id)} style={actionBtn}>
-                    Delete
+                    Xóa
                   </button>
                 </div>
               </article>
@@ -318,9 +318,9 @@ export default function AdminCustomerPhotosPage() {
                 width: 'min(760px, 100%)',
                 maxHeight: '90vh',
                 overflowY: 'auto',
-                background: 'white',
+                background: 'var(--admin-surface)',
                 borderRadius: 10,
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--admin-border)',
                 padding: 14,
                 display: 'grid',
                 gap: 12,
@@ -329,19 +329,19 @@ export default function AdminCustomerPhotosPage() {
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
-                <h3 style={{ margin: 0, fontSize: 16 }}>Edit Customer Photo</h3>
+                <h3 style={{ margin: 0, fontSize: 16 }}>Chỉnh sửa ảnh khách hàng</h3>
                 <button type="button" onClick={resetEdit} style={secondaryBtn}>
-                  Close
+                  Đóng
                 </button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'grid', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: '#374151' }}>Current image</span>
+                  <span style={{ fontSize: 12, color: 'var(--admin-ink-2)' }}>Ảnh hiện tại</span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={editingPhoto.image_url}
-                    alt={editingPhoto.caption || 'Current photo'}
+                    alt={editingPhoto.caption || 'Ảnh hiện tại'}
                     style={{
                       width: '100%',
                       aspectRatio: '4 / 3',
@@ -351,19 +351,19 @@ export default function AdminCustomerPhotosPage() {
                   />
                 </div>
                 <div style={{ display: 'grid', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: '#374151' }}>Replace image (optional)</span>
+                  <span style={{ fontSize: 12, color: 'var(--admin-ink-2)' }}>Thay thế ảnh (tuỳ chọn)</span>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(event) => setEditFile(event.target.files?.[0] ?? null)}
                     style={inputStyle}
                   />
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>
-                    If you choose a file, save will upload new image and remove the old one.
+                  <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>
+                    Nếu bạn chọn một tệp, lưu sẽ tải lên ảnh mới và xóa ảnh cũ.
                   </span>
                   {editFile ? (
-                    <span style={{ fontSize: 12, color: '#166534' }}>
-                      Selected: {editFile.name}
+                    <span style={{ fontSize: 12, color: 'var(--admin-ok)' }}>
+                      Đã chọn: {editFile.name}
                     </span>
                   ) : null}
                 </div>
@@ -376,7 +376,7 @@ export default function AdminCustomerPhotosPage() {
                   gap: 10,
                 }}
               >
-                <Field label="Caption">
+                <Field label="Chú thích">
                   <input
                     value={form.caption}
                     onChange={(event) =>
@@ -385,7 +385,7 @@ export default function AdminCustomerPhotosPage() {
                     style={inputStyle}
                   />
                 </Field>
-                <Field label="Sort order">
+                <Field label="Thứ tự">
                   <input
                     type="number"
                     value={form.sort_order}
@@ -405,15 +405,15 @@ export default function AdminCustomerPhotosPage() {
                     setForm((prev) => ({ ...prev, is_active: event.target.checked }))
                   }
                 />
-                Show
+                Hiển thị
               </label>
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={savePhoto} style={primaryBtn} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Changes'}
+                  {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
                 <button type="button" onClick={resetEdit} style={secondaryBtn} disabled={saving}>
-                  Cancel
+                  Hủy
                 </button>
               </div>
             </div>
@@ -427,30 +427,30 @@ export default function AdminCustomerPhotosPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label style={{ display: 'grid', gap: 6 }}>
-      <span style={{ fontSize: 12, color: '#374151' }}>{label}</span>
+      <span style={{ fontSize: 12, color: 'var(--admin-ink-2)' }}>{label}</span>
       {children}
     </label>
   )
 }
 
 const inputStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--admin-border)',
   borderRadius: 6,
   padding: '10px 12px',
   fontSize: 14,
 }
 const primaryBtn: React.CSSProperties = {
   border: 'none',
-  background: '#7f1d1d',
+  background: 'var(--admin-primary)',
   color: 'white',
   borderRadius: 6,
   padding: '9px 12px',
   cursor: 'pointer',
 }
 const secondaryBtn: React.CSSProperties = {
-  border: '1px solid #d1d5db',
-  background: 'white',
-  color: '#374151',
+  border: '1px solid var(--admin-border)',
+  background: 'var(--admin-surface)',
+  color: 'var(--admin-ink-2)',
   borderRadius: 6,
   padding: '9px 12px',
   cursor: 'pointer',
@@ -458,7 +458,7 @@ const secondaryBtn: React.CSSProperties = {
 const actionBtn: React.CSSProperties = {
   border: 'none',
   background: 'transparent',
-  color: '#7f1d1d',
+  color: 'var(--admin-primary)',
   cursor: 'pointer',
   padding: 0,
 }

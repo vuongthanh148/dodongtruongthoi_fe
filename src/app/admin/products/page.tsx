@@ -21,7 +21,9 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
 
   useEffect(() => {
     loadProducts()
@@ -56,6 +58,14 @@ export default function AdminProductsPage() {
       return matchesSearch && matchesCategory
     })
   }, [products, searchTerm, selectedCategory])
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    const end = start + pageSize
+    return filteredProducts.slice(start, end)
+  }, [filteredProducts, currentPage])
+
+  const totalPages = Math.ceil(filteredProducts.length / pageSize)
 
   const handleToggleActive = async (id: string, currentValue: boolean) => {
     const newValue = !currentValue
@@ -129,7 +139,7 @@ export default function AdminProductsPage() {
             <span>Đã cập nhật · </span>
             <button
               onClick={() => {
-                handleToggleActive(id, currentValue)
+                handleToggleActive(id, newValue)
                 toast.dismiss(t)
               }}
               style={{
@@ -258,7 +268,12 @@ export default function AdminProductsPage() {
               </button>
             )}
           </div>
-          <button
+          <select
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value)
+              setCurrentPage(1)
+            }}
             style={{
               height: 40,
               padding: '0 12px',
@@ -270,14 +285,15 @@ export default function AdminProductsPage() {
               fontWeight: 500,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
             }}
           >
-            {isSmall ? 'Danh mục' : `Danh mục: ${selectedCategory ? categoryMap[selectedCategory] || 'Tất cả' : 'Tất cả'}`}
-            <span>▼</span>
-          </button>
+            <option value="">Danh mục: Tất cả</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
           <button
             style={{
               height: 40,
@@ -453,7 +469,7 @@ export default function AdminProductsPage() {
           </div>
         ) : isSmall ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {filteredProducts.map((p) => (
+            {paginatedProducts.map((p) => (
               <article
                 key={p.id}
                 style={{
@@ -477,7 +493,11 @@ export default function AdminProductsPage() {
                     opacity: p.is_active_optimistic ?? p.is_active ? 1 : 0.55,
                     background: 'var(--admin-border-soft)',
                   }}
-                />
+                >
+                  {p.images?.[0]?.url && (
+                    <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
+                </div>
                 <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--admin-ink)' }}>
                     {p.title}
@@ -547,7 +567,7 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((p) => (
+                {paginatedProducts.map((p) => (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--admin-border-soft)' }}>
                     <td style={tableCell}>
                       <div
@@ -560,7 +580,11 @@ export default function AdminProductsPage() {
                           opacity: p.is_active_optimistic ?? p.is_active ? 1 : 0.55,
                           background: 'var(--admin-border-soft)',
                         }}
-                      />
+                      >
+                        {p.images?.[0]?.url && (
+                          <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
+                      </div>
                     </td>
                     <td style={tableCell}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: (p.is_active_optimistic ?? p.is_active) ? 'var(--admin-ink)' : 'var(--admin-muted)' }}>
@@ -580,9 +604,11 @@ export default function AdminProductsPage() {
                         {formatVnd(p.base_price)}
                       </b>
                     </td>
+                    {/* Note: Stock/quantity field not yet available from API */}
                     <td style={{ ...tableCell, textAlign: 'right', color: 'var(--admin-ink-2)' }}>
                       <span style={{ fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>0</span>
                     </td>
+                    {/* Note: Updated date field not yet available from API */}
                     <td style={tableCell}>
                       <span style={{ fontSize: 13, color: 'var(--admin-muted)' }}>05/10</span>
                     </td>
@@ -648,6 +674,51 @@ export default function AdminProductsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filteredProducts.length > pageSize && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{
+                height: 32,
+                padding: '0 10px',
+                borderRadius: 6,
+                border: '1px solid var(--admin-border)',
+                background: currentPage === 1 ? 'var(--admin-border-soft)' : '#fff',
+                color: 'var(--admin-ink-2)',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                opacity: currentPage === 1 ? 0.5 : 1,
+              }}
+            >
+              ← Trước
+            </button>
+            <span style={{ fontSize: 13, color: 'var(--admin-muted)', minWidth: 100, textAlign: 'center' }}>
+              Trang {currentPage}/{totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                height: 32,
+                padding: '0 10px',
+                borderRadius: 6,
+                border: '1px solid var(--admin-border)',
+                background: currentPage === totalPages ? 'var(--admin-border-soft)' : '#fff',
+                color: 'var(--admin-ink-2)',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                opacity: currentPage === totalPages ? 0.5 : 1,
+              }}
+            >
+              Sau →
+            </button>
           </div>
         )}
       </AdminFrame>

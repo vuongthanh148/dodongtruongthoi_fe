@@ -67,35 +67,35 @@ export default function AdminContactsPage() {
       : await adminPost<AdminContact>('/contacts', { id: form.id.trim(), ...payload })
 
     if (saved) {
-      toast.success(editingId ? 'Contact updated' : 'Contact created')
+      toast.success(editingId ? 'Đã cập nhật liên hệ' : 'Đã tạo liên hệ')
       await loadContacts()
       startCreate()
     } else {
-      toast.error('Failed to save contact')
+      toast.error('Không thể lưu liên hệ')
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Delete this contact?')) {
+    if (!window.confirm('Xóa liên hệ này?')) {
       return
     }
 
     const ok = await adminDelete(`/contacts/${id}`)
     if (ok) {
-      toast.success('Contact deleted')
+      toast.success('Đã xóa liên hệ')
       await loadContacts()
     } else {
-      toast.error('Failed to delete contact')
+      toast.error('Không thể xóa liên hệ')
     }
   }
 
   return (
     <AdminGuard>
-      <AdminLayout title="Contacts" subtitle="Manage floating social links and hotline channels">
+      <AdminLayout title="Liên hệ" subtitle="Quản lý các liên kết mạng xã hội và kênh đường dây nóng">
         <section
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
             borderRadius: 8,
             padding: 12,
             display: 'grid',
@@ -106,7 +106,7 @@ export default function AdminContactsPage() {
           <div
             style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}
           >
-            <Field label="ID (create only)">
+            <Field label="ID (chỉ tạo)">
               <input
                 value={form.id}
                 onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
@@ -114,21 +114,21 @@ export default function AdminContactsPage() {
                 disabled={Boolean(editingId)}
               />
             </Field>
-            <Field label="Platform">
+            <Field label="Nền tảng">
               <select
                 value={form.platform}
                 onChange={(event) => setForm((prev) => ({ ...prev, platform: event.target.value }))}
                 style={inputStyle}
               >
-                <option value="zalo">zalo</option>
-                <option value="messenger">messenger</option>
-                <option value="facebook">facebook</option>
-                <option value="tiktok">tiktok</option>
-                <option value="phone">phone</option>
-                <option value="email">email</option>
+                <option value="zalo">Zalo</option>
+                <option value="messenger">Messenger</option>
+                <option value="facebook">Facebook</option>
+                <option value="tiktok">TikTok</option>
+                <option value="phone">Điện thoại</option>
+                <option value="email">Email</option>
               </select>
             </Field>
-            <Field label="Label">
+            <Field label="Nhãn">
               <input
                 value={form.label}
                 onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
@@ -142,7 +142,7 @@ export default function AdminContactsPage() {
                 style={inputStyle}
               />
             </Field>
-            <Field label="Sort order">
+            <Field label="Thứ tự">
               <input
                 type="number"
                 value={form.sort_order}
@@ -161,29 +161,29 @@ export default function AdminContactsPage() {
                 setForm((prev) => ({ ...prev, is_active: event.target.checked }))
               }
             />
-            Active
+            Đang hoạt động
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={saveContact} style={primaryBtn}>
-              {editingId ? 'Update Contact' : 'Create Contact'}
+              {editingId ? 'Cập nhật liên hệ' : 'Tạo liên hệ'}
             </button>
             <button type="button" onClick={startCreate} style={secondaryBtn}>
-              Reset
+              Đặt lại
             </button>
           </div>
         </section>
 
         <div
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
             borderRadius: 8,
             padding: 12,
             display: 'grid',
             gap: 8,
           }}
         >
-          {loading ? <p style={{ color: '#6b7280', margin: 0 }}>Loading contacts...</p> : null}
+          {loading ? <p style={{ color: 'var(--admin-muted)', margin: 0 }}>Đang tải liên hệ...</p> : null}
           {rows.map((row) => (
             <div
               key={row.id}
@@ -192,7 +192,7 @@ export default function AdminContactsPage() {
                 gridTemplateColumns: '120px 1fr auto auto',
                 gap: 8,
                 alignItems: 'center',
-                border: '1px solid #f3f4f6',
+                border: '1px solid var(--admin-border-soft)',
                 borderRadius: 8,
                 padding: 8,
               }}
@@ -200,10 +200,10 @@ export default function AdminContactsPage() {
               <strong style={{ textTransform: 'capitalize' }}>{row.platform}</strong>
               <span style={{ overflowWrap: 'anywhere' }}>{row.url}</span>
               <button type="button" onClick={() => startEdit(row)} style={actionBtn}>
-                Edit
+                Chỉnh sửa
               </button>
               <button type="button" onClick={() => handleDelete(row.id)} style={actionBtn}>
-                Delete
+                Xóa
               </button>
             </div>
           ))}
@@ -216,30 +216,30 @@ export default function AdminContactsPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label style={{ display: 'grid', gap: 6 }}>
-      <span style={{ fontSize: 12, color: '#374151' }}>{label}</span>
+      <span style={{ fontSize: 12, color: 'var(--admin-ink-2)' }}>{label}</span>
       {children}
     </label>
   )
 }
 
 const inputStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--admin-border)',
   borderRadius: 6,
   padding: '10px 12px',
   fontSize: 14,
 }
 const primaryBtn: React.CSSProperties = {
   border: 'none',
-  background: '#7f1d1d',
+  background: 'var(--admin-primary)',
   color: 'white',
   borderRadius: 6,
   padding: '9px 12px',
   cursor: 'pointer',
 }
 const secondaryBtn: React.CSSProperties = {
-  border: '1px solid #d1d5db',
-  background: 'white',
-  color: '#374151',
+  border: '1px solid var(--admin-border)',
+  background: 'var(--admin-surface)',
+  color: 'var(--admin-ink-2)',
   borderRadius: 6,
   padding: '9px 12px',
   cursor: 'pointer',
@@ -247,7 +247,7 @@ const secondaryBtn: React.CSSProperties = {
 const actionBtn: React.CSSProperties = {
   border: 'none',
   background: 'transparent',
-  color: '#7f1d1d',
+  color: 'var(--admin-primary)',
   cursor: 'pointer',
   padding: 0,
 }

@@ -192,13 +192,13 @@ export default function AdminSettingsPage() {
     prefix: LabelPrefix
   ) {
     return (
-      <section style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px 12px 10px' }}>
+      <section style={{ border: '1px solid var(--admin-border)', borderRadius: 8, padding: '12px 12px 10px' }}>
         <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>{title}</h3>
-        <p style={{ margin: '0 0 10px', color: '#6b7280', fontSize: 13 }}>{description}</p>
+        <p style={{ margin: '0 0 10px', color: 'var(--admin-muted)', fontSize: 13 }}>{description}</p>
         <div style={{ display: 'grid', gap: 8 }}>
           {fields.map((field) => (
             <label key={field.key} style={{ display: 'grid', gap: 4 }}>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>{field.label}</span>
+              <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{field.label}</span>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 6 }}>
                 <input
                   value={displayLabels[field.key] ?? ''}
@@ -211,7 +211,7 @@ export default function AdminSettingsPage() {
                   }}
                   placeholder={field.defaultValue}
                   style={{
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--admin-border)',
                     borderRadius: 6,
                     padding: '8px 10px',
                     fontSize: 14,
@@ -227,18 +227,18 @@ export default function AdminSettingsPage() {
                     )
                   }}
                   style={{
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--admin-border)',
                     borderRadius: 6,
-                    background: 'white',
+                    background: 'var(--admin-surface)',
                     padding: '6px 9px',
                     cursor: 'pointer',
                     fontSize: 12,
                   }}
                 >
-                  Remove
+                  Xóa
                 </button>
               </div>
-              <code style={{ fontSize: 11, color: '#9ca3af' }}>{field.key}</code>
+              <code style={{ fontSize: 11, color: 'var(--admin-muted)' }}>{field.key}</code>
             </label>
           ))}
 
@@ -257,9 +257,9 @@ export default function AdminSettingsPage() {
                 <input
                   value={row.key}
                   onChange={(event) => updateExtraLabel(prefix, index, { key: event.target.value })}
-                  placeholder="key suffix"
+                  placeholder="hậu tố khóa"
                   style={{
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--admin-border)',
                     borderRadius: 6,
                     padding: '8px 10px',
                     fontSize: 13,
@@ -271,9 +271,9 @@ export default function AdminSettingsPage() {
                   onChange={(event) =>
                     updateExtraLabel(prefix, index, { value: event.target.value })
                   }
-                  placeholder="Display value"
+                  placeholder="Giá trị hiển thị"
                   style={{
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--admin-border)',
                     borderRadius: 6,
                     padding: '8px 10px',
                     fontSize: 13,
@@ -284,17 +284,17 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => removeExtraLabel(prefix, index)}
                   style={{
-                    border: '1px solid #d1d5db',
+                    border: '1px solid var(--admin-border)',
                     borderRadius: 6,
-                    background: 'white',
+                    background: 'var(--admin-surface)',
                     padding: '8px 10px',
                     cursor: 'pointer',
                   }}
                 >
-                  Remove
+                  Xóa
                 </button>
               </div>
-              <code style={{ fontSize: 11, color: '#9ca3af' }}>{`${prefix}.${row.key || '<key>'}`}</code>
+              <code style={{ fontSize: 11, color: 'var(--admin-muted)' }}>{`${prefix}.${row.key || '<khóa>'}`}</code>
             </div>
           ))}
 
@@ -303,14 +303,14 @@ export default function AdminSettingsPage() {
             onClick={() => addExtraLabel(prefix)}
             style={{
               justifySelf: 'start',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--admin-border)',
               borderRadius: 6,
-              background: 'white',
+              background: 'var(--admin-surface)',
               padding: '7px 10px',
               cursor: 'pointer',
             }}
           >
-            + Add label
+            + Thêm nhãn
           </button>
         </div>
       </section>
@@ -351,7 +351,7 @@ export default function AdminSettingsPage() {
 
       const saved = await adminPut<Record<string, string>>('/settings', payload)
       if (saved) {
-        setMessage('Settings saved')
+        setMessage('Đã lưu cài đặt')
         setSaving(false)
         return
       }
@@ -359,20 +359,20 @@ export default function AdminSettingsPage() {
       // Local fallback if backend is offline.
     }
 
-    setMessage('Saved locally (backend offline)')
+    setMessage('Đã lưu cục bộ (backend offline)')
     setSaving(false)
   }
 
   return (
     <AdminGuard>
-      <AdminFrame title="Settings" subtitle="Control global storefront behavior and active theme">
-        <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, maxWidth: 900 }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Theme Switcher</h2>
-          <p style={{ margin: '0 0 14px', color: '#6b7280' }}>Select which seasonal theme is applied to the storefront.</p>
+      <AdminFrame title="Cài đặt" subtitle="Kiểm soát hành vi storefront toàn cục và chủ đề hoạt động">
+        <section style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: 8, padding: 14, maxWidth: 900 }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Bộ chuyển đổi chủ đề</h2>
+          <p style={{ margin: '0 0 14px', color: 'var(--admin-muted)' }}>Chọn chủ đề mùa nào sẽ áp dụng cho storefront.</p>
 
           <div style={{ display: 'grid', gap: 8 }}>
             {THEMES.map((theme) => (
-              <label key={theme.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', display: 'grid', gap: 4, cursor: 'pointer', background: activeTheme === theme.id ? '#fef2f2' : 'white' }}>
+              <label key={theme.id} style={{ border: '1px solid var(--admin-border)', borderRadius: 8, padding: '10px 12px', display: 'grid', gap: 4, cursor: 'pointer', background: activeTheme === theme.id ? 'var(--admin-primary-subtle)' : 'var(--admin-surface)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     type="radio"
@@ -382,7 +382,7 @@ export default function AdminSettingsPage() {
                   />
                   <strong>{theme.label}</strong>
                 </span>
-                <span style={{ fontSize: 13, color: '#6b7280' }}>{theme.description}</span>
+                <span style={{ fontSize: 13, color: 'var(--admin-muted)' }}>{theme.description}</span>
               </label>
             ))}
           </div>
@@ -391,18 +391,18 @@ export default function AdminSettingsPage() {
             type="button"
             onClick={saveSettings}
             disabled={saving}
-            style={{ marginTop: 14, border: 'none', background: '#7f1d1d', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}
+            style={{ marginTop: 14, border: 'none', background: 'var(--admin-primary)', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}
           >
-            {saving ? 'Saving...' : 'Save Settings'}
+            {saving ? 'Đang lưu...' : 'Lưu cài đặt'}
           </button>
 
-          {message ? <p style={{ margin: '8px 0 0', color: '#166534' }}>{message}</p> : null}
+          {message ? <p style={{ margin: '8px 0 0', color: 'var(--admin-ok)' }}>{message}</p> : null}
         </section>
 
-        <section style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, maxWidth: 900, marginTop: 14 }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Display Labels</h2>
-          <p style={{ margin: '0 0 14px', color: '#6b7280' }}>
-            Configure storefront labels for variant names and product detail metadata.
+        <section style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: 8, padding: 14, maxWidth: 900, marginTop: 14 }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Nhãn hiển thị</h2>
+          <p style={{ margin: '0 0 14px', color: 'var(--admin-muted)' }}>
+            Cấu hình nhãn storefront cho tên biến thể và siêu dữ liệu chi tiết sản phẩm.
           </p>
 
           <div style={{ display: 'grid', gap: 12 }}>
@@ -421,9 +421,9 @@ export default function AdminSettingsPage() {
             type="button"
             onClick={saveSettings}
             disabled={saving}
-            style={{ marginTop: 14, border: 'none', background: '#7f1d1d', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}
+            style={{ marginTop: 14, border: 'none', background: 'var(--admin-primary)', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}
           >
-            {saving ? 'Saving...' : 'Save Display Labels'}
+            {saving ? 'Đang lưu...' : 'Lưu nhãn hiển thị'}
           </button>
         </section>
       </AdminFrame>

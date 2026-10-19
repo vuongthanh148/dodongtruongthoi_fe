@@ -39,74 +39,74 @@ export default function AdminReviewsPage() {
   async function handleApprove(id: string, isApproved: boolean) {
     const saved = await adminPut<AdminReview>(`/reviews/${id}`, { is_approved: isApproved })
     if (saved) {
-      toast.success(isApproved ? 'Review approved' : 'Review disapproved')
+      toast.success(isApproved ? 'Đã phê duyệt đánh giá' : 'Đã từ chối đánh giá')
       await loadReviews()
     } else {
-      toast.error('Failed to update review')
+      toast.error('Không thể cập nhật đánh giá')
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Delete this review?')) {
+    if (!window.confirm('Xóa đánh giá này?')) {
       return
     }
     const ok = await adminDelete(`/reviews/${id}`)
     if (ok) {
-      toast.success('Review deleted')
+      toast.success('Đã xóa đánh giá')
       await loadReviews()
     } else {
-      toast.error('Failed to delete review')
+      toast.error('Không thể xóa đánh giá')
     }
   }
 
   return (
     <AdminGuard>
       <AdminLayout
-        title="Reviews"
-        subtitle="Moderate customer product reviews before they appear on the storefront"
+        title="Đánh giá"
+        subtitle="Kiểm duyệt các đánh giá sản phẩm của khách hàng trước khi chúng xuất hiện trên storefront"
       >
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <FilterButton active={filter === 'all'} onClick={() => setFilter('all')}>
-            All
+            Tất cả
           </FilterButton>
           <FilterButton active={filter === 'pending'} onClick={() => setFilter('pending')}>
-            Pending
+            Chờ duyệt
           </FilterButton>
           <FilterButton active={filter === 'approved'} onClick={() => setFilter('approved')}>
-            Approved
+            Đã phê duyệt
           </FilterButton>
         </div>
 
         <div
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
             borderRadius: 8,
             overflow: 'hidden',
           }}
         >
           {loading ? (
-            <div style={{ padding: 24, color: '#6b7280', fontSize: 14 }}>Loading reviews...</div>
+            <div style={{ padding: 24, color: 'var(--admin-muted)', fontSize: 14 }}>Đang tải đánh giá...</div>
           ) : rows.length === 0 ? (
-            <div style={{ padding: 24, color: '#6b7280', fontSize: 14 }}>No reviews found.</div>
+            <div style={{ padding: 24, color: 'var(--admin-muted)', fontSize: 14 }}>Không tìm thấy đánh giá.</div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  <th style={th}>Reviewer</th>
-                  <th style={th}>Product</th>
-                  <th style={th}>Rating</th>
-                  <th style={th}>Comment</th>
-                  <th style={th}>Status</th>
-                  <th style={th}>Date</th>
-                  <th style={th}>Actions</th>
+                <tr style={{ background: 'var(--admin-border-soft)' }}>
+                  <th style={th}>Người dùng</th>
+                  <th style={th}>Sản phẩm</th>
+                  <th style={th}>Xếp hạng</th>
+                  <th style={th}>Bình luận</th>
+                  <th style={th}>Trạng thái</th>
+                  <th style={th}>Ngày</th>
+                  <th style={th}>Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
                     <td style={td}>{row.reviewer_name}</td>
-                    <td style={{ ...td, color: '#6b7280', fontSize: 12 }}>{row.product_id}</td>
+                    <td style={{ ...td, color: 'var(--admin-muted)', fontSize: 12 }}>{row.product_id}</td>
                     <td style={td}>{renderStars(row.rating)}</td>
                     <td style={{ ...td, maxWidth: 280 }}>
                       <span
@@ -117,7 +117,7 @@ export default function AdminReviewsPage() {
                           overflow: 'hidden',
                         }}
                       >
-                        {row.body ?? <em style={{ color: '#9ca3af' }}>No comment</em>}
+                        {row.body ?? <em style={{ color: 'var(--admin-muted)' }}>Không có bình luận</em>}
                       </span>
                     </td>
                     <td style={td}>
@@ -126,14 +126,14 @@ export default function AdminReviewsPage() {
                           fontSize: 12,
                           padding: '3px 8px',
                           borderRadius: 999,
-                          background: row.is_approved ? '#dcfce7' : '#fef3c7',
-                          color: row.is_approved ? '#166534' : '#92400e',
+                          background: row.is_approved ? 'var(--admin-ok-bg)' : 'var(--admin-warn-bg)',
+                          color: row.is_approved ? 'var(--admin-ok)' : 'var(--admin-warn)',
                         }}
                       >
-                        {row.is_approved ? 'Approved' : 'Pending'}
+                        {row.is_approved ? 'Đã phê duyệt' : 'Chờ duyệt'}
                       </span>
                     </td>
-                    <td style={{ ...td, fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...td, fontSize: 12, color: 'var(--admin-muted)', whiteSpace: 'nowrap' }}>
                       {row.created_at.slice(0, 10)}
                     </td>
                     <td style={td}>
@@ -144,15 +144,15 @@ export default function AdminReviewsPage() {
                             onClick={() => handleApprove(row.id, false)}
                             style={actionBtn}
                           >
-                            Reject
+                            Từ chối
                           </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleApprove(row.id, true)}
-                            style={{ ...actionBtn, color: '#166534' }}
+                            style={{ ...actionBtn, color: 'var(--admin-ok)' }}
                           >
-                            Approve
+                            Phê duyệt
                           </button>
                         )}
                         <button
@@ -160,7 +160,7 @@ export default function AdminReviewsPage() {
                           onClick={() => handleDelete(row.id)}
                           style={actionBtn}
                         >
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </td>
@@ -190,9 +190,9 @@ function FilterButton({
       onClick={onClick}
       style={{
         border: '1px solid',
-        borderColor: active ? '#7f1d1d' : '#d1d5db',
-        background: active ? '#7f1d1d' : 'white',
-        color: active ? 'white' : '#374151',
+        borderColor: active ? 'var(--admin-primary)' : 'var(--admin-border)',
+        background: active ? 'var(--admin-primary)' : 'var(--admin-surface)',
+        color: active ? 'white' : 'var(--admin-ink-2)',
         borderRadius: 999,
         padding: '7px 14px',
         cursor: 'pointer',
@@ -206,7 +206,7 @@ function FilterButton({
 
 function renderStars(rating: number) {
   return (
-    <span style={{ color: '#d97706', fontSize: 13, letterSpacing: 1 }}>
+    <span style={{ color: 'var(--color-warning)', fontSize: 13, letterSpacing: 1 }}>
       {'★'.repeat(rating)}
       {'☆'.repeat(5 - rating)}
     </span>
@@ -217,18 +217,18 @@ const th: React.CSSProperties = {
   textAlign: 'left',
   padding: '10px 12px',
   fontSize: 12,
-  color: '#374151',
+  color: 'var(--admin-ink-2)',
 }
 const td: React.CSSProperties = {
   padding: '10px 12px',
-  borderTop: '1px solid #f3f4f6',
+  borderTop: '1px solid var(--admin-border-soft)',
   fontSize: 14,
   verticalAlign: 'top',
 }
 const actionBtn: React.CSSProperties = {
   border: 'none',
   background: 'transparent',
-  color: '#7f1d1d',
+  color: 'var(--admin-primary)',
   cursor: 'pointer',
   padding: 0,
   fontSize: 14,
