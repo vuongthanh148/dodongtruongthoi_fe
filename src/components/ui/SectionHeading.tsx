@@ -17,10 +17,9 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
             <div
               style={{
                 marginBottom: 6,
-                fontFamily: 'var(--font-jetbrains), monospace',
-                fontSize: 12,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
+                fontFamily: 'var(--font-body)',
+                fontWeight: 500,
+                fontSize: 15,
                 color: 'var(--bronze)',
               }}
             >
@@ -29,10 +28,10 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
           ) : null}
           <div
             style={{
-              fontFamily: 'var(--font-lora), serif',
+              fontFamily: 'var(--font-heading)',
               fontSize: 22,
               fontWeight: 600,
-              lineHeight: 1.05,
+              lineHeight: 1.08,
               color: 'var(--text-primary)',
             }}
           >
@@ -48,7 +47,7 @@ export function SectionHeading({ eyebrow, title, action, onActionClick }: Sectio
               border: 'none',
               padding: 0,
               color: 'var(--accent)',
-              fontFamily: 'var(--font-lora), serif',
+              fontFamily: 'var(--font-body)',
               fontStyle: 'italic',
               fontSize: 13,
               cursor: 'pointer',

@@ -124,7 +124,7 @@ export function BannerSection({ banners }: BannerSectionProps) {
                         <div
                           className="text-[26px] md:text-[38px] lg:text-[46px]"
                           style={{
-                            fontFamily: 'var(--font-lora), serif',
+                            fontFamily: 'var(--font-heading)',
                             fontWeight: 500,
                             lineHeight: 1.05,
                             color: 'var(--text-on-dark)',
@@ -280,7 +280,7 @@ export function BannerSection({ banners }: BannerSectionProps) {
           </div>
           <div
             style={{
-              fontFamily: 'var(--font-lora), serif',
+              fontFamily: 'var(--font-heading)',
               fontSize: 24,
               fontWeight: 600,
               color: 'var(--text-on-dark)',
@@ -315,6 +315,27 @@ export function BannerSection({ banners }: BannerSectionProps) {
           </Btn>
         </div>
       )}
+    </div>
+
+    {/* Trust badges (HANDOFF.md home.jsx HomeHero): 4 short claims under the hero. */}
+    <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
+      {[
+        ['Đồng nguyên chất 99%', 'Có giấy bảo hành chất liệu'],
+        ['Chế tác thủ công', 'Nghệ nhân làng Đại Bái'],
+        ['Bảo hành 12 tháng', 'Đổi trả nếu lỗi kỹ thuật'],
+        ['Giao & lắp đặt', 'Tận nơi trong nội thành'],
+      ].map(([title, body]) => (
+        <div
+          key={title}
+          className="rounded-[10px] p-3"
+          style={{ border: '1px solid var(--border-gold)' }}
+        >
+          <div style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+            {title}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted-strong)', marginTop: 2 }}>{body}</div>
+        </div>
+      ))}
     </div>
     </div>
   )

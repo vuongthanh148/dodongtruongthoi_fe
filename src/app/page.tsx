@@ -14,8 +14,8 @@ import { CraftDetailSection } from '@/components/sections/CraftDetailSection'
 import { CustomerPhotosSection } from '@/components/sections/CustomerPhotosSection'
 import { FeaturedProductsSection } from '@/components/sections/FeaturedProductsSection'
 import { GiftServiceSection } from '@/components/sections/GiftServiceSection'
+import { CamNangSection } from '@/components/sections/CamNangSection'
 import { OccasionSection } from '@/components/sections/OccasionSection'
-import { StoriesSection } from '@/components/sections/StoriesSection'
 import { VisitBlock } from '@/components/sections/VisitBlock'
 import { CATEGORIES } from '@/lib/data'
 import {
@@ -93,7 +93,7 @@ export default function Home() {
 
       <CustomerPhotosSection photos={customerPhotos} />
 
-      <StoriesSection banners={banners} customerPhotos={customerPhotos} />
+      <CamNangSection />
 
       <VisitBlock />
 
