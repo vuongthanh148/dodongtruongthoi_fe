@@ -24,7 +24,7 @@ const CTA_LINK_CLASS =
 
 function QtyStepper({ value, onChange }: { value: number; onChange: (next: number) => void }) {
   const btn =
-    'flex h-8 w-8 items-center justify-center text-[16px] text-[var(--text-primary)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40'
+    'flex h-8 w-8 items-center justify-center text-[16px] text-[var(--text-primary)] hover:text-[var(--accent)] disabled:cursor-not-allowed'
   return (
     <div className="inline-flex items-center overflow-hidden rounded-[6px] border border-[var(--border)]">
       <button type="button" className={btn} onClick={() => onChange(value - 1)} disabled={value <= 1} aria-label={CART_COPY.decrease}>
@@ -206,7 +206,7 @@ export default function CartPage() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--bg-page)] pb-24 md:pb-0">
+    <div className="paper flex min-h-screen flex-col bg-[var(--bg-page)] pb-24 md:pb-0">
       <DeskHeader />
       <TopBar
         title={CART_COPY.title}

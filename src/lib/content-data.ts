@@ -755,6 +755,8 @@ export const BANK_COPY = {
   retry: 'Thử lại',
   callShop: 'Gọi cửa hàng',
   zalo: 'Nhắn Zalo',
+  pendingPill: 'Chờ chuyển khoản',
+  paidPill: 'Đã nhận thanh toán',
   paidButton: 'Tôi đã chuyển khoản',
   paidTitle: 'Đã ghi nhận, chúng tôi sẽ kiểm tra.',
   paidBody: 'Ghi nhận này chỉ lưu trên thiết bị này, chưa phải xác nhận thanh toán.',

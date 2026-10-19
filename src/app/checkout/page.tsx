@@ -388,7 +388,7 @@ export default function CheckoutPage() {
             <button
               type="submit"
               disabled={loading}
-              className="hidden h-[50px] w-full items-center justify-center rounded-[6px] bg-[var(--accent)] font-body text-[15px] font-semibold text-white md:flex disabled:cursor-not-allowed disabled:opacity-70"
+              className="hidden h-[50px] w-full items-center justify-center rounded-[6px] bg-[var(--accent)] font-body text-[15px] font-semibold text-white md:flex disabled:cursor-not-allowed"
             >
               {loading ? CHECKOUT_COPY.submitting : CHECKOUT_COPY.submit}
             </button>
@@ -403,7 +403,7 @@ export default function CheckoutPage() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--bg-page)] pb-24 md:pb-0">
+    <div className="paper flex min-h-screen flex-col bg-[var(--bg-page)] pb-24 md:pb-0">
       <DeskHeader />
       <TopBar
         title={CHECKOUT_COPY.title}

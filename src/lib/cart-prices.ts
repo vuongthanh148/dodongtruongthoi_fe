@@ -31,11 +31,9 @@ export async function fetchLivePrices(items: CartItem[]): Promise<Record<number,
     const sizeCode = size?.code ?? null
     const listPrice = resolveSKUPrice(product.skus, sizeCode, item.selectedAttrs ?? {}, size?.price ?? product.price)
     const view = variantSale(listPrice, product, campaigns)
-    const fallbackPrice =
-      !view.campaign && product.discountPrice && product.discountPrice > 0 && product.discountPrice < listPrice
-        ? product.discountPrice
-        : view.price
-    map[idx] = { listPrice, price: fallbackPrice, campaign: view.campaign, percent: view.percent }
+    // When there's no active campaign, always use listPrice (never fall back to stale discountPrice)
+    const price = !view.campaign ? listPrice : view.price
+    map[idx] = { listPrice, price, campaign: view.campaign, percent: view.percent }
   })
   return map
 }

@@ -78,21 +78,34 @@ export function BankTransferPanel({ mode, amount, memo }: BankTransferPanelProps
   }
 
   const shell = 'flex flex-col gap-4 rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] p-5 md:p-6'
-  const header = (
+
+  const renderHeader = (showPill: boolean) => (
     <div className="flex items-center gap-3">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface-alt)] text-[var(--bronze)]" aria-hidden="true">
         <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 10h18M5 10V19M9 10V19M15 10V19M19 10V19M2 21h20M12 3 2 8h20z" />
         </svg>
       </span>
-      <h3 className="font-body text-[18px] font-semibold leading-[1.25] text-[var(--text-primary)]">{BANK_COPY.title}</h3>
+      <div className="flex items-center gap-2">
+        <h3 className="font-body text-[18px] font-semibold leading-[1.25] text-[var(--text-primary)]">{BANK_COPY.title}</h3>
+        {showPill && (
+          <span className={cn(
+            'inline-flex items-center rounded-full px-2.5 py-1 font-body text-[12px] font-semibold',
+            paid
+              ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]'
+              : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
+          )}>
+            {paid ? BANK_COPY.paidPill : BANK_COPY.pendingPill}
+          </span>
+        )}
+      </div>
     </div>
   )
 
   if (error) {
     return (
       <section aria-live="polite" className={shell}>
-        {header}
+        {renderHeader(false)}
         <div className="flex gap-3 rounded-[8px] border border-[var(--accent-subtle)] bg-[var(--accent-subtle)] p-3.5 text-[14px] leading-[1.55] text-[var(--text-secondary)]">
           <span className="font-bold text-[var(--accent)]" aria-hidden="true">!</span>
           <p>{BANK_COPY.errorBody}</p>
@@ -127,7 +140,7 @@ export function BankTransferPanel({ mode, amount, memo }: BankTransferPanelProps
   if (isLoading) {
     return (
       <section aria-busy="true" className={shell}>
-        {header}
+        {renderHeader(false)}
         <div className="flex flex-col gap-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-5 w-full animate-pulse rounded-[4px] bg-[var(--bg-surface-alt)]" />
@@ -146,7 +159,7 @@ export function BankTransferPanel({ mode, amount, memo }: BankTransferPanelProps
 
   return (
     <section className={shell}>
-      {header}
+      {renderHeader(mode === 'confirm')}
       {mode === 'checkout' && (
         <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">{BANK_COPY.checkoutIntro}</p>
       )}
