@@ -91,11 +91,31 @@ export function AuditLogList() {
 
   const formatChange = (before?: Record<string, unknown>, after?: Record<string, unknown>) => {
     if (!before && !after) return '—'
-    try {
-      return JSON.stringify({ before, after })
-    } catch {
-      return '—'
+
+    const allKeys = new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])
+    const changes: string[] = []
+
+    for (const key of allKeys) {
+      const oldVal = before?.[key]
+      const newVal = after?.[key]
+
+      if (oldVal === newVal) continue // Skip unchanged fields
+
+      const formatValue = (val: unknown): string => {
+        if (val === null || val === undefined) return 'trống'
+        if (typeof val === 'number') {
+          // Format numbers with thousand separators
+          return new Intl.NumberFormat('vi-VN').format(val)
+        }
+        return String(val)
+      }
+
+      const oldStr = formatValue(oldVal)
+      const newStr = formatValue(newVal)
+      changes.push(`${oldStr} → ${newStr}`)
     }
+
+    return changes.length > 0 ? changes.join('; ') : '—'
   }
 
   const filtered = useMemo(() => {
@@ -151,14 +171,14 @@ export function AuditLogList() {
   const tools = (
     <div className="mb-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-bg-page px-3 text-text-muted sm:max-w-[320px] sm:flex-none">
+        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md border border-admin-border bg-admin-bg px-3 text-admin-muted sm:max-w-[320px] sm:flex-none">
           <Search size={16} aria-hidden />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={copy.searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+            className="min-w-0 flex-1 bg-transparent text-sm text-admin-ink outline-none placeholder:text-admin-muted"
           />
         </label>
         <div className="noscroll flex gap-1.5 overflow-x-auto">
@@ -182,7 +202,7 @@ export function AuditLogList() {
           type="button"
           onClick={exportCsv}
           disabled={filtered.length === 0}
-          className="ml-auto inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-bg-page px-3 text-[13px] font-semibold text-text-primary disabled:opacity-50"
+          className="ml-auto inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-admin-border bg-admin-bg px-3 text-[13px] font-semibold text-admin-ink disabled:opacity-50"
         >
           <Download size={15} aria-hidden />
           {copy.exportCsv}
@@ -214,7 +234,7 @@ export function AuditLogList() {
         {tools}
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="text-sm text-text-muted">{copy.loading}</div>
+            <div className="text-sm text-admin-muted">{copy.loading}</div>
           </div>
         </div>
       </div>
@@ -225,13 +245,13 @@ export function AuditLogList() {
     return (
       <div>
         {tools}
-        <div className="rounded-lg border border-border bg-bg-surface p-6">
+        <div className="rounded-lg border border-admin-border bg-admin-surface p-6">
           <div className="text-center">
-            <div className="text-sm font-medium text-text-primary">{copy.loadError}</div>
-            <div className="mt-2 text-xs text-text-muted">{copy.loadErrorBody}</div>
+            <div className="text-sm font-medium text-admin-ink">{copy.loadError}</div>
+            <div className="mt-2 text-xs text-admin-muted">{copy.loadErrorBody}</div>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 inline-block rounded-md bg-accent px-4 py-2 text-xs font-medium text-white hover:opacity-90"
+              className="mt-4 inline-block rounded-md bg-admin-primary px-4 py-2 text-xs font-medium text-white hover:opacity-90"
             >
               {copy.retry}
             </button>
@@ -245,10 +265,10 @@ export function AuditLogList() {
     return (
       <div>
         {tools}
-        <div className="rounded-lg border border-border bg-bg-surface p-6">
+        <div className="rounded-lg border border-admin-border bg-admin-surface p-6">
           <div className="text-center">
-            <div className="text-sm font-medium text-text-primary">{copy.empty}</div>
-            <div className="mt-2 text-xs text-text-muted">{copy.emptyBody}</div>
+            <div className="text-sm font-medium text-admin-ink">{copy.empty}</div>
+            <div className="mt-2 text-xs text-admin-muted">{copy.emptyBody}</div>
           </div>
         </div>
       </div>
@@ -260,9 +280,9 @@ export function AuditLogList() {
       {tools}
 
       {filtered.length === 0 ? (
-        <div className="rounded-lg border border-border bg-bg-surface p-6">
+        <div className="rounded-lg border border-admin-border bg-admin-surface p-6">
           <div className="text-center">
-            <div className="text-sm font-medium text-text-primary">{copy.noResults}</div>
+            <div className="text-sm font-medium text-admin-ink">{copy.noResults}</div>
             <button
               type="button"
               onClick={() => {
@@ -270,7 +290,7 @@ export function AuditLogList() {
                 setDateRange('all')
                 setSelectedType('')
               }}
-              className="mt-4 inline-block rounded-md border border-border bg-bg-page px-4 py-2 text-xs font-medium text-text-primary"
+              className="mt-4 inline-block rounded-md border border-admin-border bg-admin-bg px-4 py-2 text-xs font-medium text-admin-ink"
             >
               {copy.clearFilters}
             </button>
@@ -282,24 +302,25 @@ export function AuditLogList() {
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="py-3 px-4 text-left font-medium text-text-muted">{copy.columns.time}</th>
-                  <th className="py-3 px-4 text-left font-medium text-text-muted">{copy.columns.entity}</th>
-                  <th className="py-3 px-4 text-left font-medium text-text-muted">{copy.columns.entityId}</th>
-                  <th className="py-3 px-4 text-left font-medium text-text-muted">{copy.columns.action}</th>
-                  <th className="py-3 px-4 text-left font-medium text-text-muted">{copy.columns.actor}</th>
-                  <th className="py-3 px-4 text-left font-medium text-text-muted">{copy.columns.change}</th>
+                <tr className="border-b border-admin-border">
+                  <th className="py-3 px-4 text-left font-medium text-admin-muted">{copy.columns.time}</th>
+                  <th className="py-3 px-4 text-left font-medium text-admin-muted">{copy.columns.entity}</th>
+                  <th className="py-3 px-4 text-left font-medium text-admin-muted">{copy.columns.entityId}</th>
+                  <th className="py-3 px-4 text-left font-medium text-admin-muted">{copy.columns.action}</th>
+                  <th className="py-3 px-4 text-left font-medium text-admin-muted">{copy.columns.actor}</th>
+                  <th className="py-3 px-4 text-left font-medium text-admin-muted">{copy.columns.change}</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((entry) => (
-                  <tr key={entry.id} className="border-b border-border hover:bg-bg-surface-alt">
-                    <td className="py-3 px-4 text-xs text-text-primary">{formatDate(entry.created_at)}</td>
-                    <td className="py-3 px-4 text-xs text-text-primary">{getEntityTypeLabel(entry.entity_type)}</td>
-                    <td className="py-3 px-4 text-xs text-text-muted font-mono">{entry.entity_id.slice(0, 8)}</td>
-                    <td className="py-3 px-4 text-xs text-text-primary">{getActionLabel(entry.action)}</td>
-                    <td className="py-3 px-4 text-xs text-text-primary">{entry.actor}</td>
-                    <td className="py-3 px-4 text-xs text-text-muted font-mono max-w-xs truncate">
+                  <tr key={entry.id} className="border-b border-admin-border hover:bg-admin-border-soft">
+                    <td className="py-3 px-4 text-xs text-admin-ink">{formatDate(entry.created_at)}</td>
+                    <td className="py-3 px-4 text-xs text-admin-ink">{getEntityTypeLabel(entry.entity_type)}</td>
+                    {/* Entity ID: API returns UUID only, no human-readable label is available */}
+                    <td className="py-3 px-4 text-xs text-admin-muted font-mono">{entry.entity_id.slice(0, 8)}</td>
+                    <td className="py-3 px-4 text-xs text-admin-ink">{getActionLabel(entry.action)}</td>
+                    <td className="py-3 px-4 text-xs text-admin-ink">{entry.actor}</td>
+                    <td className="py-3 px-4 text-xs text-admin-muted font-mono max-w-xs truncate">
                       {formatChange(entry.before, entry.after)}
                     </td>
                   </tr>
@@ -311,16 +332,17 @@ export function AuditLogList() {
           {/* Cards for mobile */}
           <div className="space-y-3 md:hidden">
             {filtered.map((entry) => (
-              <div key={entry.id} className="rounded-lg border border-border bg-bg-surface p-4">
+              <div key={entry.id} className="rounded-lg border border-admin-border bg-admin-surface p-4">
                 <div className="mb-2 flex items-start justify-between">
-                  <div className="text-xs font-medium text-text-primary">{getEntityTypeLabel(entry.entity_type)}</div>
-                  <div className="text-xs text-text-muted">{formatDate(entry.created_at)}</div>
+                  <div className="text-xs font-medium text-admin-ink">{getEntityTypeLabel(entry.entity_type)}</div>
+                  <div className="text-xs text-admin-muted">{formatDate(entry.created_at)}</div>
                 </div>
-                <div className="mb-2 text-xs text-text-muted">
+                {/* Entity ID: API returns UUID only, no human-readable label is available */}
+                <div className="mb-2 text-xs text-admin-muted">
                   <span className="font-mono">{entry.entity_id.slice(0, 8)}</span> · {getActionLabel(entry.action)}
                 </div>
-                <div className="mb-2 text-xs text-text-muted">Người: {entry.actor}</div>
-                <div className="text-xs text-text-muted font-mono break-words">
+                <div className="mb-2 text-xs text-admin-muted">Người: {entry.actor}</div>
+                <div className="text-xs text-admin-muted font-mono break-words">
                   {formatChange(entry.before, entry.after)}
                 </div>
               </div>

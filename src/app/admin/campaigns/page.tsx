@@ -107,6 +107,7 @@ export default function AdminCampaignsPage() {
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [nameError, setNameError] = useState('')
   const [valueError, setValueError] = useState('')
   const [dateError, setDateError] = useState('')
@@ -121,9 +122,13 @@ export default function AdminCampaignsPage() {
 
   async function loadCampaigns() {
     setLoading(true)
+    setLoadError(false)
     try {
       const data = await adminGet<AdminCampaign[]>('/campaigns')
       setCampaigns(data ?? [])
+    } catch (error) {
+      setLoadError(true)
+      console.error('Failed to load campaigns:', error)
     } finally {
       setLoading(false)
     }
@@ -238,6 +243,56 @@ export default function AdminCampaignsPage() {
   const previewPrice = sampleProduct && previewValue > 0 ? salePrice(sampleProduct.base_price, previewCampaign) : null
   const previewPercent =
     sampleProduct && previewValue > 0 ? discountPercent(sampleProduct.base_price, previewCampaign) : null
+
+  if (loadError) {
+    return (
+      <AdminGuard>
+        <AdminFrame title="Khuyến mãi" subtitle="Tạo và quản lý chương trình khuyến mãi">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 48, paddingBottom: 48, textAlign: 'center' }}>
+            <div
+              style={{
+                display: 'grid',
+                placeItems: 'center',
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: 'var(--admin-primary-subtle)',
+                color: 'var(--admin-danger)',
+              }}
+            >
+              <AlertCircle size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--admin-ink)', marginBottom: 8 }}>
+                Không thể tải danh sách khuyến mãi
+              </div>
+              <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--admin-muted)', maxWidth: 360 }}>
+                Có lỗi xảy ra khi tải dữ liệu. Vui lòng kiểm tra kết nối và thử lại.
+              </p>
+            </div>
+            <button
+              onClick={loadCampaigns}
+              style={{
+                marginTop: 16,
+                height: 40,
+                padding: '0 16px',
+                borderRadius: 6,
+                border: 'none',
+                background: 'var(--admin-primary)',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: 13.5,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Thử lại
+            </button>
+          </div>
+        </AdminFrame>
+      </AdminGuard>
+    )
+  }
 
   return (
     <AdminGuard>
@@ -378,7 +433,7 @@ export default function AdminCampaignsPage() {
                   fontSize: 13.5,
                   cursor: saving ? 'not-allowed' : 'pointer',
                   fontFamily: 'inherit',
-                  opacity: saving ? 0.7 : 1,
+                  opacity: saving ? 0.45 : 1,
                 }}
               >
                 {saving ? 'Đang lưu…' : buttonText}
