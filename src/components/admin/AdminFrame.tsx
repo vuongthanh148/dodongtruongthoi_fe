@@ -56,6 +56,8 @@ interface AdminFrameProps {
   title: string
   subtitle?: string
   children: React.ReactNode
+  /** Optional actions to display in the header, right-aligned */
+  actions?: React.ReactNode
   /** Kept for existing callers. The shell now collapses to a top bar below lg at every page. */
   mobileHideSidebar?: boolean
 }
@@ -87,7 +89,7 @@ function useNavCounts(): NavCounts {
   return counts
 }
 
-export function AdminFrame({ title, subtitle, children }: AdminFrameProps) {
+export function AdminFrame({ title, subtitle, children, actions }: AdminFrameProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -150,18 +152,21 @@ export function AdminFrame({ title, subtitle, children }: AdminFrameProps) {
         </header>
 
         <main className="min-w-0 flex-1 px-4 py-5 md:px-6 lg:py-6 xl:px-8">
-          <div className="mb-5 lg:mb-6">
-            <h1
-              className="font-heading hidden text-[26px] leading-[1.1] font-semibold lg:block"
-              style={{ color: 'var(--admin-ink)' }}
-            >
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="mt-1 text-[14px] leading-normal" style={{ color: 'var(--admin-muted)' }}>
-                {subtitle}
-              </p>
-            ) : null}
+          <div className="mb-5 flex items-start justify-between gap-4 lg:mb-6">
+            <div className="min-w-0 flex-1">
+              <h1
+                className="font-heading hidden text-[26px] leading-[1.1] font-semibold lg:block"
+                style={{ color: 'var(--admin-ink)' }}
+              >
+                {title}
+              </h1>
+              {subtitle ? (
+                <p className="mt-1 text-[14px] leading-normal" style={{ color: 'var(--admin-muted)' }}>
+                  {subtitle}
+                </p>
+              ) : null}
+            </div>
+            {actions ? <div className="shrink-0">{actions}</div> : null}
           </div>
           {children}
         </main>

@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle2, ChevronRight, Inbox } from 'lucide-react'
 import { adminGet } from '@/lib/admin-api'
 import { ADMIN_COPY } from '@/lib/content-data'
 import { formatVnd } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { AdminOrder, AdminReview } from '@/lib/types'
 
 type Status = 'loading' | 'ready' | 'error'
@@ -93,8 +94,11 @@ const cardClass =
 const retryClass =
   'inline-flex h-9 items-center rounded-md border border-admin-border bg-admin-surface px-3.5 text-[13px] font-semibold text-admin-ink cursor-pointer'
 
+type PeriodFilter = 'today' | '7d' | '30d'
+
 export function AdminDashboard() {
   const copy = ADMIN_COPY.dashboard
+  const [period, setPeriod] = useState<PeriodFilter>('30d')
   const pendingOrders = useResource(loaders.pendingOrders)
   const recentOrders = useResource(loaders.recentOrders)
   const messages = useResource(loaders.unhandledMessages)
@@ -109,17 +113,48 @@ export function AdminDashboard() {
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 5)
 
-  const cutoff = recentOrders.loadedAt - 30 * 24 * 3_600_000
+  // Compute cutoff based on selected period
+  const getCutoff = (): number => {
+    const now = recentOrders.loadedAt
+    switch (period) {
+      case 'today': {
+        const todayStart = new Date(now)
+        todayStart.setHours(0, 0, 0, 0)
+        return todayStart.getTime()
+      }
+      case '7d':
+        return now - 7 * 24 * 3_600_000
+      case '30d':
+      default:
+        return now - 30 * 24 * 3_600_000
+    }
+  }
+
+  const cutoff = getCutoff()
   const ordersInWindow = recentOrders.data.filter((o) => Date.parse(o.created_at) >= cutoff)
   const completedInWindow = ordersInWindow.filter((o) => o.status === 'completed')
   const revenue = completedInWindow.reduce((sum, o) => sum + o.total_amount, 0)
   const aov = completedInWindow.length > 0 ? Math.round(revenue / completedInWindow.length) : 0
 
+  // Get period label for hint text
+  const getPeriodHintLabel = (): string => {
+    switch (period) {
+      case 'today':
+        return 'hôm nay'
+      case '7d':
+        return '7 ngày qua'
+      case '30d':
+      default:
+        return '30 ngày qua'
+    }
+  }
+  const periodHintLabel = getPeriodHintLabel()
+
   const kpis = [
     {
       key: 'revenue',
       label: copy.kpi.revenue,
-      hint: copy.kpiHint.revenue,
+      hint: `Đơn hoàn thành + đã nhận tiền, ${periodHintLabel}`,
       href: '/admin/orders',
       res: recentOrders,
       value: revenue,
@@ -128,7 +163,7 @@ export function AdminDashboard() {
     {
       key: 'newOrders',
       label: copy.kpi.newOrders,
-      hint: copy.kpiHint.newOrders,
+      hint: periodHintLabel,
       href: '/admin/orders',
       res: recentOrders,
       value: ordersInWindow.length,
@@ -137,7 +172,7 @@ export function AdminDashboard() {
     {
       key: 'aov',
       label: copy.kpi.aov,
-      hint: copy.kpiHint.aov,
+      hint: `Trung bình trên mỗi đơn, ${periodHintLabel}`,
       href: '/admin/orders',
       res: recentOrders,
       value: aov,
@@ -195,6 +230,30 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="eyebrow">Số liệu</h2>
+          <div className="flex gap-2">
+            {(['today', '7d', '30d'] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                aria-pressed={period === p}
+                className={cn(
+                  'inline-flex h-8 rounded-md border px-3 text-[13px] font-medium transition-colors',
+                  period === p
+                    ? 'border-admin-primary bg-admin-primary text-white'
+                    : 'border-admin-border bg-admin-surface text-admin-ink hover:border-admin-border-strong'
+                )}
+              >
+                {p === 'today' ? 'Hôm nay' : p === '7d' ? '7 ngày' : '30 ngày'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           {kpis.map((kpi) => (

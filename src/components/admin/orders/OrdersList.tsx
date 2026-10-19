@@ -160,6 +160,58 @@ export function OrdersList() {
     }
   }
 
+  async function bulkConfirm() {
+    if (selectedOrders.length === 0 || running) return
+    await runBulkWithTarget('confirmed')
+  }
+
+  async function runBulkWithTarget(target: OrderStatus) {
+    if (selectedOrders.length === 0 || running) return
+
+    const targets = selectedOrders
+    const failures: BulkFailure[] = []
+    setBulk({ target, total: targets.length, done: 0, running: true, okCount: 0, failures: [] })
+
+    for (const order of targets) {
+      const result = await saveOrderStatus(order.id, target, order.admin_note ?? '')
+      const failure: BulkFailure | null =
+        'error' in result ? { id: order.id, code: shortOrderCode(order.id), message: result.error } : null
+      if (failure) failures.push(failure)
+      setBulk((prev) => (prev ? { ...prev, done: prev.done + 1, okCount: prev.okCount + (failure ? 0 : 1) } : prev))
+    }
+
+    const okCount = targets.length - failures.length
+    const failedIds = new Set(failures.map((f) => f.id))
+    const updatedIds = new Set(targets.filter((o) => !failedIds.has(o.id)).map((o) => o.id))
+    setOrders((prev) => (prev ? prev.map((o) => (updatedIds.has(o.id) ? { ...o, status: target } : o)) : prev))
+    setBulk({ target, total: targets.length, done: targets.length, running: false, okCount, failures })
+    setSelected(failures.map((failure) => failure.id))
+
+    if (failures.length === 0) {
+      toast.success(copy.bulkDone(okCount, targets.length, orderStatusLabel(target)))
+    } else {
+      toast.error(copy.bulkFailed(failures.length))
+    }
+  }
+
+  function exportCsvSelection() {
+    if (selectedOrders.length === 0) return
+    try {
+      const name = csvFileName()
+      downloadTextFile(buildOrdersCsv(selectedOrders), name)
+      toast.success(copy.exported(name, selectedOrders.length))
+    } catch {
+      toast.error('Không xuất được CSV')
+    }
+  }
+
+  function printSelectedOrders() {
+    if (selectedOrders.length === 0) return
+    for (const order of selectedOrders) {
+      window.open(`/admin/orders/${order.id}/invoice`, '_blank')
+    }
+  }
+
   function exportCsv() {
     if (filtered.length === 0 || exporting) return
     setExporting(true)
@@ -353,6 +405,33 @@ export function OrdersList() {
               </span>
             ) : (
               <>
+                <button
+                  type="button"
+                  onClick={bulkConfirm}
+                  disabled={selectedOrders.length === 0}
+                  className={cn(adminButtonSecondary, 'flex-1 md:flex-none')}
+                  title="Xác nhận tất cả đơn đã chọn"
+                >
+                  Xác nhận {selectedOrders.length > 0 ? `${selectedOrders.length} đơn` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={exportCsvSelection}
+                  disabled={selectedOrders.length === 0}
+                  className={cn(adminButtonSecondary, 'flex-1 md:flex-none')}
+                  title="Xuất CSV đơn đã chọn"
+                >
+                  Xuất
+                </button>
+                <button
+                  type="button"
+                  onClick={printSelectedOrders}
+                  disabled={selectedOrders.length === 0}
+                  className={cn(adminButtonSecondary, 'flex-1 md:flex-none')}
+                  title="In hoá đơn đơn đã chọn"
+                >
+                  In
+                </button>
                 <select
                   aria-label={copy.bulkTarget}
                   value={bulkTarget}
