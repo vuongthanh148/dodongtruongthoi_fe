@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconClose, IconFacebook, IconMessenger, IconZalo } from '@/components/icons'
+import { IconClose, IconFacebook, IconZalo } from '@/components/icons'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import { SHARE_COPY } from '@/lib/content-data'
-import { facebookShareUrl, messengerShareUrl, zaloShareUrl } from '@/lib/product-links'
+import { facebookShareUrl, zaloShareUrl } from '@/lib/product-links'
 
 type ShareStatus = 'idle' | 'opening' | 'copied' | 'error'
 type ArtBg = 'gold' | 'red' | 'bronze' | 'dark'
@@ -84,10 +84,6 @@ export function ShareSheet({ title, path, image, bg = 'gold', frame = 'bronze', 
       '_blank',
       'noopener,noreferrer,width=640,height=560'
     )
-  }
-
-  function shareMessenger() {
-    window.location.href = messengerShareUrl(url || `${window.location.origin}${path}`)
   }
 
   async function copyLink() {
@@ -177,23 +173,56 @@ export function ShareSheet({ title, path, image, bg = 'gold', frame = 'bronze', 
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              <ShareTile label={SHARE_COPY.targets.zalo} busyLabel={SHARE_COPY.targets.zaloOpening} busy={zaloBusy} onClick={shareZalo}>
-                <IconZalo size={28} />
-              </ShareTile>
-              <ShareTile label={SHARE_COPY.targets.facebook} onClick={shareFacebook}>
-                <IconFacebook size={28} />
-              </ShareTile>
-              <ShareTile label={SHARE_COPY.targets.messenger} onClick={shareMessenger}>
-                <IconMessenger size={28} />
-              </ShareTile>
-              <ShareTile
-                label={copied ? SHARE_COPY.targets.copied : SHARE_COPY.targets.copy}
-                done={copied}
-                onClick={copyLink}
+            <div className="flex flex-col gap-0 md:flex-col">
+              <button
+                type="button"
+                onClick={shareZalo}
+                disabled={zaloBusy}
+                className="flex h-[52px] items-center justify-between gap-3 border-b border-[var(--border-soft)] px-0 py-3 text-left hover:bg-[var(--bg-surface)] md:border-b md:px-0 md:py-3"
               >
-                {copied ? <CheckGlyph /> : <LinkGlyph />}
-              </ShareTile>
+                <span className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--bg-card)]">
+                    {zaloBusy ? <Spinner /> : <IconZalo size={18} />}
+                  </span>
+                  <span className="font-body text-[15px] font-semibold text-[var(--text-primary)]">
+                    {zaloBusy ? SHARE_COPY.targets.zaloOpening : SHARE_COPY.targets.zalo}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={shareFacebook}
+                className="flex h-[52px] items-center justify-between gap-3 border-b border-[var(--border-soft)] px-0 py-3 text-left hover:bg-[var(--bg-surface)] md:border-b md:px-0 md:py-3"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--bg-card)]">
+                    <IconFacebook size={18} />
+                  </span>
+                  <span className="font-body text-[15px] font-semibold text-[var(--text-primary)]">
+                    {SHARE_COPY.targets.facebook}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={copyLink}
+                className="flex h-[52px] items-center justify-between gap-3 px-0 py-3 text-left hover:bg-[var(--bg-surface)] md:px-0 md:py-3"
+              >
+                <span className="flex items-center gap-3">
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border ${
+                    copied
+                      ? 'border-[rgba(45,106,45,0.3)] bg-[var(--color-success-subtle)] text-[var(--color-success)]'
+                      : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]'
+                  }`}>
+                    {copied ? <CheckGlyph /> : <LinkGlyph />}
+                  </span>
+                  <span className={`font-body text-[15px] font-semibold ${
+                    copied ? 'text-[var(--color-success)]' : 'text-[var(--text-primary)]'
+                  }`}>
+                    {copied ? SHARE_COPY.targets.copied : SHARE_COPY.targets.copy}
+                  </span>
+                </span>
+              </button>
             </div>
 
             {copied && (
@@ -242,48 +271,6 @@ export function ShareSheet({ title, path, image, bg = 'gold', frame = 'bronze', 
         </>
       )}
     </div>
-  )
-}
-
-function ShareTile({
-  label,
-  busyLabel,
-  busy = false,
-  done = false,
-  onClick,
-  children,
-}: {
-  label: string
-  busyLabel?: string
-  busy?: boolean
-  done?: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={busy && busyLabel ? busyLabel : label}
-      className="flex min-h-[92px] flex-col items-center justify-start gap-2 rounded-[8px] px-1 py-1"
-    >
-      <span
-        className={`grid h-14 w-14 place-items-center rounded-full border transition-colors ${
-          done
-            ? 'border-[rgba(45,106,45,0.3)] bg-[var(--color-success-subtle)] text-[var(--color-success)]'
-            : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)]'
-        }`}
-      >
-        {busy ? <Spinner /> : children}
-      </span>
-      <span
-        className={`text-center text-[12.5px] leading-[1.3] font-medium ${
-          done ? 'text-[var(--color-success)]' : 'text-[var(--text-primary)]'
-        }`}
-      >
-        {busy && busyLabel ? busyLabel : label}
-      </span>
-    </button>
   )
 }
 

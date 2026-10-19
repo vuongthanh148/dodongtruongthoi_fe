@@ -12,7 +12,7 @@ interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const sizeStyles: Record<BtnSize, React.CSSProperties> = {
   sm: { padding: '6px 10px', fontSize: 11 },
-  md: { padding: '9px 12px', fontSize: 12 },
+  md: { padding: '0 22px', fontSize: 15, height: 50 },
   lg: { padding: '12px 14px', fontSize: 13 },
 }
 
@@ -21,25 +21,25 @@ const variantStyles: Record<BtnVariant, React.CSSProperties> = {
     background: 'var(--accent)',
     color: 'white',
     border: 'none',
-    borderRadius: 2,
+    borderRadius: 6,
   },
   outline: {
     background: 'transparent',
     color: 'var(--accent)',
-    border: '1px solid var(--accent)',
-    borderRadius: 2,
+    border: '1.5px solid var(--accent)',
+    borderRadius: 6,
   },
   ghost: {
     background: 'transparent',
     color: 'var(--accent)',
     border: 'none',
-    borderRadius: 2,
+    borderRadius: 6,
   },
   dark: {
     background: 'var(--bg-dark)',
     color: 'var(--gold)',
     border: '1px solid var(--gold)',
-    borderRadius: 2,
+    borderRadius: 6,
   },
 }
 
@@ -48,15 +48,14 @@ export function Btn({ variant = 'primary', size = 'md', icon, className, style, 
     <button
       className={cn(className)}
       style={{
-        fontFamily: 'var(--font-be-vietnam), sans-serif',
-        fontWeight: 500,
-        letterSpacing: '0.05em',
+        fontFamily: 'var(--font-body), sans-serif',
+        fontWeight: 600,
         cursor: props.disabled ? 'not-allowed' : 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
         gap: 8,
         justifyContent: 'center',
-        opacity: props.disabled ? 0.6 : 1,
+        opacity: props.disabled ? 0.45 : 1,
         ...sizeStyles[size],
         ...variantStyles[variant],
         ...style,

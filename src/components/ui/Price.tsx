@@ -18,13 +18,14 @@ const sizeMap: Record<PriceSize, number> = {
 export function Price({ amount, size = 'md', strikethrough = false, className }: PriceProps) {
   return (
     <span
-      className={className}
+      className={`price-num ${className ?? ''}`}
       style={{
-        fontFamily: 'var(--font-lora), serif',
+        fontFamily: 'var(--font-body)',
         fontWeight: 700,
         color: strikethrough ? 'var(--text-muted)' : 'var(--accent)',
         textDecoration: strikethrough ? 'line-through' : 'none',
         fontSize: sizeMap[size],
+        fontVariantNumeric: 'tabular-nums',
       }}
     >
       {formatVnd(amount)}

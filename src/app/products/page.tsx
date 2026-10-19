@@ -61,14 +61,14 @@ function ProductsListRow({ product, categories, onOpen }: { product: Product; ca
       </div>
       <div style={{ padding: '12px 14px 12px 10px', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
         {catName ? (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--bronze)' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--bronze)' }}>
             {catName}
           </div>
         ) : null}
-        <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {product.title}
         </div>
-        <div style={{ fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', fontSize: 12, color: 'var(--bronze)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--bronze)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
           {product.subtitle}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>

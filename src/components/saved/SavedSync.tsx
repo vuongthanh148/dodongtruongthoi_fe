@@ -40,6 +40,62 @@ function formatCountdown(seconds: number): string {
   return `${m}:${s}`
 }
 
+// 6-digit OTP input with individual boxed cells
+function OtpInputBox({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const handleChange = (index: number, val: string) => {
+    if (!/^\d?$/.test(val)) return
+
+    // Build new code: replace digit at index with new val
+    const digitsArr = value.split('')
+    if (val) {
+      digitsArr[index] = val
+      const newVal = digitsArr.join('').slice(0, OTP_LENGTH)
+      onChange(newVal)
+
+      // Auto-advance to next box if digit entered
+      if (index < OTP_LENGTH - 1) {
+        inputRefs.current[index + 1]?.focus()
+      }
+    }
+  }
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault()
+      const digitsArr = value.split('')
+      digitsArr.splice(index, 1)
+      onChange(digitsArr.join(''))
+
+      if (index > 0) {
+        inputRefs.current[index - 1]?.focus()
+      }
+    }
+  }
+
+  const digits = value.split('')
+  return (
+    <div className="flex gap-2">
+      {Array.from({ length: OTP_LENGTH }).map((_, i) => (
+        <input
+          key={i}
+          ref={(el) => { inputRefs.current[i] = el }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          disabled={disabled}
+          value={digits[i] ?? ''}
+          onChange={(e) => handleChange(i, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          autoComplete="one-time-code"
+          className="h-[50px] w-[44px] rounded-[6px] border border-[var(--border)] bg-[var(--bg-card)] text-center font-body text-[20px] font-semibold text-[var(--text-primary)]"
+        />
+      ))}
+    </div>
+  )
+}
+
 // "Đồng bộ đã lưu": phone + consent, OTP, then synced. Device saving stays on whatever happens here.
 export function SavedSync({ localVariants, onMerged }: SavedSyncProps) {
   const [ready, setReady] = useState(false)
@@ -261,16 +317,7 @@ export function SavedSync({ localVariants, onMerged }: SavedSyncProps) {
           </p>
         </div>
         <form onSubmit={submitCode} noValidate className="flex flex-col gap-3 md:flex-row md:items-center">
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={OTP_LENGTH}
-            aria-label={SAVED_SYNC_COPY.otpLabel}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH))}
-            className="h-[50px] w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-card)] px-4 text-center font-body text-[20px] font-semibold tracking-[0.4em] text-[var(--text-primary)] tabular-nums md:w-[220px]"
-          />
+          <OtpInputBox value={code} onChange={setCode} disabled={verifying} />
           <button
             type="submit"
             disabled={code.length !== OTP_LENGTH || verifying}

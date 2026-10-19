@@ -58,14 +58,14 @@ function CatListRow({ product, categories, onOpen }: { product: Product; categor
       </div>
       <div style={{ padding: '12px 14px 12px 10px', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
         {catName ? (
-          <div style={{ fontFamily: 'var(--font-jetbrains), monospace', fontSize: 12, letterSpacing: '0.1em', color: 'var(--bronze)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--bronze)' }}>
             {catName}
           </div>
         ) : null}
-        <div style={{ fontFamily: 'var(--font-lora), serif', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {product.title}
         </div>
-        <div style={{ fontFamily: 'var(--font-lora), serif', fontStyle: 'italic', fontSize: 12, color: 'var(--bronze)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--bronze)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
           {product.subtitle}
         </div>
         {(() => {
@@ -141,7 +141,7 @@ export default function CategoryPage() {
     [categoriesData]
   )
 
-  const { data: products = [], isLoading } = useSWR(
+  const { data: products = [], isLoading, error: productsError, mutate: retryProducts } = useSWR(
     activeCategoryId ? SWR_KEYS.productsByCategory(activeCategoryId) : null,
     activeCategoryId
       ? () => fetchProducts(activeCategoryId === 'all' ? undefined : { category: activeCategoryId })
@@ -409,17 +409,33 @@ export default function CategoryPage() {
           />
 
           <div style={{ paddingBottom: 100 }}>
-          {isLoading ? (
+          {isLoading && !products.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 xl:gap-6">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
+          ) : productsError && !products.length ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10, padding: '22px 14px', margin: 16,
+              border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)',
+            }}>
+              <div style={{ width: 170 }}>
+                <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
+              </div>
+              <Heading as="h3" size="sm" style={{ textAlign: 'center' }}>
+                Không thể tải sản phẩm
+              </Heading>
+              <Btn type="button" variant="outline" onClick={() => retryProducts()}>
+                Thử lại
+              </Btn>
+            </div>
           ) : visibleProducts.length === 0 ? (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 10, padding: '22px 14px', margin: 16,
-              border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--bg-card)',
+              border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-card)',
             }}>
               <div style={{ width: 170 }}>
                 <ArtPiece bg="bronze" frame="gold" label="" pad={8} aspect="4/3" />
