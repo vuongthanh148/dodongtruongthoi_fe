@@ -54,7 +54,7 @@ export default function BuyGuidePage() {
                   ) : null}
                   {step.steps && step.steps.length > 0 ? (
                     <ol
-                      className="m-0 mt-3 flex flex-col gap-2 pl-5 text-[15px] md:text-base"
+                      className="m-0 mt-3 flex flex-col gap-2 list-decimal list-inside pl-5 text-[15px] md:text-base"
                       style={{ lineHeight: 1.6, color: 'var(--text-secondary)' }}
                     >
                       {step.steps.map((s) => (

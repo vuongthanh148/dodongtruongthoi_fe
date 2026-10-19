@@ -6,9 +6,7 @@ import { ContentPageShell } from '@/components/content/ContentPageShell'
 import { ArtPiece } from '@/components/ui/ArtPiece'
 import {
   CONTENT_PAGE_META,
-  CRAFT_DETAIL_COPY,
   CRAFT_PAGE_COPY,
-  CRAFT_STEPS,
   CRAFT_STORIES,
 } from '@/lib/content-data'
 
@@ -37,7 +35,7 @@ export default function CraftVillagePage() {
         </Container>
       </div>
 
-      <Container className="flex w-full flex-col gap-12 pb-10 pt-10 md:gap-14 md:pb-14 md:pt-14 lg:gap-16 lg:pb-16 lg:pt-16 xl:gap-[72px] xl:pb-[72px] xl:pt-[72px]">
+      <Container className="flex w-full flex-col gap-10 pb-10 pt-10 md:gap-14 md:pb-14 md:pt-14 lg:gap-16 lg:pb-16 lg:pt-16 xl:gap-[72px] xl:pb-[72px] xl:pt-[72px]">
         {/* Story rows: image and text side by side at md+, alternating; stacked below md. */}
         {CRAFT_STORIES.map((story, index) => (
           <section key={story.label} className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-center md:gap-10 lg:gap-16">
@@ -60,36 +58,6 @@ export default function CraftVillagePage() {
             </div>
           </section>
         ))}
-
-        {/* Craft steps, list A */}
-        <section>
-          <div className="eyebrow">
-            {CRAFT_DETAIL_COPY.eyebrow}
-          </div>
-          <h2
-            className="mt-2 mb-5 text-[22px] md:mb-6 md:text-[26px] lg:mb-7"
-            style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, lineHeight: 1.2, margin: '8px 0 20px' }}
-          >
-            {CRAFT_DETAIL_COPY.stepsTitle}
-          </h2>
-          <ol className="grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 md:grid-cols-3 md:gap-4 lg:gap-5" style={{ margin: 0 }}>
-            {CRAFT_STEPS.map((step, index) => (
-              <li
-                key={step.title}
-                className="flex flex-col gap-1.5 rounded-[10px] p-4 md:p-5"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-              >
-                <span className="text-gold" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15 }}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 17, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-                  {step.title}
-                </span>
-                <span style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{step.body}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
 
         {/* Visit CTA */}
         <div className="flex flex-col items-center gap-4 pt-8 text-center md:gap-4" style={{ borderTop: '1px solid var(--border-soft)' }}>

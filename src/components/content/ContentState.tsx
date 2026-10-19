@@ -5,6 +5,7 @@ import { Container } from '@/components/layout/Container'
 import { ReadColumn } from '@/components/layout/ReadColumn'
 import { ContentPageShell } from '@/components/content/ContentPageShell'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { VisitBlock } from '@/components/sections/VisitBlock'
 import { HOTLINE, HOTLINE_TEL, SHOP_ADDRESS, SOCIAL_LINKS } from '@/lib/constants'
 import { CONTENT_PAGE_META, CONTENT_STATE_COPY, type ContentKind } from '@/lib/content-data'
 
@@ -141,11 +142,12 @@ function ErrorBody({ kind, onRetry }: { kind: ContentKind; onRetry?: () => void 
   const buttonBase = { height: 50, padding: '0 22px', borderRadius: 6, fontSize: 15, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 } as const
 
   return (
-    <div
-      role="alert"
-      className="mx-auto flex max-w-[640px] flex-col items-center gap-3 rounded-[10px] px-5 py-10 text-center md:px-8 md:py-14"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-    >
+    <>
+      <div
+        role="alert"
+        className="mx-auto flex max-w-[640px] flex-col items-center gap-3 rounded-[10px] px-5 py-10 text-center md:px-8 md:py-14"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      >
       <span
         className="grid h-14 w-14 place-items-center rounded-full"
         style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}
@@ -192,7 +194,9 @@ function ErrorBody({ kind, onRetry }: { kind: ContentKind; onRetry?: () => void 
           </div>
         </div>
       ) : null}
-    </div>
+      </div>
+      {isContact ? <VisitBlock /> : null}
+    </>
   )
 }
 
