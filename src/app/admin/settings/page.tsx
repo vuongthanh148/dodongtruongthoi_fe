@@ -78,6 +78,9 @@ export default function AdminSettingsPage() {
     spec_label: [],
   })
   const [removedLabelKeys, setRemovedLabelKeys] = useState<string[]>([])
+  const [bankName, setBankName] = useState('')
+  const [bankAccountName, setBankAccountName] = useState('')
+  const [bankAccountNumber, setBankAccountNumber] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -93,6 +96,10 @@ export default function AdminSettingsPage() {
         if (value) {
           setActiveTheme(value as ThemeId)
         }
+
+        if (typeof json.bank_name === 'string') setBankName(json.bank_name)
+        if (typeof json.bank_account_name === 'string') setBankAccountName(json.bank_account_name)
+        if (typeof json.bank_account_number === 'string') setBankAccountNumber(json.bank_account_number)
 
         const knownKeys = new Set(ALL_LABEL_FIELDS.map((field) => field.key))
         const loadedExtraLabels: Record<LabelPrefix, ExtraLabelRow[]> = {
@@ -329,6 +336,9 @@ export default function AdminSettingsPage() {
 
       const payload: Record<string, string> = {
         active_theme: activeTheme,
+        bank_name: bankName.trim(),
+        bank_account_name: bankAccountName.trim(),
+        bank_account_number: bankAccountNumber.trim(),
         ...normalizedLabels,
       }
 
@@ -397,6 +407,52 @@ export default function AdminSettingsPage() {
           </button>
 
           {message ? <p style={{ margin: '8px 0 0', color: 'var(--admin-ok)' }}>{message}</p> : null}
+        </section>
+
+        <section style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: 8, padding: 14, maxWidth: 900, marginTop: 14 }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Tài khoản ngân hàng</h2>
+          <p style={{ margin: '0 0 14px', color: 'var(--admin-muted)' }}>
+            Hiển thị trên trang thanh toán khi khách chọn chuyển khoản. Để trống sẽ dùng thông tin mặc định.
+          </p>
+
+          <div style={{ display: 'grid', gap: 10, maxWidth: 420 }}>
+            <label style={{ display: 'grid', gap: 4 }}>
+              <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>Ngân hàng</span>
+              <input
+                value={bankName}
+                onChange={(event) => setBankName(event.target.value)}
+                placeholder="Vietcombank"
+                style={{ border: '1px solid var(--admin-border)', borderRadius: 6, padding: '8px 10px', fontSize: 14 }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 4 }}>
+              <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>Tên chủ tài khoản</span>
+              <input
+                value={bankAccountName}
+                onChange={(event) => setBankAccountName(event.target.value)}
+                placeholder="NGUYEN VAN A"
+                style={{ border: '1px solid var(--admin-border)', borderRadius: 6, padding: '8px 10px', fontSize: 14 }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 4 }}>
+              <span style={{ fontSize: 12, color: 'var(--admin-muted)' }}>Số tài khoản</span>
+              <input
+                value={bankAccountNumber}
+                onChange={(event) => setBankAccountNumber(event.target.value)}
+                placeholder="0123456789"
+                style={{ border: '1px solid var(--admin-border)', borderRadius: 6, padding: '8px 10px', fontSize: 14 }}
+              />
+            </label>
+          </div>
+
+          <button
+            type="button"
+            onClick={saveSettings}
+            disabled={saving}
+            style={{ marginTop: 14, border: 'none', background: 'var(--admin-primary)', color: 'white', borderRadius: 6, padding: '9px 12px', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}
+          >
+            {saving ? 'Đang lưu...' : 'Lưu tài khoản ngân hàng'}
+          </button>
         </section>
 
         <section style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: 8, padding: 14, maxWidth: 900, marginTop: 14 }}>

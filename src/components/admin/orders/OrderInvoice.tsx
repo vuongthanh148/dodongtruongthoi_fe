@@ -131,7 +131,7 @@ function Sheet({ order }: { order: AdminOrder }) {
           </div>
         </div>
         <div className="text-right">
-          <div className="font-heading text-[22px] leading-tight font-semibold">{copy.title}</div>
+          <div className="text-[22px] leading-tight font-semibold">{copy.title}</div>
           <div className="mt-1.5 text-[12.5px] leading-[1.7]">
             {copy.number}: <b className="tabular-nums">{code}</b>
             <br />

@@ -543,6 +543,12 @@ body {
   font-family: var(--font-body);
   color: var(--admin-ink);
 }
+.adm h1,
+.adm h2,
+.adm h3 {
+  font-family: var(--font-body);
+  line-height: normal;
+}
 .adm button:focus-visible,
 .adm a:focus-visible {
   outline: 2px solid var(--admin-primary);

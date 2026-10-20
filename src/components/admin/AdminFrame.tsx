@@ -144,7 +144,7 @@ export function AdminFrame({ title, subtitle, children, actions }: AdminFramePro
             <Menu size={22} aria-hidden />
           </button>
           <h1
-            className="font-heading min-w-0 flex-1 truncate text-[18px] font-semibold"
+            className="min-w-0 flex-1 truncate text-[18px] font-semibold"
             style={{ color: 'var(--admin-ink)' }}
           >
             {title}
@@ -155,7 +155,7 @@ export function AdminFrame({ title, subtitle, children, actions }: AdminFramePro
           <div className="mb-5 flex items-start justify-between gap-4 lg:mb-6">
             <div className="min-w-0 flex-1">
               <h1
-                className="font-heading hidden text-[26px] leading-[1.1] font-semibold lg:block"
+                className="hidden text-[26px] leading-[1.1] font-semibold lg:block"
                 style={{ color: 'var(--admin-ink)' }}
               >
                 {title}
@@ -220,7 +220,7 @@ function AdminNav({
       <div className="flex items-center gap-2.5 px-2 pb-5">
         <DrumMark size={30} color="var(--gold)" />
         <div className="min-w-0">
-          <div className="font-heading text-[16px] font-semibold text-white">{ADMIN_COPY.brandName}</div>
+          <div className="text-[16px] font-semibold text-white">{ADMIN_COPY.brandName}</div>
           <div className="text-[12px] opacity-70">{ADMIN_COPY.brandSub}</div>
         </div>
       </div>
