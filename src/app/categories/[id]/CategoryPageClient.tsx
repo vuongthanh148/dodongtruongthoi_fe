@@ -149,13 +149,16 @@ export function CategoryPageClient({
     [categoriesData]
   )
 
-  const { data: products = [], isLoading, error: productsError, mutate: retryProducts } = useSWR(
+  const { data: products = [], error: productsError, mutate: retryProducts } = useSWR(
     activeCategoryId ? SWR_KEYS.productsByCategory(activeCategoryId) : null,
     activeCategoryId
       ? () => fetchProducts(activeCategoryId === 'all' ? undefined : { category: activeCategoryId })
       : null,
     { fallbackData: activeCategoryId === categoryId ? initialProducts : undefined }
   )
+  // SWR's own isLoading flag ignores fallbackData and can read true anyway during
+  // the SSR pass, so derive it from products.length instead of trusting that flag.
+  const isLoading = products.length === 0 && activeCategoryId !== categoryId
 
   // Paging resets automatically whenever the filter key changes
   const filterKey = JSON.stringify([activeCategoryId, sort, priceRange, sizeFilter, bgTone, query])

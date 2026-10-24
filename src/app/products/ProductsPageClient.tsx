@@ -23,10 +23,11 @@ import { LISTING_CHIP_COPY, LISTING_COPY, SEARCH_EMPTY_COPY } from '@/lib/conten
 import { HOTLINE_TEL } from '@/lib/constants'
 import { fetchCategories, loadProducts } from '@/lib/storefront-api'
 import { SWR_KEYS } from '@/lib/swr-keys'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import type { Category, Product } from '@/lib/types'
+import { SearchParamsBridge } from '@/components/SearchParamsBridge'
 
 const PAGE_SIZE = 9
 
@@ -87,13 +88,23 @@ function ProductsPageInner({
   initialCategories: Category[]
 }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const campaignId = searchParams.get('campaign') ?? undefined
-  const categoryParam = searchParams.get('category') ?? undefined
-  const qParam = searchParams.get('q')?.trim() || undefined
+  const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null)
+  const handleUrlParams = useCallback((params: URLSearchParams) => setUrlParams(params), [])
+  const campaignId = urlParams?.get('campaign') ?? undefined
+  const categoryParam = urlParams?.get('category') ?? undefined
+  const qParam = urlParams?.get('q')?.trim() || undefined
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [activeCategoryId, setActiveCategoryId] = useState<string>(categoryParam ?? 'all')
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('all')
+
+  // searchParams resolves after mount (see SearchParamsBridge below), so a
+  // ?category= link needs to apply once it's known rather than at init.
+  useEffect(() => {
+    if (categoryParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveCategoryId(categoryParam)
+    }
+  }, [categoryParam])
   const [sort, setSort] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating-desc'>(
     'featured'
   )
@@ -112,11 +123,15 @@ function ProductsPageInner({
   const [pendingBgTone, setPendingBgTone] = useState<string | null>(null)
   const [expanded, setExpanded] = useState({ key: '', count: PAGE_SIZE })
 
-  const { data: productsData, error: productsError, isLoading, mutate: retryProducts } = useSWR(
+  const { data: productsData, error: productsError, mutate: retryProducts } = useSWR(
     SWR_KEYS.products,
     () => loadProducts({ limit: 100 }),
     { fallbackData: initialProducts }
   )
+  // SWR's own isLoading flag ignores fallbackData and can read true anyway during
+  // the SSR pass, so derive it from productsData instead rather than risk hiding
+  // real content (initialProducts is always seeded, so this is false on first render).
+  const isLoading = productsData === undefined
   const allProducts = useMemo(() => productsData ?? [], [productsData])
   const listFailed = !!productsError && !productsData
 
@@ -281,6 +296,10 @@ function ProductsPageInner({
         minHeight: '100vh',
       }}
     >
+      <Suspense fallback={null}>
+        <SearchParamsBridge onParams={handleUrlParams} />
+      </Suspense>
+
       <DeskHeader />
       <TopBar
         title={title}
@@ -809,9 +828,5 @@ export function ProductsPageClient({
   initialProducts: Product[]
   initialCategories: Category[]
 }) {
-  return (
-    <Suspense>
-      <ProductsPageInner initialProducts={initialProducts} initialCategories={initialCategories} />
-    </Suspense>
-  )
+  return <ProductsPageInner initialProducts={initialProducts} initialCategories={initialCategories} />
 }

@@ -11,7 +11,6 @@ import { ArtPiece } from '@/components/ui/ArtPiece'
 import { BottomActionBar } from '@/components/ui/BottomActionBar'
 import { ProductCard, ProductCardSkeleton } from '@/components/ui/ProductCard'
 import { ShareSheet } from '@/components/ui/ShareSheet'
-import { Skeleton } from '@/components/ui/Skeleton'
 import { VariantSwatch } from '@/components/ui/VariantSwatch'
 import { campaignEndLine, variantSale } from '@/lib/campaign-price'
 import { formatVnd } from '@/lib/format'
@@ -41,8 +40,9 @@ import { SWR_KEYS } from '@/lib/swr-keys'
 import type { Product, SavedProductVariant, VariantOption } from '@/lib/types'
 import { useCampaigns } from '@/lib/use-campaigns'
 import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { SearchParamsBridge } from '@/components/SearchParamsBridge'
 import useSWR from 'swr'
 
 type TabId = 'description' | 'meaning' | 'specs' | 'reviews'
@@ -346,9 +346,11 @@ function ProductDetailPageInner({
   productId: string
   initialProduct: Product
 }) {
-  const searchParams = useSearchParams()
   const router = useRouter()
   const { data: campaigns = [] } = useCampaigns()
+
+  const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null)
+  const handleUrlParams = useCallback((params: URLSearchParams) => setUrlParams(params), [])
 
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({})
   const [sizeId, setSizeId] = useState('')
@@ -360,9 +362,13 @@ function ProductDetailPageInner({
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const touchStartXRef = useRef<number | null>(null)
 
-  const querySizeId = searchParams.get('sizeId') ?? ''
+  const querySizeId = urlParams?.get('sizeId') ?? ''
 
-  const { data: product = null, isLoading } = useSWR(
+  // The server already resolved this via initialProduct (page.tsx calls notFound()
+  // otherwise), so product is never null on first render. SWR's isLoading flag
+  // ignores fallbackData and can read true anyway during the SSR pass, so gate
+  // on product nullability instead rather than risk hiding real content.
+  const { data: product = null } = useSWR(
     SWR_KEYS.product(productId),
     () => fetchProduct(productId).then((p) => p || null),
     { fallbackData: initialProduct }
@@ -398,8 +404,8 @@ function ProductDetailPageInner({
 
   // Options from the URL (shared links, saved items) fill in under the user's own picks.
   const queryAttrs = useMemo(
-    () => (product ? pickQueryAttrs(product.variantOptions, searchParams) : {}),
-    [product, searchParams]
+    () => (product && urlParams ? pickQueryAttrs(product.variantOptions, urlParams) : {}),
+    [product, urlParams]
   )
   const resolvedAttrs = useMemo(
     () => ({ ...(product?.defaultVariant ?? {}), ...queryAttrs, ...selectedAttrs }),
@@ -537,27 +543,6 @@ function ProductDetailPageInner({
     router.push('/cart')
   }
 
-  if (isLoading) {
-    return (
-      <div className="paper" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
-        <DeskHeader />
-        <TopBar title="Chi tiết sản phẩm" onBack={() => window.history.back()} />
-        <Container className="pt-4">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-14">
-            <Skeleton style={{ aspectRatio: '4/3', borderRadius: 12 }} />
-            <div className="flex flex-col gap-3">
-              <Skeleton style={{ height: 16, width: '40%' }} />
-              <Skeleton style={{ height: 36, width: '75%' }} />
-              <Skeleton style={{ height: 16, width: '50%' }} />
-              <Skeleton style={{ height: 36, width: '40%', marginTop: 12 }} />
-              <Skeleton style={{ height: 50, marginTop: 16 }} />
-            </div>
-          </div>
-        </Container>
-      </div>
-    )
-  }
-
   if (!product) {
     return (
       <div className="paper flex min-h-screen items-center justify-center" style={{ background: 'var(--bg-page)' }}>
@@ -599,6 +584,10 @@ function ProductDetailPageInner({
 
   return (
     <div className="paper pb-24 md:pb-0" style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
+      <Suspense fallback={null}>
+        <SearchParamsBridge onParams={handleUrlParams} />
+      </Suspense>
+
       {/* Zoom overlay */}
       {zoomOpen && (
         <div
@@ -1137,9 +1126,5 @@ export function ProductDetailClient({
   productId: string
   initialProduct: Product
 }) {
-  return (
-    <Suspense>
-      <ProductDetailPageInner productId={productId} initialProduct={initialProduct} />
-    </Suspense>
-  )
+  return <ProductDetailPageInner productId={productId} initialProduct={initialProduct} />
 }
