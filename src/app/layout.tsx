@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Be_Vietnam_Pro, JetBrains_Mono, Lora, Playfair_Display } from 'next/font/google'
 import './globals.css'
-import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/constants'
+import { SHOP_EMAIL, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIAL_LINKS } from '@/lib/constants'
 import type { ThemeId } from '@/lib/themes'
 import SWRProvider from '@/components/providers/SWRProvider'
 
@@ -33,8 +33,41 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: SITE_NAME,
   description: SITE_DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    locale: 'vi_VN',
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    images: [{ url: '/chim-lac.png', width: 2018, height: 1113 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: ['/chim-lac.png'],
+  },
+}
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/chim-lac.png`,
+  email: SHOP_EMAIL,
+  sameAs: Object.values(SOCIAL_LINKS),
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: SITE_URL,
 }
 
 const FALLBACK_THEME: ThemeId = 'default'
@@ -79,6 +112,14 @@ export default async function RootLayout({
       className={`${beVietnam.variable} ${lora.variable} ${playfair.variable} ${jetbrains.variable}`}
     >
       <body suppressHydrationWarning className="antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <SWRProvider>
           <main>{children}</main>
         </SWRProvider>

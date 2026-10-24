@@ -1,5 +1,6 @@
 export const SITE_NAME = 'Đồ Đồng Trường Thơi'
 export const SITE_DESCRIPTION = 'Handcrafted Vietnamese bronze art and altar pieces from Dai Bai craft village.'
+export const SITE_URL = 'https://www.dodong.store'
 export const SHOP_EMAIL = 'dodongtruongthoi@gmail.com'
 export const COMPANY_NAME = 'Công ty TNHH Đồ Đồng Trường Thơi'
 
